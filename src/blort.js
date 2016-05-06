@@ -1,4 +1,4 @@
-var BLORT = (function (baseURL) {
+var BLORT = (function () {
     "use strict";
 
     var gAudioContext = null,
@@ -46,9 +46,7 @@ var BLORT = (function (baseURL) {
         sound.source = null;
         sound.buffer = null;
         sound.loop = loop;
-        
-        resource = baseURL + resource;
-        
+
         if (gVorbisSupport) {
             resource += ".ogg";
         } else if (!loop || forceMP3) {
@@ -147,4 +145,4 @@ var BLORT = (function (baseURL) {
         Tune: Tune,
         noteOn: audioNoteOn
     };
-}(rootURL));
+}());
