@@ -386,5 +386,13 @@ var LINEAR = (function () {
     
     linear.ZERO = new Vec(0, 0);
     
+    function testSuite() {
+        var vecTests = [
+        ];
+        
+        TEST.run("Vector", vecTests);
+    }
+    linear.testSuite = testSuite;
+    
     return linear;
 }());
