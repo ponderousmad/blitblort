@@ -1,4 +1,4 @@
-var TIMING = (function () {
+var TICK = (function () {
     "use strict";
 
     var getTimestamp = null,

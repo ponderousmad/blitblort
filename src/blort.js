@@ -1,4 +1,4 @@
-var AUDIO = (function (baseURL) {
+var BLORT = (function (baseURL) {
     "use strict";
 
     var gAudioContext = null,
@@ -96,42 +96,42 @@ var AUDIO = (function (baseURL) {
         sound.source.start();
     }
 
-    function SoundEffect(resource) {
+    function Noise(resource) {
         setup(this, resource, false, false);
     }
         
-    SoundEffect.prototype.isLoaded = function () {
+    Noise.prototype.isLoaded = function () {
         return gAudioContext === null || this.buffer !== null;
     };
 
-    SoundEffect.prototype.play = function () {
+    Noise.prototype.play = function () {
         play(this, false);
     };
     
-    function Music(resource, forceMP3) {
+    function Tune(resource, forceMP3) {
         setup(this, resource, true, forceMP3);
         this.playing = false;
         this.gain = null;
         this.volume = 1;
     }
     
-    Music.prototype.isLoaded = function() {
+    Tune.prototype.isLoaded = function() {
         return gAudioContext === null || this.buffer !== null;
     };
 
-    Music.prototype.play = function () {
+    Tune.prototype.play = function () {
         play(this, true);
         this.playing = true;
     };
     
-    Music.prototype.setVolume = function (volume) {
+    Tune.prototype.setVolume = function (volume) {
         this.volume = volume;
         if (this.playing) {
             this.gain.gain.value = volume;
         }
     };
     
-    Music.prototype.stop = function () {
+    Tune.prototype.stop = function () {
         if (this.source) {
             this.source.stop();
             this.gain.disconnect(gAudioContext.destination);
@@ -143,8 +143,8 @@ var AUDIO = (function (baseURL) {
     };
     
     return {
-        SoundEffect: SoundEffect,
-        Music: Music,
+        Noise: Noise,
+        Tune: Tune,
         noteOn: audioNoteOn
     };
 }(rootURL));

@@ -1,82 +1,82 @@
 var LINEAR = (function () {
     "use strict";
     
-    var linear = {};    
-    var COLINEAR_TOLERANCE = 1e-5;
+    var linear = {},
+        COLINEAR_TOLERANCE = 1e-5;
 
-    function Vector(x, y) {
+    function Vec(x, y) {
         this.x = x;
         this.y = y;
     }
     
-    linear.Vector = Vector;
+    linear.Vec = Vec;
 
-    Vector.prototype.clone = function () {
-        return new Vector(this.x, this.y);
+    Vec.prototype.clone = function () {
+        return new Vec(this.x, this.y);
     };
 
-    Vector.prototype.set = function (x, y) {
+    Vec.prototype.set = function (x, y) {
         this.x = x;
         this.y = y;
     };
 
-    Vector.prototype.copy = function (v) {
+    Vec.prototype.copy = function (v) {
         this.x = v.x;
         this.y = v.y;
     };
 
-    Vector.prototype.add = function (v) {
+    Vec.prototype.add = function (v) {
         this.x += v.x;
         this.y += v.y;
     };
 
-    Vector.prototype.addScaled = function (v, s) {
+    Vec.prototype.addScaled = function (v, s) {
         this.x += v.x * s;
         this.y += v.y * s;
     };
 
-    Vector.prototype.sub = function (v) {
+    Vec.prototype.sub = function (v) {
         this.x -= v.x;
         this.y -= v.y;
     };
 
-    Vector.prototype.scale = function (s) {
+    Vec.prototype.scale = function (s) {
         this.x *= s;
         this.y *= s;
     };
 
-    Vector.prototype.lengthSq = function () {
+    Vec.prototype.lengthSq = function () {
         return this.x * this.x + this.y * this.y;
     };
 
-    Vector.prototype.length = function () {
+    Vec.prototype.length = function () {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     };
 
-    Vector.prototype.normalize = function () {
+    Vec.prototype.normalize = function () {
         var length = this.length();
         this.x /= length;
         this.y /= length;
     };
     
-    Vector.prototype.dot = function (v) {
+    Vec.prototype.dot = function (v) {
         return this.x * v.x + this.y * v.y;
     };
     
-    Vector.prototype.toString = function () {
+    Vec.prototype.toString = function () {
         return "(" + this.x + ", " + this.y + ")";
     };
 
     linear.scaleVector = function (p, s) {
-        return new Vector(p.x * s, p.y * s);
+        return new Vec(p.x * s, p.y * s);
     };
 
     linear.addVectors = function (a, b) {
-        return new Vector(a.x + b.x, a.y + b.y);
+        return new Vec(a.x + b.x, a.y + b.y);
     };
 
     function subVectors(a, b) {
-        return new Vector(a.x - b.x, a.y - b.y);
+        return new Vec(a.x - b.x, a.y - b.y);
     }
     linear.subVectors = subVectors;
 
@@ -92,15 +92,15 @@ var LINEAR = (function () {
 
     linear.vectorNormalize = function (v) {
         var length = v.length();
-        return new Vector(v.x / length, v.y / length);
+        return new Vec(v.x / length, v.y / length);
     };
 
     linear.angleToVector = function (angle) {
-        return new Vector(Math.cos(angle), Math.sin(angle));
+        return new Vec(Math.cos(angle), Math.sin(angle));
     };
 
     linear.parseVector = function (data) {
-        return new Vector(parseFloat(data.x), parseFloat(data.y));
+        return new Vec(parseFloat(data.x), parseFloat(data.y));
     };
 
     linear.clampAngle = function (angle) {
@@ -116,7 +116,7 @@ var LINEAR = (function () {
 
     function tolEqual(a, b, tol) {
         return Math.abs(a - b) <= tol;
-    }    
+    }
     linear.tolEqual = tolEqual;
 
     function relEqual(a, b, tol) {
@@ -177,8 +177,8 @@ var LINEAR = (function () {
     }
 
     linear.inSegmentPD = function (start, direction, point) {
-        var diffX = point.x - start.x;
-        var diffY = point.y - start.y;
+        var diffX = point.x - start.x,
+            diffY = point.y - start.y;
         if (diffX !== 0) {
             return inSegment(diffX / direction.x);
         } else if (diffY !== 0) {
@@ -188,8 +188,8 @@ var LINEAR = (function () {
     };
     
     linear.segmentsIntersectPDT = function (start1, d1, start2, d2, tolerance) {
-        var between = subVectors(start1, start2);
-        var denom = determinant(d1, d2);
+        var between = subVectors(start1, start2),
+            denom = determinant(d1, d2);
 
         if (tolEqual(denom, 0, tolerance)) {
             // Lines are parallel, can't intersect, but may overlap.
@@ -218,8 +218,8 @@ var LINEAR = (function () {
     };
     
     linear.intersectSegmentsPDT = function (start1, d1, start2, d2, intersection, tolerance) {
-        var between = subVectors(start1, start2);
-        var denom = determinant(d1, d2);
+        var between = subVectors(start1, start2),
+            denom = determinant(d1, d2);
 
         intersection.copy(start1);
         if (tolEqual(denom, 0, tolerance)) {
@@ -268,8 +268,8 @@ var LINEAR = (function () {
             this.start = a;
             this.end = b;
         } else {
-            this.start = new Vector(a, b);
-            this.end = new Vector(c, d);
+            this.start = new Vec(a, b);
+            this.end = new Vec(c, d);
         }
     }
     
@@ -297,19 +297,19 @@ var LINEAR = (function () {
         return linear.pointDistance(this.end, this.start);
     };
     
-    Segment.prototype.intersects = function(other) {
+    Segment.prototype.intersects = function (other) {
         return linear.segmentsIntersectPP(this.start, this.end, other.start, other.end);
     };
     
-    Segment.prototype.intersectsT = function(other, tolerance) {
+    Segment.prototype.intersectsT = function (other, tolerance) {
         return linear.segmentsIntersectPPT(this.start, this.end, other.start, other.end, tolerance);
     };
     
-    Segment.prototype.findIntersection = function(other, intersection) {
+    Segment.prototype.findIntersection = function (other, intersection) {
         return linear.intersectSegmentsPP(this.start, this.end, other.start, other.end, intersection);
     };
     
-    Segment.prototype.findIntersectionT = function(other, tolerance, intersection) {
+    Segment.prototype.findIntersectionT = function (other, tolerance, intersection) {
         return linear.intersectSegmentsPPT(this.start, this.end, other.start, other.end, tolerance, intersection);
     };
     
@@ -343,7 +343,7 @@ var LINEAR = (function () {
     };
     
     Segment.prototype.closestPoint = function (center) {
-        var closest = new Vector(0, 0),
+        var closest = new Vec(0, 0),
             normal = this.normal(),
             dir = this.direction();
         if (!linear.intersectLinesPD(this.start, dir, center, normal, closest)) {
@@ -365,7 +365,7 @@ var LINEAR = (function () {
     
     linear.Segment = Segment;
     
-    var AABox = function(left, top, width, height) {
+    var AABox = function (left, top, width, height) {
         this.left = left;
         this.top = top;
         this.width = width;
@@ -374,17 +374,17 @@ var LINEAR = (function () {
         this.bottom = top + height;
     };
     
-    AABox.prototype.contains = function(p) {
+    AABox.prototype.contains = function (p) {
         return this.left <= p.x && p.x <= this.right && this.top <= p.y && p.y <= this.bottom;
     };
     
-    AABox.prototype.inflated = function(w, h) {
+    AABox.prototype.inflated = function (w, h) {
         return new AABox(this.left - w, this.top - h, this.width + 2 * w, this.height + 2 * h);
     };
     
     linear.AABox = AABox;
     
-    linear.ZERO = new Vector(0, 0);
+    linear.ZERO = new Vec(0, 0);
     
     return linear;
 }());

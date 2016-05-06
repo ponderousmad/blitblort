@@ -1,4 +1,4 @@
-var INPUT = (function (TIMING, AUDIO) {
+var IO = (function (TICK, BLORT) {
     "use strict";
 
     function Keyboard(element, capture) {
@@ -9,7 +9,7 @@ var INPUT = (function (TIMING, AUDIO) {
         if (element) {
             element.onkeydown = function (e) {
                 e = e || window.event;
-                self.pressed[e.keyCode] = TIMING.now();
+                self.pressed[e.keyCode] = TICK.now();
                 if (capture) {
                     e.preventDefault();
                 }
@@ -197,4 +197,4 @@ var INPUT = (function (TIMING, AUDIO) {
         Touch: Touch,
         Pointer: Pointer
     };
-}(TIMING, AUDIO));
+}(TICK, BLORT));

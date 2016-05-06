@@ -1,7 +1,15 @@
-var ImageBatch = (function (baseURL) {
+var BLIT = (function (baseURL) {
     "use strict";
+    
+    var ALIGN = {
+        Center: 0,
+        Left: 1,
+        Right: 2,
+        Top: 4,
+        Bottom: 8
+    };
 
-    function ImageBatch(basePath, onComplete) {
+    function Batch(basePath, onComplete) {
         this._toLoad = 0;
         this._commited = false;
         this._basePath = basePath;
@@ -9,11 +17,11 @@ var ImageBatch = (function (baseURL) {
         this.loaded = false;
     }
 
-    ImageBatch.prototype.setPath = function (path) {
+    Batch.prototype.setPath = function (path) {
         this._basePath = path;
     };
 
-    ImageBatch.prototype._checkComplete = function () {
+    Batch.prototype._checkComplete = function () {
         if (this._commited) {
             if (this._toLoad === 0) {
                 this.loaded = true;
@@ -24,7 +32,7 @@ var ImageBatch = (function (baseURL) {
         }
     };
 
-    ImageBatch.prototype.load = function (resource, onLoad) {
+    Batch.prototype.load = function (resource, onLoad) {
         this._toLoad += 1;
         var image = new Image();
         var self =  this;
@@ -42,16 +50,10 @@ var ImageBatch = (function (baseURL) {
         return image;
     };
 
-    ImageBatch.prototype.commit = function () {
+    Batch.prototype.commit = function () {
         this._commited = true;
         this._checkComplete();
     };
-    
-    return ImageBatch;
-}(rootURL));
-
-var DRAW = (function () {
-    "use strict";
     
     function drawCentered(context, image, pos, y) {
         var x = pos;
@@ -105,10 +107,79 @@ var DRAW = (function () {
         context.drawImage(tintCanvas, 0, 0, image.width, image.height, x, y, width, height);
     }
     
+    function Flip(imageBatch, baseName, frameCount, digits) {
+        this.frames = [];
+        for (var i = 0; i < frameCount; ++i) {
+            var number = i.toString();
+            while (number.length < digits) {
+                number = "0" + number;
+            }
+            this.frames.push(imageBatch.load(baseName + number + ".png"));
+        }
+    }
+    
+    Flip.prototype.setupPlayback = function(frameTime, loop, offset) {
+        var time = offset ? offset : 0;
+        return {
+            elapsed: time,
+            timePerFrame: frameTime,
+            fractionComplete: time / (frameTime * this.frames.length),
+            loop: loop === true
+        };
+    };
+    
+    Flip.prototype.updatePlayback = function(elapsed, playback) {
+        var totalLength = playback.timePerFrame * this.frames.length;
+        playback.elapsed += elapsed;
+        if(playback.loop) {
+            playback.elapsed = playback.elapsed % totalLength;
+        }
+        if (playback.elapsed > totalLength) {
+            playback.fractionComplete = 0;
+            return true;
+        } else {
+            playback.fractionComplete = playback.elapsed / totalLength;
+            return false;
+        }
+    };
+    
+    Flip.prototype.draw = function(context, playback, x, y, alignment, width, height, tint) {
+        if (!width) {
+            width = this.frames[0].width;
+        }
+        if (!height) {
+            height = this.frames[0].height;
+        }
+        
+        if ((alignment & ALIGN.Bottom) !== 0) {
+            y -= height;
+        } else if ((alignment & ALIGN.Top) === 0) { // center
+            y -= height * 0.5;
+        }
+        
+        if ((alignment & ALIGN.Right) !== 0) {
+            x -= width;
+        } else if ((alignment & ALIGN.Left) === 0) { // center
+            x -= width * 0.5;
+        }
+        
+        var index = Math.min(this.frames.length - 1, Math.floor(playback.elapsed / playback.timePerFrame)),
+            image = this.frames[index];
+        
+        if (tint) {
+            DRAW.tinted(context, image, x, y, width, height, tint);
+        } else {
+            context.drawImage(image, x, y, width, height);
+        }
+    };
+    
     return {
+        ALIGN: ALIGN,
+        Batch: Batch,
         centered: drawCentered,
         centeredScaled: drawCenteredScaled,
         tinted: drawTinted,
-        centeredText: drawTextCentered
+        centeredText: drawTextCentered,
+        Flip: Flip
     };
-}());
+}(rootURL));
