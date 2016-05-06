@@ -1,5 +1,16 @@
 var IO = (function (TICK, BLORT) {
     "use strict";
+    
+    var KEYS = {
+        Up : 38,
+        Down : 40,
+        Left : 37,
+        Right : 39,
+        Space : 32,
+        Escape : 27,
+        LT : 188,
+        GT : 190
+    };
 
     function Keyboard(element, capture) {
         this.pressed = {};
@@ -192,6 +203,7 @@ var IO = (function (TICK, BLORT) {
     };
     
     return {
+        KEYS, KEYS,
         Keyboard: Keyboard,
         Mouse: Mouse,
         Touch: Touch,
