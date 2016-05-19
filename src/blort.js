@@ -47,12 +47,14 @@ var BLORT = (function () {
         sound.buffer = null;
         sound.loop = loop;
 
-        if (gVorbisSupport) {
-            resource += ".ogg";
-        } else if (!loop || forceMP3) {
-            resource += ".mp3";
-        } else {
-            resource += ".wav";
+        if (!resource.endsWith(".wav")) {
+            if (gVorbisSupport) {
+                resource += ".ogg";
+            } else if (!loop || forceMP3) {
+                resource += ".mp3";
+            } else {
+                resource += ".wav";
+            }
         }
 
         if (gAudioContext !== null) {

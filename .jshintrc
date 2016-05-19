@@ -1,0 +1,13 @@
+{
+    "browser"       : true,
+    "globals"       : {
+        "console"   : true,
+        "BLIT"      : true,
+        "BLORT"     : true,
+        "TICK"      : true,
+        "IO"        : true,
+        "LINEAR"    : true,
+        "ENTROPY"   : true,
+        "TEST"      : true
+    } 
+}

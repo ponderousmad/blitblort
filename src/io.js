@@ -8,6 +8,10 @@ var IO = (function (TICK, BLORT) {
         Right : 39,
         Space : 32,
         Escape : 27,
+        Plus : 187,
+        Minus : 189,
+        Backspace : 8,
+        Delete : 46,
         LT : 188,
         GT : 190
     };
@@ -144,7 +148,7 @@ var IO = (function (TICK, BLORT) {
         
         var self = this;
         var handleTouch = function(e) {
-            AUDIO.noteOn();
+            BLORT.noteOn();
             self.touches = e.touches;
             e.preventDefault();
         };
@@ -200,6 +204,14 @@ var IO = (function (TICK, BLORT) {
         }
         this.primary = spot;
         this.mouse.postUpdate();
+    };
+    
+    Pointer.prototype.activated = function() {
+        return this.primary != null && this.primary.isStart;
+    };
+    
+    Pointer.prototype.location = function() {
+        return this.primary;
     };
     
     return {

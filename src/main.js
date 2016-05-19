@@ -1,4 +1,4 @@
-var MAIN = (function (gameplay, gamedraw) {
+var MAIN = (function (game, updateInterval, updateInDraw) {
     "use strict";
 
     function safeWidth() {
@@ -19,8 +19,7 @@ var MAIN = (function (gameplay, gamedraw) {
     
     var batch = new BLIT.Batch("images/"),
         testImage = batch.load("test.png"),
-        testFlip = new BLIT.Flip(batch, "test", 6, 2),
-        testFlipDraw = testFlip.setupPlayback(80, true);
+        testFlip = new BLIT.Flip(batch, "test", 6, 2).setupPlayback(80, true);
     
     (function () {
         batch.commit();
@@ -38,11 +37,10 @@ var MAIN = (function (gameplay, gamedraw) {
                     elapsed = now - lastTime;
                 pointer.update(elapsed);
                 
-                if (gameplay) {
-                    gameplay(now, elapsed, keyboard, pointer);
-                }
-                if (!gamedraw) {
-                    testFlip.updatePlayback(elapsed, testFlipDraw);
+                if (game) {
+                    game.update(now, elapsed, keyboard, pointer);
+                } else {
+                    testFlip.update(elapsed);
                 }
                 
                 keyboard.postUpdate();
@@ -52,20 +50,26 @@ var MAIN = (function (gameplay, gamedraw) {
         function drawFrame() {
             requestAnimationFrame(drawFrame);
             
+            if (!updateInterval || updateInDraw) {
+                update();
+            }
+            
             canvas.width  = safeWidth();
             canvas.height = safeHeight();
             
             context.clearRect(0, 0, canvas.width, canvas.height);
             
-            if (gamedraw) {
-                gamedraw(canvs.width, canvas.height);
+            if (game) {
+                game.draw(context, canvas.width, canvas.height);
             } else if (!BLIT.isPendingBatch()) {
-                BLIT.draw(context, testImage, 100, 100, BLIT.ALIGN.Center, 0, 0, BLIT.MIRROR.Horizontal);
-                testFlip.draw(context, testFlipDraw, 200, 50, BLIT.ALIGN.Left, 0, 0, BLIT.MIRROR.Vertical);
+                BLIT.draw(context, testImage, 100, 100, BLIT.ALIGN.Center, 0, 0, BLIT.MIRROR.Horizontal, [1,0,0]);
+                testFlip.draw(context, 200, 50, BLIT.ALIGN.Left, 0, 0, BLIT.MIRROR.Vertical);
             }
         }
-
-        window.setInterval(update, 16);
+        
+        if (updateInterval) {
+            window.setInterval(update, updateInterval);
+        }
 
         drawFrame();
 

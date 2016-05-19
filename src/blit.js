@@ -6,6 +6,7 @@ var BLIT = (function () {
         Left: 1,
         Right: 2,
         Top: 4,
+        TopLeft: 5,
         Bottom: 8
     };
     
@@ -16,7 +17,8 @@ var BLIT = (function () {
         Both: 3
     };
     
-    var batchesPending = 0;
+    var batchesPending = 0,
+        tintCache = {};
 
     function Batch(basePath, onComplete) {
         this._toLoad = 0;
@@ -66,44 +68,43 @@ var BLIT = (function () {
         this._checkComplete();
     };
     
-    function drawCentered(context, image, pos, y) {
-        var x = pos;
-        if (typeof x !== "number") {
-            y = pos.y;
-            x = pos.x;
-        }
-        context.drawImage(image, x - image.width * 0.5, y - image.height * 0.5);
+    function cacheTint(image, tint, canvas) {
+        tintCache[image.src + tint] = canvas;
     }
     
-    function drawCenteredScaled(context, image, x, y, width, height) {
-        context.drawImage(image, x - width * 0.5, y - height * 0.5, width, height);
+    function checkTintCache(image, tint) {
+        return tintCache[image.src + tint];
     }
     
-    var tintCanvas = document.createElement('canvas'),
-        tintContext = tintCanvas.getContext('2d');
-    
-    function drawTinted(context, image, x, y, width, height, tint) {
-        tintCanvas.width = image.width;
-        tintCanvas.height = image.height;
-        tintContext.clearRect(0, 0, image.width + 2, image.height + 2);
-        tintContext.drawImage(image, 0, 0);
+    function drawTinted(context, image, x, y, width, height, tint, noCache) {
+        var tintCanvas = noCache ? null : checkTintCache(image, tint);
         
-        var buffer = tintContext.getImageData(0, 0, image.width, image.height),
-            data = buffer.data;
+        if (!tintCanvas) {
+            tintCanvas = document.createElement('canvas');
+            var tintContext = tintCanvas.getContext('2d');
+            tintCanvas.width = image.width;
+            tintCanvas.height = image.height;
+            tintContext.clearRect(0, 0, image.width + 2, image.height + 2);
+            tintContext.drawImage(image, 0, 0);
 
-        // Adapted from: http://stackoverflow.com/questions/18576702/how-to-tint-an-image-in-html5
-        for (var i = 0; i < data.length; i += 4) {
-            data[i]     = data[i]     * tint[0];  /// add R
-            data[i + 1] = data[i + 1] * tint[1];  /// add G
-            data[i + 2] = data[i + 2] * tint[2];  /// add B
+            var buffer = tintContext.getImageData(0, 0, image.width, image.height),
+                data = buffer.data;
+
+            // Adapted from: http://stackoverflow.com/questions/18576702/how-to-tint-an-image-in-html5
+            for (var i = 0; i < data.length; i += 4) {
+                data[i]     = data[i]     * tint[0];  /// add R
+                data[i + 1] = data[i + 1] * tint[1];  /// add G
+                data[i + 2] = data[i + 2] * tint[2];  /// add B
+            }
+
+            tintContext.putImageData(buffer, 0, 0);
+            cacheTint(image, tint, tintCanvas);
         }
-
-        tintContext.putImageData(buffer, 0, 0);
 
         context.drawImage(tintCanvas, 0, 0, image.width, image.height, x, y, width, height);
     }
 
-    function draw(context, image, x, y, alignment, width, height, mirror, tint) {
+    function draw(context, image, x, y, alignment, width, height, mirror, tint, noCache) {
         if (!width) {
             width = image.width;
         }
@@ -145,11 +146,8 @@ var BLIT = (function () {
             y = -y - height;
         }
         
-        
-        console.log("x: " + x + " y: " + y + " + scale: (" + scaleX + ", " + scaleY + ")");
-        
         if (tint) {
-            drawTinted(context, image, x * scaleX, y * scaleY, width, height, tint);
+            drawTinted(context, image, x, y, width, height, tint, noCache);
         } else {
             context.drawImage(image, x, y, width, height);
         }
@@ -184,12 +182,19 @@ var BLIT = (function () {
     }
     
     Flip.prototype.setupPlayback = function(frameTime, loop, offset) {
-        var time = offset ? offset : 0;
+        var time = offset ? offset : 0,
+            flip = this;
         return {
             elapsed: time,
             timePerFrame: frameTime,
             fractionComplete: time / (frameTime * this.frames.length),
-            loop: loop === true
+            loop: loop === true,
+            update: function (elapsed) { return flip.updatePlayback(elapsed, this); },
+            draw: function (context, x, y, alignment, width, height, mirror, tint) {
+                flip.draw(context, this, x, y, alignment, width, height, mirror, tint);
+            },
+            width: function () { return flip.width(); },
+            height: function () { return flip.height(); }
         };
     };
     
@@ -200,7 +205,7 @@ var BLIT = (function () {
             playback.elapsed = playback.elapsed % totalLength;
         }
         if (playback.elapsed > totalLength) {
-            playback.fractionComplete = 0;
+            playback.fractionComplete = 1;
             return true;
         } else {
             playback.fractionComplete = playback.elapsed / totalLength;
@@ -211,19 +216,32 @@ var BLIT = (function () {
     Flip.prototype.draw = function(context, playback, x, y, alignment, width, height, mirror, tint) {
         var index = Math.min(this.frames.length - 1, Math.floor(playback.elapsed / playback.timePerFrame));
         
-        draw(context, this.frames[index], x, y, alignment, width, height, mirror, tint);
+        draw(context, this.frames[index], x, y, alignment, width, height, mirror, tint, true);
     };
+    
+    Flip.prototype.width = function () {
+        return this.frames[0].width;
+    };
+    
+    Flip.prototype.height = function () {
+        return this.frames[0].height;
+    };
+    
+    function updatePlaybacks(elapsed, playbacks) {
+        for (var p = 0; p < playbacks.length; ++p) {
+            playbacks[p].update(elapsed);
+        }
+    }
     
     return {
         ALIGN: ALIGN,
         MIRROR: MIRROR,
         Batch: Batch,
         isPendingBatch: function () { return batchesPending > 0; },
-        centered: drawCentered,
-        centeredScaled: drawCenteredScaled,
         tinted: drawTinted,
         draw: draw,
         centeredText: drawTextCentered,
-        Flip: Flip
+        Flip: Flip,
+        updatePlaybacks : updatePlaybacks
     };
 }());
