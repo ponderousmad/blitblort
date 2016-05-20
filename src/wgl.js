@@ -38,11 +38,11 @@ var WGL = (function () {
     
     Room.prototype.setupShader = function (source, type) {
         var shader = this.gl.createShader(type);
-        this.gl.shaderSource(shader, theSource);
+        this.gl.shaderSource(shader, source);
         this.gl.compileShader(shader);
         
         if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {  
-            console.log("Shader compile error:" + this.gl.getShaderInfoLog(shader));  
+            console.log("Shader compile error: " + this.gl.getShaderInfoLog(shader));  
             return null;  
         }
         return shader;
@@ -62,7 +62,7 @@ var WGL = (function () {
         this.gl.linkProgram(program);
 
         if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
-            console.log("Shader error: " + this.gl.getProgramInfoLog(program));
+            console.log("Shader link error: " + this.gl.getProgramInfoLog(program));
             return false;
         }
 
