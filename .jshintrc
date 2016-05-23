@@ -8,6 +8,8 @@
         "IO"        : true,
         "LINEAR"    : true,
         "ENTROPY"   : true,
+        "R3"        : true,
+        "WGL"       : true,
         "TEST"      : true
     } 
 }

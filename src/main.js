@@ -1,4 +1,4 @@
-var MAIN = (function (game, updateInterval, updateInDraw) {
+var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
     "use strict";
 
     function safeWidth() {
@@ -25,32 +25,34 @@ var MAIN = (function (game, updateInterval, updateInDraw) {
         batch.commit();
     }());
     
-    window.onload = function (e) {
-        console.log("window.onload", e, TICK.now());
-        var canvas = document.getElementById("canvas"),
-            context = canvas.getContext("2d"),
-            pointer = new IO.Pointer(canvas),
+    function setupUpdate(canvas) {
+        var pointer = new IO.Pointer(canvas),
             keyboard = new IO.Keyboard(window),
-            lastTime = TICK.now(),
-            update = function () {
-                var now = TICK.now(),
-                    elapsed = now - lastTime;
-                pointer.update(elapsed);
-                
-                if (game) {
-                    game.update(now, elapsed, keyboard, pointer);
-                } else {
-                    testFlip.update(elapsed);
-                }
-                
-                keyboard.postUpdate();
-                lastTime = now;
-            };
+            lastTime = TICK.now();
+
+        return function () {
+            var now = TICK.now(),
+                elapsed = now - lastTime;
+            pointer.update(elapsed);
+
+            if (game) {
+                game.update(now, elapsed, keyboard, pointer);
+            } else {
+                testFlip.update(elapsed);
+            }
+
+            keyboard.postUpdate();
+            lastTime = now;
+        };
+    }
+    
+    function setup2D(canvas, update) {
+        var context = canvas.getContext("2d");
 
         function drawFrame() {
             requestAnimationFrame(drawFrame);
             
-            if (!updateInterval || updateInDraw) {
+            if (update) {
                 update();
             }
             
@@ -66,12 +68,51 @@ var MAIN = (function (game, updateInterval, updateInDraw) {
                 testFlip.draw(context, 200, 50, BLIT.ALIGN.Left, 0, 0, BLIT.MIRROR.Vertical);
             }
         }
+
+        drawFrame();
+    }
+    
+    function setup3D(canvas, update) {
+        var room = WGL.Room(canvas, game ? game.clearColor : [0,0,0,0]);
         
+        function drawFrame3D() {
+            requestAnimationFrame(drawFrame3D);
+            
+            if (update) {
+                update();
+            }
+            
+            canvas.width  = safeWidth();
+            canvas.height = safeHeight();
+            
+            room.updateSize();
+            room.clear();
+            
+            if (game) {
+                game.draw(room, canvas.width, canvas.height);
+            } else if (!BLIT.isPendingBatch()) {
+                room.drawTest();
+            }
+        }
+
+        drawFrame3D();
+    }
+    
+    window.onload = function (e) {
+        console.log("window.onload", e, TICK.now());
+
+        var canvas = document.getElementById("canvas"),
+            update = setupUpdate(canvas),
+            drawUpdate = (!updateInterval || updateInDraw) ? update : null;
+        if (test3D || (game && game.is3D)) {
+            setup3D(canvas, drawUpdate);
+        } else {
+            setup2D(canvas, drawUpdate);
+        }
+
         if (updateInterval) {
             window.setInterval(update, updateInterval);
         }
-
-        drawFrame();
 
         // These tests are slow, don't want to run them all the time.
         if (TEST.INCLUDE_SLOW) {

@@ -26,6 +26,7 @@ var WGL = (function () {
             this.gl.enable(this.gl.DEPTH_TEST);
             this.gl.depthFunc(this.gl.LEQUAL);
         }
+        this.modelView = new R3.M();
     }
     
     Room.prototype.clear = function () {
@@ -48,7 +49,7 @@ var WGL = (function () {
         return shader;
     };
     
-    Room.prototype.setupShaderProgram = function(fragmentSource, vertexSource, vertexVariableName) {
+    Room.prototype.setupShaderProgram = function (fragmentSource, vertexSource, vertexVariableName) {
         var fragmentShader = this.setupShader(fragmentSource, this.gl.FRAGMENT_SHADER),
             vertexShader = this.setupShader(vertexSource, this.gl.VERTEX_SHADER);
         
@@ -74,9 +75,37 @@ var WGL = (function () {
         return true;
     };
     
+    Room.prototype.setupBuffer = function (verticies, hint) {
+        if (!hint) {
+            hint = this.gl.STATIC_DRAW;
+        }
+        var vertexBuffer = this.gl.createBuffer();
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(verticies), hint);
+    };
+    
+    function perspectiveMatrix(fieldOfView, aspectRatio, near, far) {
+        var scale = 1.0 / (near - far);
+
+        return [
+            fieldOfView / aspectRatio, 0, 0, 0,
+            0, fieldOfView, 0, 0,
+            0, 0, (near + far) * scale, -1,
+            0, 0, near * far * scale * 2, 0
+        ];
+    }
+    
     Room.prototype.drawTest = function () {
-        this.updateSize();
-        this.clear();
+        var vertices = [
+             1.0,  1.0, 0.0,
+            -1.0,  1.0, 0.0,
+             1.0, -1.0, 0.0,
+            -1.0, -1.0, 0.0
+        ];
         
+    };
+    
+    return {
+        Room: Room
     };
 }());
