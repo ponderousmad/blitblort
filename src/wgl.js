@@ -18,6 +18,17 @@ var WGL = (function () {
         return null;
     }
     
+    function Viewer() {
+        this.position = R3.origin();
+        this.fov = 45;
+        this.near = 0.01;
+        this.far = 100;
+    }
+    
+    Viewer.perspective = function(aspect) {
+        return R3.perspective(this.fov, aspect, this.near, this.var);
+    };
+    
     function Room(canvas, clearColor) {
         this.canvas = canvas;
         this.gl = getGlContext(canvas);
@@ -26,7 +37,8 @@ var WGL = (function () {
             this.gl.enable(this.gl.DEPTH_TEST);
             this.gl.depthFunc(this.gl.LEQUAL);
         }
-        this.modelView = new R3.M();
+        this.modelView = R3.identity();
+        this.viewer = new Viewer();
     }
     
     Room.prototype.clear = function () {
@@ -35,6 +47,10 @@ var WGL = (function () {
     
     Room.prototype.updateSize = function () {
         this.gl.viewport(this.canvas.width, this.canvas.height);
+    };
+    
+    Room.prototype.aspect = function () {
+        return this.canvas.width / this.canvas.height;  
     };
     
     Room.prototype.setupShader = function (source, type) {
@@ -84,16 +100,10 @@ var WGL = (function () {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(verticies), hint);
     };
     
-    function perspectiveMatrix(fieldOfView, aspectRatio, near, far) {
-        var scale = 1.0 / (near - far);
-
-        return [
-            fieldOfView / aspectRatio, 0, 0, 0,
-            0, fieldOfView, 0, 0,
-            0, 0, (near + far) * scale, -1,
-            0, 0, near * far * scale * 2, 0
-        ];
-    }
+    Room.prototype.setupUniforms = function (shader, perspective, modelView) {
+        this.gl.uniformMatrix4fv(this.gl.getUniformLocation(shader, "uPMatrix"), false, perspective.m);
+        this.gl.uniformMatrix4fv(this.gl.getUniformLocation(shader, "uMVMatrix"), false, modelView.m);
+    };
     
     Room.prototype.drawTest = function () {
         var vertices = [
@@ -102,7 +112,11 @@ var WGL = (function () {
              1.0, -1.0, 0.0,
             -1.0, -1.0, 0.0
         ];
+        this.viewer.position.set(0, 0, 6);
+        var perspective = this.viewer.perspective(this.aspect()),
+            view = R3.identity();
         
+        view.translate(R3.toOrigin(this.viewer.position));
     };
     
     return {
