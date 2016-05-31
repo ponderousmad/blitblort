@@ -4,79 +4,85 @@ var R2 = (function () {
     var r2 = {},
         COLINEAR_TOLERANCE = 1e-5;
 
-    function Vec(x, y) {
+    function V(x, y) {
         this.x = x;
         this.y = y;
     }
     
-    r2.Vec = Vec;
+    r2.V = V;
 
-    Vec.prototype.clone = function () {
-        return new Vec(this.x, this.y);
+    V.prototype.clone = function () {
+        return new V(this.x, this.y);
     };
 
-    Vec.prototype.set = function (x, y) {
+    V.prototype.set = function (x, y) {
         this.x = x;
         this.y = y;
     };
 
-    Vec.prototype.copy = function (v) {
+    V.prototype.copy = function (v) {
         this.x = v.x;
         this.y = v.y;
     };
 
-    Vec.prototype.add = function (v) {
+    V.prototype.add = function (v) {
         this.x += v.x;
         this.y += v.y;
     };
 
-    Vec.prototype.addScaled = function (v, s) {
+    V.prototype.addScaled = function (v, s) {
         this.x += v.x * s;
         this.y += v.y * s;
     };
 
-    Vec.prototype.sub = function (v) {
+    V.prototype.sub = function (v) {
         this.x -= v.x;
         this.y -= v.y;
     };
 
-    Vec.prototype.scale = function (s) {
+    V.prototype.scale = function (s) {
         this.x *= s;
         this.y *= s;
     };
 
-    Vec.prototype.lengthSq = function () {
+    V.prototype.lengthSq = function () {
         return this.x * this.x + this.y * this.y;
     };
 
-    Vec.prototype.length = function () {
+    V.prototype.length = function () {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     };
 
-    Vec.prototype.normalize = function () {
+    V.prototype.normalize = function () {
         var length = this.length();
         this.x /= length;
         this.y /= length;
     };
+
+    V.prototype.normalized = function () {
+        var length = this.length();
+        return new V(this.x / length, this.y / length);
+    };
+
     
-    Vec.prototype.dot = function (v) {
+    V.prototype.dot = function (v) {
         return this.x * v.x + this.y * v.y;
     };
     
-    Vec.prototype.toString = function () {
+    V.prototype.toString = function () {
         return "(" + this.x + ", " + this.y + ")";
     };
 
     r2.scaleVector = function (p, s) {
-        return new Vec(p.x * s, p.y * s);
+        return new V(p.x * s, p.y * s);
     };
 
     r2.addVectors = function (a, b) {
-        return new Vec(a.x + b.x, a.y + b.y);
+        return new V(a.x + b.x, a.y + b.y);
     };
 
     function subVectors(a, b) {
-        return new Vec(a.x - b.x, a.y - b.y);
+        return new V(a.x - b.x, a.y - b.y);
     }
     r2.subVectors = subVectors;
 
@@ -89,18 +95,13 @@ var R2 = (function () {
     r2.pointDistance = function (a, b) {
         return Math.sqrt(r2.pointDistanceSq(a, b));
     };
-
-    r2.vectorNormalize = function (v) {
-        var length = v.length();
-        return new Vec(v.x / length, v.y / length);
-    };
-
+    
     r2.angleToVector = function (angle) {
-        return new Vec(Math.cos(angle), Math.sin(angle));
+        return new V(Math.cos(angle), Math.sin(angle));
     };
 
     r2.parseVector = function (data) {
-        return new Vec(parseFloat(data.x), parseFloat(data.y));
+        return new V(parseFloat(data.x), parseFloat(data.y));
     };
 
     r2.clampAngle = function (angle) {
@@ -268,8 +269,8 @@ var R2 = (function () {
             this.start = a;
             this.end = b;
         } else {
-            this.start = new Vec(a, b);
-            this.end = new Vec(c, d);
+            this.start = new V(a, b);
+            this.end = new V(c, d);
         }
     }
     
@@ -343,7 +344,7 @@ var R2 = (function () {
     };
     
     Segment.prototype.closestPoint = function (center) {
-        var closest = new Vec(0, 0),
+        var closest = new V(0, 0),
             normal = this.normal(),
             dir = this.direction();
         if (!r2.intersectLinesPD(this.start, dir, center, normal, closest)) {
@@ -384,13 +385,25 @@ var R2 = (function () {
     
     r2.AABox = AABox;
     
-    r2.ZERO = new Vec(0, 0);
+    r2.ZERO = new V(0, 0);
     
     function testSuite() {
-        var vecTests = [
+        var vectorTests = [
         ];
         
-        TEST.run("Vector", vecTests);
+        var intersectTests = [  
+        ];
+        
+        var segmentTests = [  
+        ];
+        
+        var aaboxTests = [
+        ];
+        
+        TEST.run("R2 Vector", vectorTests);
+        TEST.run("R2 Intersect", intersectTests);
+        TEST.run("R2 Segment", segmentTests);
+        TEST.run("R2 AABOX", aaboxTests);
     }
     r2.testSuite = testSuite;
     

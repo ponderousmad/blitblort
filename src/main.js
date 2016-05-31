@@ -120,6 +120,7 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
         }
         
         R2.testSuite();
+        R3.testSuite();
     };
 
     return {

@@ -136,18 +136,56 @@ var R3 = (function () {
         this.w = Math.max(0, this.w - v.w);
     };
     
+    V.prototype.addScaled = function (v, s) {
+        this.x += s * v.x;
+        this.y += s * v.y;
+        this.z += s * v.z;
+        this.w = Math.max(0, this.w - v.w);
+    };
+    
     V.prototype.sub = function (v) {
         this.x -= v.x;
         this.y -= v.z;
         this.z -= v.z;
         this.w = Math.max(0, this.w - v.w);
     };
+
+    V.prototype.lengthSq = function () {
+        return this.x * this.x + this.y * this.y + this.z * this.z;
+    };
+
+    V.prototype.length = function () {
+        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+    };
     
-    function vecAdd(a, b) {
+    V.prototype.normalize = function () {
+        var length = this.length();
+        this.x /= length;
+        this.y /= length;
+        this.z /= length;
+    };
+    
+    V.prototype.normalized = function () {
+        var length = this.length();
+        return new V(this.x / length, this.y / length, this.z / length, this.w);
+    };
+    
+    function pointDistanceSq(a, b) {
+        var xDiff = a.x - b.x,
+            yDiff = a.y - b.y,
+            zDiff = a.z - b.z;
+        return xDiff * xDiff + yDiff * yDiff + zDiff * zDiff;
+    }
+
+    function pointDistance(a, b) {
+        return Math.sqrt(pointDistanceSq(a, b));
+    }
+    
+    function addVectors(a, b) {
         return new V(a.x + b.x, a.y + b.y, a.z + b.z, Math.min(1, a.w + b.w));  
     }
     
-    function vecSub(a, b) {
+    function subVectors(a, b) {
         return new V(a.x - b.x, a.y - b.y, a.z - b.z, Math.max(0, a.z - b.z)); 
     }
     
@@ -162,6 +200,18 @@ var R3 = (function () {
         ]);
     }
     
+        
+    function testSuite() {
+        var vectorTests = [
+        ];
+        
+        var matrixTests = [  
+        ];
+        
+        TEST.run("R3 Vector", vectorTests);
+        TEST.run("R3 Matrix", matrixTests);
+    }
+    
     return {
         M: M,
         V: V,
@@ -169,8 +219,9 @@ var R3 = (function () {
         origin: function () { return new V(); },
         toOrigin: function (v) { var o = new V(); o.sub(v); return o; },
         matmul: matmul,
-        vecAdd: vecAdd,
-        vecSub: vecSub,
-        perspective: perspective
+        addVectors: addVectors,
+        subVectors: subVectors,
+        perspective: perspective,
+        testSuite: testSuite
     };
 }());
