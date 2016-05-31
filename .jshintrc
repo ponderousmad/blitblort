@@ -6,8 +6,8 @@
         "BLORT"     : true,
         "TICK"      : true,
         "IO"        : true,
-        "LINEAR"    : true,
         "ENTROPY"   : true,
+        "R2"        : true,
         "R3"        : true,
         "WGL"       : true,
         "TEST"      : true
