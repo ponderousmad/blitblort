@@ -1,4 +1,4 @@
-var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
+var MAIN = (function () {
     "use strict";
 
     function safeWidth() {
@@ -25,7 +25,7 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
         batch.commit();
     }());
     
-    function setupUpdate(canvas) {
+    function setupUpdate(game, canvas) {
         var pointer = new IO.Pointer(canvas),
             keyboard = new IO.Keyboard(window),
             lastTime = TICK.now();
@@ -35,7 +35,7 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
                 elapsed = now - lastTime;
             pointer.update(elapsed);
 
-            if (game) {
+            if (game && game.update) {
                 game.update(now, elapsed, keyboard, pointer);
             } else {
                 testFlip.update(elapsed);
@@ -46,7 +46,7 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
         };
     }
     
-    function setup2D(canvas, update) {
+    function setup2D(game, canvas, update) {
         var context = canvas.getContext("2d");
 
         function drawFrame() {
@@ -61,7 +61,7 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
             
             context.clearRect(0, 0, canvas.width, canvas.height);
             
-            if (game) {
+            if (game && game.draw) {
                 game.draw(context, canvas.width, canvas.height);
             } else if (!BLIT.isPendingBatch()) {
                 BLIT.draw(context, testImage, 100, 100, BLIT.ALIGN.Center, 0, 0, BLIT.MIRROR.Horizontal, [1,0,0]);
@@ -72,8 +72,8 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
         drawFrame();
     }
     
-    function setup3D(canvas, update) {
-        var room = WGL.Room(canvas, game ? game.clearColor : [0,0,0,0]);
+    function setup3D(game, canvas, update) {
+        var room = new WGL.Room(canvas, game && game.clearColor ? game.clearColor : [0,0,0,0]);
         
         function drawFrame3D() {
             requestAnimationFrame(drawFrame3D);
@@ -88,7 +88,7 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
             room.updateSize();
             room.clear();
             
-            if (game) {
+            if (game && game.draw) {
                 game.draw(room, canvas.width, canvas.height);
             } else if (!BLIT.isPendingBatch()) {
                 room.drawTest();
@@ -100,18 +100,19 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
     
     window.onload = function (e) {
         console.log("window.onload", e, TICK.now());
-
+        
         var canvas = document.getElementById("canvas"),
-            update = setupUpdate(canvas),
-            drawUpdate = (!updateInterval || updateInDraw) ? update : null;
-        if (test3D || (game && game.is3D)) {
-            setup3D(canvas, drawUpdate);
+            game = canvas.setupGame(),
+            update = setupUpdate(game, canvas),
+            drawUpdate = (game && (!game.updateInterval || game.updateInDraw)) ? update : null;
+        if (game && game.is3D) {
+            setup3D(game, canvas, drawUpdate);
         } else {
-            setup2D(canvas, drawUpdate);
+            setup2D(game, canvas, drawUpdate);
         }
 
-        if (updateInterval) {
-            window.setInterval(update, updateInterval);
+        if (game && game.updateInterval) {
+            window.setInterval(update, game.updateInterval);
         }
 
         // These tests are slow, don't want to run them all the time.

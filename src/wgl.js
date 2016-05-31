@@ -25,12 +25,13 @@ var WGL = (function () {
         this.far = 100;
     }
     
-    Viewer.perspective = function(aspect) {
+    Viewer.prototype.perspective = function (aspect) {
         return R3.perspective(this.fov, aspect, this.near, this.var);
     };
     
     function Room(canvas, clearColor) {
         this.canvas = canvas;
+        this.viewportSize = new R2.V(0, 0);
         this.gl = getGlContext(canvas);
         if (this.gl) {
             this.gl.clearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
@@ -46,7 +47,10 @@ var WGL = (function () {
     };
     
     Room.prototype.updateSize = function () {
-        this.gl.viewport(this.canvas.width, this.canvas.height);
+        if (this.viewportSize.x !== this.canvas.width || this.viewportSize.y != this.canvas.height) {
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            this.viewportSize = new R2.V(this.canvas.width, this.canvas.height);
+        }
     };
     
     Room.prototype.aspect = function () {

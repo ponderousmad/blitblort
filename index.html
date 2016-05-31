@@ -1,24 +1,32 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>BlitBlort</title>
-    <link href="style.css" rel="stylesheet">
-    <script type="text/javascript" src="src/test.js"></script>
-    <script type="text/javascript" src="src/blit.js"></script>
-    <script type="text/javascript" src="src/tick.js"></script>
-    <script type="text/javascript" src="src/blort.js"></script>
-    <script type="text/javascript" src="src/io.js"></script>
-    <script type="text/javascript" src="src/entropy.js"></script>
-    <script type="text/javascript" src="src/r2.js"></script>
-    <script type="text/javascript" src="src/r3.js"></script>
-    <script type="text/javascript" src="src/wgl.js"></script>
-    <script type="text/javascript" src="src/main.js"></script>    
-  </head>
-  <body>
-    <div class="colocate">
-        <canvas id="canvas" width="800" height="600">
-            Sorry, your browser doesn't support the &lt;canvas&gt; element.
-        </canvas>
-    </div>
-  </body>
+    <head>
+        <title>BlitBlort</title>
+        <link href="style.css" rel="stylesheet">
+        <script type="text/javascript" src="src/test.js"></script>
+        <script type="text/javascript" src="src/blit.js"></script>
+        <script type="text/javascript" src="src/tick.js"></script>
+        <script type="text/javascript" src="src/blort.js"></script>
+        <script type="text/javascript" src="src/io.js"></script>
+        <script type="text/javascript" src="src/entropy.js"></script>
+        <script type="text/javascript" src="src/r2.js"></script>
+        <script type="text/javascript" src="src/r3.js"></script>
+        <script type="text/javascript" src="src/wgl.js"></script>
+        <script type="text/javascript" src="src/main.js"></script>  
+    </head>
+    <body>
+        <div>
+            <canvas id="canvas" width="800" height="600">
+                Sorry, your browser doesn't support the &lt;canvas&gt; element.
+            </canvas>
+        </div>
+        <script type="text/javascript">
+            document.getElementById("canvas").setupGame = function () {
+                return {
+                    updateInDraw: true,
+                    is3D: true
+                };
+            } 
+        </script>
+    </body>
 </html>
