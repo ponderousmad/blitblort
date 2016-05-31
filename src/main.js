@@ -119,7 +119,7 @@ var MAIN = (function (game, updateInterval, updateInDraw, test3D) {
             ENTROPY.testSuite();
         }
         
-        LINEAR.testSuite();
+        R2.testSuite();
     };
 
     return {
