@@ -1,33 +1,39 @@
 var WGL = (function () {
     "use strict";
     
-    var logGLCalls = false;
+    var debugOptions = null;
+    
+    if (true) {
+        debugOptions = {
+            validateArgs: true,
+            throwOnError: true,
+            logCalls: false
+        };
+    }
     
     function throwOnGLError(err, funcName, args) {
-        throw WebGLDebugUtils.glEnumToString(err) + " was caused by call to: " + funcName;
-    }
-    
-    function logGLCall(functionName, args) {   
-        console.log("gl." + functionName + "(" + 
-        WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");   
-    }
-    
-    function validateNoneOfTheArgsAreUndefined(functionName, args) {
-        for (var ii = 0; ii < args.length; ++ii) {
-            if (args[ii] === undefined) {
-                console.error(
-                    "undefined passed to gl." + functionName + "(" +
-                    WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")"
-                );
-            }
+        if (debugOptions.throwOnError) {
+            throw WebGLDebugUtils.glEnumToString(err) + " was caused by call to: " + funcName;
         }
+    }
+    
+    function argsToString(functionName, args) {   
+        return WebGLDebugUtils.glFunctionArgsToString(functionName, args);
     }
     
     function logAndValidate(functionName, args) {
-        if (logGLCalls) {
-            logGLCall(functionName, args);
+        if (debugOptions.logCalls) {
+            console.log("gl." + functionName + "(" + argsToString(functionName, args) + ")");
         }
-        validateNoneOfTheArgsAreUndefined(functionName, args);
+        if (debugOptions.validateArgs) {
+            for (var a = 0; a < args.length; ++a) {
+                if (args[a] === undefined) {
+                    console.error(
+                        "undefined passed to gl." + functionName + "(" + argsToString(functionName, args) + ")"
+                    );
+                }
+            }
+        }
     }
 
     function getGlContext(canvas) {
@@ -36,7 +42,9 @@ var WGL = (function () {
         try {
             context = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
             if (context) {
-                context = WebGLDebugUtils.makeDebugContext(context, throwOnGLError, logAndValidate);
+                if (debugOptions) {
+                    context = WebGLDebugUtils.makeDebugContext(context, throwOnGLError, logAndValidate);
+                }
                 return context;
             }
             console.log("Looks like there's no WebGL here.");
