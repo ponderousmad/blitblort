@@ -35,9 +35,9 @@ var R3 = (function () {
     };
     
     M.prototype.translate = function (v) {
-        this.m[at(0, 0)] += v.x;
-        this.m[at(0, 1)] += v.y;
-        this.m[at(0, 2)] += v.z;
+        this.m[at(0, 3)] += v.x;
+        this.m[at(1, 3)] += v.y;
+        this.m[at(2, 3)] += v.z;
     };
     
     M.prototype.scale = function (s) {
@@ -145,7 +145,7 @@ var R3 = (function () {
     
     V.prototype.sub = function (v) {
         this.x -= v.x;
-        this.y -= v.z;
+        this.y -= v.y;
         this.z -= v.z;
         this.w = Math.max(0, this.w - v.w);
     };

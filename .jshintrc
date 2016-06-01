@@ -10,6 +10,7 @@
         "R2"        : true,
         "R3"        : true,
         "WGL"       : true,
+        "WebGLDebugUtils" : true,
         "TEST"      : true
     } 
 }

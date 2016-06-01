@@ -1,5 +1,34 @@
 var WGL = (function () {
     "use strict";
+    
+    var logGLCalls = false;
+    
+    function throwOnGLError(err, funcName, args) {
+        throw WebGLDebugUtils.glEnumToString(err) + " was caused by call to: " + funcName;
+    }
+    
+    function logGLCall(functionName, args) {   
+        console.log("gl." + functionName + "(" + 
+        WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");   
+    }
+    
+    function validateNoneOfTheArgsAreUndefined(functionName, args) {
+        for (var ii = 0; ii < args.length; ++ii) {
+            if (args[ii] === undefined) {
+                console.error(
+                    "undefined passed to gl." + functionName + "(" +
+                    WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")"
+                );
+            }
+        }
+    }
+    
+    function logAndValidate(functionName, args) {
+        if (logGLCalls) {
+            logGLCall(functionName, args);
+        }
+        validateNoneOfTheArgsAreUndefined(functionName, args);
+    }
 
     function getGlContext(canvas) {
         var context = null;
@@ -7,6 +36,7 @@ var WGL = (function () {
         try {
             context = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
             if (context) {
+                context = WebGLDebugUtils.makeDebugContext(context, throwOnGLError, logAndValidate);
                 return context;
             }
             console.log("Looks like there's no WebGL here.");
@@ -20,13 +50,13 @@ var WGL = (function () {
     
     function Viewer() {
         this.position = R3.origin();
-        this.fov = 45;
-        this.near = 0.01;
+        this.fov = 90;
+        this.near = 0.1;
         this.far = 100;
     }
     
     Viewer.prototype.perspective = function (aspect) {
-        return R3.perspective(this.fov, aspect, this.near, this.var);
+        return R3.perspective(this.fov * Math.PI / 180.0, aspect, this.near, this.far);
     };
     
     function Room(canvas, clearColor) {
@@ -78,8 +108,8 @@ var WGL = (function () {
         }
         
         var program = this.gl.createProgram();
-        this.gl.attachShader(program, vertexSource);
-        this.gl.attachShader(program, fragmentSource);
+        this.gl.attachShader(program, fragmentShader);
+        this.gl.attachShader(program, vertexShader);
         this.gl.linkProgram(program);
 
         if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
@@ -92,7 +122,10 @@ var WGL = (function () {
         var vertexPositionAttribute = this.gl.getAttribLocation(program, vertexVariableName);
         this.gl.enableVertexAttribArray(vertexPositionAttribute);
         
-        return true;
+        return {
+            program: program,
+            vertexPosition: vertexPositionAttribute
+        };
     };
     
     Room.prototype.setupBuffer = function (verticies, hint) {
@@ -102,25 +135,41 @@ var WGL = (function () {
         var vertexBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(verticies), hint);
+        return vertexBuffer;
     };
     
-    Room.prototype.setupUniforms = function (shader, perspective, modelView) {
-        this.gl.uniformMatrix4fv(this.gl.getUniformLocation(shader, "uPMatrix"), false, perspective.m);
-        this.gl.uniformMatrix4fv(this.gl.getUniformLocation(shader, "uMVMatrix"), false, modelView.m);
+    Room.prototype.setupUniforms = function (program, perspective, modelView) {
+        var pLocation = this.gl.getUniformLocation(program, "uPMatrix"),
+            mvLocation = this.gl.getUniformLocation(program, "uMVMatrix");
+        this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
+        this.gl.uniformMatrix4fv(mvLocation, false, modelView.m);
     };
     
     Room.prototype.drawTest = function () {
-        var vertices = [
-             1.0,  1.0, 0.0,
-            -1.0,  1.0, 0.0,
-             1.0, -1.0, 0.0,
-            -1.0, -1.0, 0.0
-        ];
-        this.viewer.position.set(0, 0, 6);
+        if (!this.testSetup) {
+            var vertexSource = document.getElementById("vertex-test").innerHTML,
+                fragmentSource = document.getElementById("fragment-test").innerHTML;
+            this.testSetup = this.setupShaderProgram(fragmentSource, vertexSource, "aVertexPosition");
+            
+            var vertices = [
+                 1.0,  1.0, 0.0,
+                -1.0,  1.0, 0.0,
+                 1.0, -1.0, 0.0,
+                -1.0, -1.0, 0.0
+            ];
+            this.testSetup.square = this.setupBuffer(vertices);
+            this.gl.disable(this.gl.CULL_FACE);
+        }
+        this.viewer.position.set(0, 0, 2);
         var perspective = this.viewer.perspective(this.aspect()),
             view = R3.identity();
         
         view.translate(R3.toOrigin(this.viewer.position));
+        
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.testSetup.square);
+        this.gl.vertexAttribPointer(this.testSetup.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
+        this.setupUniforms(this.testSetup.program, perspective, view);
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     };
     
     return {

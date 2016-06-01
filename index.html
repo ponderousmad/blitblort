@@ -11,6 +11,7 @@
         <script type="text/javascript" src="src/entropy.js"></script>
         <script type="text/javascript" src="src/r2.js"></script>
         <script type="text/javascript" src="src/r3.js"></script>
+        <script type="text/javascript" src="src/webgl-debug.js"></script>
         <script type="text/javascript" src="src/wgl.js"></script>
         <script type="text/javascript" src="src/main.js"></script>  
     </head>
@@ -24,9 +25,25 @@
             document.getElementById("canvas").setupGame = function () {
                 return {
                     updateInDraw: true,
-                    is3D: true
+                    is3D: true,
+                    clearColor: [0,0,0,1]
                 };
             } 
+        </script>
+        <script id="vertex-test" type="x-shader/x-vertex">
+            attribute vec3 aVertexPosition;
+
+            uniform mat4 uMVMatrix;
+            uniform mat4 uPMatrix;
+
+            void main(void) {
+                gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+            }
+        </script>
+        <script id="fragment-test" type="x-shader/x-fragment">
+            void main(void) {
+                gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+            }
         </script>
     </body>
 </html>
