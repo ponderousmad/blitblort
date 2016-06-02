@@ -3,7 +3,7 @@ var WGL = (function () {
     
     var debugOptions = null;
     
-    if (true) {
+    if (typeof WebGLDebugUtils !== "undefined") {
         debugOptions = {
             validateArgs: true,
             throwOnError: true,
