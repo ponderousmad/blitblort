@@ -17,18 +17,21 @@
     </head>
     <body>
         <div>
-            <canvas id="canvas" width="800" height="600">
+            <span>
+            <canvas id="canvas2D" width="400" height="400">
                 Sorry, your browser doesn't support the &lt;canvas&gt; element.
             </canvas>
+            <canvas id="canvas3D" width="400" height="400">
+                Sorry, your browser doesn't support the &lt;canvas&gt; element.
+            </canvas>
+            </span>
         </div>
         <script type="text/javascript">
-            document.getElementById("canvas").setupGame = function () {
-                return {
-                    updateInDraw: true,
-                    is3D: true,
-                    clearColor: [0,0,0,1]
-                };
-            } 
+            window.onload = function(e) {
+                MAIN.runTestSuites();
+                MAIN.start(document.getElementById("canvas2D"), new MAIN.Test2D());
+                MAIN.start(document.getElementById("canvas3D"), new MAIN.Test3D());
+            };
         </script>
         <script id="vertex-test" type="x-shader/x-vertex">
             attribute vec3 aVertexPosition;

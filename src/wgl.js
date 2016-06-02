@@ -67,12 +67,11 @@ var WGL = (function () {
         return R3.perspective(this.fov * Math.PI / 180.0, aspect, this.near, this.far);
     };
     
-    function Room(canvas, clearColor) {
+    function Room(canvas) {
         this.canvas = canvas;
         this.viewportSize = new R2.V(0, 0);
         this.gl = getGlContext(canvas);
         if (this.gl) {
-            this.gl.clearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
             this.gl.enable(this.gl.DEPTH_TEST);
             this.gl.depthFunc(this.gl.LEQUAL);
         }
@@ -80,7 +79,11 @@ var WGL = (function () {
         this.viewer = new Viewer();
     }
     
-    Room.prototype.clear = function () {
+    Room.prototype.clear = function (clearColor) {
+        if (this.clearColor != clearColor) {
+            this.gl.clearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+            this.clearColor = clearColor;
+        }
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     };
     
