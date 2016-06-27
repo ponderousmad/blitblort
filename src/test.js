@@ -32,6 +32,7 @@ var TEST = (function () {
     TEST.notSame = function (a, b) { TEST.isFalse(a == b); };
     TEST.isEmpty = function (list) { TEST.equals(list.length, 0); };
     TEST.inList = function (list, item) { return TEST.isTrue(TEST.contains(list, item)); };
+    TEST.tolEquals = function (a, b, tolerance) { TEST.isTrue(Math.abs(a-b) < (tolerance ? tolerance : 1e-6)); };
     
     TEST.run  = function (name, tests) {
         console.log("Running " + name + " Tests");
