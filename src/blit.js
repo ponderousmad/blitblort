@@ -47,6 +47,7 @@ var BLIT = (function () {
 
     Batch.prototype.load = function (resource, onLoad) {
         this._toLoad += 1;
+        this._commited = false;
         var image = new Image();
         var self =  this;
         image.onload = function () {
