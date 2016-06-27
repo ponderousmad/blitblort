@@ -3,6 +3,8 @@ var R2 = (function () {
     
     var r2 = {},
         COLINEAR_TOLERANCE = 1e-5;
+    r2.DEG_TO_RAD = Math.PI / 180;
+    r2.RAD_TO_DEG = 1 / r2.DEG_TO_RAD;
 
     function V(x, y) {
         this.x = x;
