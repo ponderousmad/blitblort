@@ -105,6 +105,9 @@ var IO = (function (TICK, BLORT) {
         this.shift = false;
         this.ctrl = false;
         this.alt = false;
+        this.wheelX = 0;
+        this.wheelY = 0;
+        this.wheelZ = 0;
         
         var self = this;
         var updateState = function (event) {
@@ -132,15 +135,28 @@ var IO = (function (TICK, BLORT) {
             self.altKey = event.altKey;
         };
         
+        var updateWheel = function (event) {
+            self.wheelX += event.deltaX;
+            self.wheelY += event.deltaY;
+            self.wheelZ += event.deltaZ;
+            
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        };
+        
         element.addEventListener("mousemove", updateState);
         element.addEventListener("mousedown", updateState);
         element.addEventListener("mouseup", updateState);
+        element.addEventListener("wheel", updateWheel);
     }
     
     Mouse.prototype.postUpdate = function () {
         this.leftDown = false;
         this.middleDown = false;
         this.rightDown = false;
+        this.wheelX = 0;
+        this.wheelY = 0;
+        this.wheelZ = 0;
     };
     
     function Touch(element) {
@@ -202,12 +218,15 @@ var IO = (function (TICK, BLORT) {
                 };
             }
         }
+        this.wheelX = this.mouse.wheelX;
+        this.wheelY = this.mouse.wheelY;
+        this.wheelZ = this.mouse.wheelZ;
         this.primary = spot;
         this.mouse.postUpdate();
     };
     
     Pointer.prototype.activated = function() {
-        return this.primary != null && this.primary.isStart;
+        return this.primary !== null && this.primary.isStart;
     };
     
     Pointer.prototype.location = function() {
@@ -215,7 +234,7 @@ var IO = (function (TICK, BLORT) {
     };
     
     return {
-        KEYS, KEYS,
+        KEYS: KEYS,
         Keyboard: Keyboard,
         Mouse: Mouse,
         Touch: Touch,
