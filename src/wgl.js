@@ -58,13 +58,21 @@ var WGL = (function () {
         
     function Viewer() {
         this.position = R3.origin();
+        this.orientation = R3.zeroQ();
         this.fov = 90;
         this.near = 0.1;
         this.far = 100;
     }
     
     Viewer.prototype.perspective = function (aspect) {
-        return R3.perspective(this.fov * Math.PI / 180.0, aspect, this.near, this.far);
+        return R3.perspective(this.fov * R2.DEG_TO_RAD, aspect, this.near, this.far);
+    };
+    
+    Viewer.prototype.view = function () {
+        var v = R3.identity(),
+            r = R3.makeRotateQ(this.orientation);
+        v.translate(R3.toOrigin(this.position));
+        return R3.matmul(r, v);
     };
     
     function Room(canvas) {
@@ -110,121 +118,216 @@ var WGL = (function () {
         return shader;
     };
     
-    Room.prototype.setupShaderProgram = function (fragmentSource, vertexSource, positionVariable, uvVariable) {
-        var fragmentShader = this.setupShader(fragmentSource, this.gl.FRAGMENT_SHADER),
-            vertexShader = this.setupShader(vertexSource, this.gl.VERTEX_SHADER);
+    Room.prototype.bindVertexAttribute = function (program, variable) {
+        var attribute = this.gl.getAttribLocation(program, variable);
+        this.gl.enableVertexAttribArray(attribute);
+        return attribute;
+    };
+    
+    Room.prototype.setupShaderProgram = function (vertexSource, fragmentSource) {
+        var vertexShader = this.setupShader(vertexSource, this.gl.VERTEX_SHADER),
+            fragmentShader = this.setupShader(fragmentSource, this.gl.FRAGMENT_SHADER);
         
         if (!vertexShader || !fragmentShader) {
-            return false;
+            return null;
         }
         
         var program = this.gl.createProgram();
-        this.gl.attachShader(program, fragmentShader);
         this.gl.attachShader(program, vertexShader);
+        this.gl.attachShader(program, fragmentShader);
         this.gl.linkProgram(program);
 
         if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
             console.log("Shader link error: " + this.gl.getProgramInfoLog(program));
-            return false;
+            return null;
         }
 
         this.gl.useProgram(program);
-
-        var positionAttribute = this.gl.getAttribLocation(program, positionVariable);
-        this.gl.enableVertexAttribArray(positionAttribute);
-        
-        var uvAttribute = this.gl.getAttribLocation(program, uvVariable);
-        this.gl.enableVertexAttribArray(uvAttribute);
-        
-        return {
-            program: program,
-            vertexPosition: positionAttribute,
-            vertexUV: uvAttribute
-        };
+        return program;
     };
     
-    Room.prototype.setupBuffer = function (data, hint) {
+    Room.prototype.setupBuffer = function (data, elements, hint) {
         if (!hint) {
             hint = this.gl.STATIC_DRAW;
         }
+        var arrayType = elements ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
         var buffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(data), hint);
+        this.gl.bindBuffer(arrayType, buffer);
+        this.gl.bufferData(arrayType, data, hint);
         return buffer;
     };
     
-    Room.prototype.setupUniforms = function (program, perspective, modelView) {
-        var pLocation = this.gl.getUniformLocation(program, "uPMatrix"),
-            mvLocation = this.gl.getUniformLocation(program, "uMVMatrix");
-        this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
-        this.gl.uniformMatrix4fv(mvLocation, false, modelView.m);
+    Room.prototype.setupFloatBuffer = function (data, elements, hint) {
+        return this.setupBuffer(new Float32Array(data), elements, hint);
+    };
+    
+    Room.prototype.setupElementBuffer = function (data, hint) {
+        return this.setupBuffer(new Int16Array(data), true, hint);
+    };
+    
+    Room.prototype.setupTexture = function(image, texture) {
+        var gl = this.gl;
+        if (!texture) {
+            texture = gl.createTexture();
+        }
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        return texture;
     };
 
     Room.prototype.loadTexture = function(batch, resource) {
-        var gl = this.gl;
-        
-        function setupTexture(image, texture) {
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-            gl.generateMipmap(gl.TEXTURE_2D);
-            gl.bindTexture(gl.TEXTURE_2D, null);
-        }
-        
-        var texture = gl.createTexture();
-        batch.load(resource, function(image) { setupTexture(image, texture); });
+        var texture = this.gl.createTexture(),
+            room = this;
+        batch.load(resource, function(image) { room.setupTexture(image, texture); });
         return texture;
+    };
+    
+    Room.prototype.setupMesh = function (mesh) {
+        if (!mesh.drawData) {
+            if (mesh.index >= Math.pow(2, 16)) {
+                throw "Mesh has too many verticies to index!";
+            }
+            for (var i = 0; i < mesh.tris.length; ++i) {
+                if (mesh.tris[i] >= mesh.index) {
+                    throw "Past end of verticies:" + mesh.tris[i] + ", " + mesh.index;
+                }
+            }
+            
+            mesh.drawData = {
+                vertexBuffer: this.setupFloatBuffer(mesh.vertices),
+                uvBuffer: this.setupFloatBuffer(mesh.uvs),
+                triBuffer: this.setupElementBuffer(mesh.tris)
+            };
+            if (mesh.image) {
+                mesh.drawData.texture = this.setupTexture(mesh.image);
+            }
+        }
+        return mesh.drawData;
+    };
+    
+    Room.prototype.drawMesh = function (mesh, program) {
+        var draw = this.setupMesh(mesh);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.vertexBuffer);
+        this.gl.vertexAttribPointer(program.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.uvBuffer);
+        this.gl.vertexAttribPointer(program.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, draw.triBuffer);
+        if (draw.texture) {
+            this.bindTexture(program.shader, program.textureVariable, draw.texture);
+        }
+        this.gl.drawElements(this.gl.TRIANGLES, mesh.tris.length, this.gl.UNSIGNED_SHORT, 0);
+    };
+    
+    Room.prototype.setupView = function (program, viewVariable, perspectiveVariable) {
+        var perspective = this.viewer.perspective(this.aspect()),
+            view = this.viewer.view(),
+            pLocation = this.gl.getUniformLocation(program, perspectiveVariable),
+            vLocation = this.gl.getUniformLocation(program, viewVariable);
+        this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
+        this.gl.uniformMatrix4fv(vLocation, false, view.m);
+    };
+    
+    Room.prototype.bindTexture = function (program, variable, texture) {
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        this.gl.uniform1i(this.gl.getUniformLocation(program, variable), 0);
+    };
+    
+    Room.prototype.programFromElements = function (vertexElement, fragmentElement) {
+        var vertexSource = document.getElementById(vertexElement).innerHTML,
+            fragmentSource = document.getElementById(fragmentElement).innerHTML;
+        
+        return this.setupShaderProgram(vertexSource, fragmentSource);
+    };
+    
+    Room.prototype.setupDrawTest = function (program) {
+        var vertices = [
+                -1.0, -1.0, 0.0,
+                -1.0,  1.0, 0.0,
+                 1.0, -1.0, 0.0,
+                 1.0,  1.0, 0.0
+            ],
+            uvs = [
+                0.0,  1.0,
+                0.0,  0.0,
+                1.0,  1.0,
+                1.0,  0.0
+            ];
+        
+        program.batch = new BLIT.Batch("images/");
+        program.square = this.setupFloatBuffer(vertices);
+        program.squareUVs = this.setupFloatBuffer(uvs);
+        program.squareTexture = this.loadTexture(program.batch, "uv.png");
+        program.batch.commit();
+    };
+    
+    Room.prototype.drawTestSquare = function (setup) {
+        this.bindTexture(setup.shader, setup.textureVariable, setup.squareTexture);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.square);
+        this.gl.vertexAttribPointer(setup.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareUVs);
+        this.gl.vertexAttribPointer(setup.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     };
     
     Room.prototype.drawTest = function () {
         if (!this.testSetup) {
-            var vertexSource = document.getElementById("vertex-test").innerHTML,
-                fragmentSource = document.getElementById("fragment-test").innerHTML;
-            this.testSetup = this.setupShaderProgram(fragmentSource, vertexSource, "aPos", "aUV");
+            var program = this.programFromElements("vertex-test", "fragment-test");
             
-            var vertices = [
-                    -1.0, -1.0, 0.0,
-                    -1.0,  1.0, 0.0,
-                     1.0, -1.0, 0.0,
-                     1.0,  1.0, 0.0,
-                ],
-                uvs = [
-                    0.0,  1.0,
-                    0.0,  0.0,
-                    1.0,  1.0,
-                    1.0,  0.0
-                ];
-            this.testSetup.square = this.setupBuffer(vertices);
-            this.testSetup.squareUVs = this.setupBuffer(uvs);
-            this.gl.disable(this.gl.CULL_FACE);
+            this.testSetup = {
+                shader: program,
+                vertexPosition: this.bindVertexAttribute(program, "aPos"),
+                vertexUV: this.bindVertexAttribute(program, "aUV"),
+                textureVariable: "uSampler"
+            };
             
-            this.testSetup.batch = new BLIT.Batch("images/");
-            this.testSetup.squareTexture = this.loadTexture(this.testSetup.batch, "uv.png");
-            this.testSetup.batch.commit();
+            this.setupDrawTest(this.testSetup);
+            this.viewer.position.set(0, 0, 2);
         }
         if (!this.testSetup.batch.loaded) {
             return;
         }
-        this.viewer.position.set(0, 0, 2);
-        var perspective = this.viewer.perspective(this.aspect()),
-            view = R3.identity();
-        
-        view.translate(R3.toOrigin(this.viewer.position));
-        
-        this.gl.activeTexture(this.gl.TEXTURE0);
-        this.gl.bindTexture(this.gl.TEXTURE_2D, this.testSetup.squareTexture);
-        this.gl.uniform1i(this.gl.getUniformLocation(this.testSetup.program, "uSampler"), 0);
-        
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.testSetup.square);
-        this.gl.vertexAttribPointer(this.testSetup.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.testSetup.squareUVs);
-        this.gl.vertexAttribPointer(this.testSetup.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
-        this.setupUniforms(this.testSetup.program, perspective, view);
-        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        this.setupView(this.testSetup.shader, "uMVMatrix", "uPMatrix");
+        this.drawTestSquare(this.testSetup);
+    };
+    
+    function Mesh() {
+        this.vertices = [];
+        this.normals = [];
+        this.uvs = [];
+        this.tris = [];
+        this.index = 0;
+        this.bbox = new R3.AABox();
+    }
+    
+    Mesh.prototype.addVertex = function (p, n, u, v) {
+        p.pushOn(this.vertices);
+        n.pushOn(this.normals);
+        this.uvs.push(u);
+        this.uvs.push(v);
+        this.index += 1;
+        this.bbox.envelope(p);
+    };
+    
+    Mesh.prototype.addTri = function (a, b, c) {
+        this.tris.push(a);
+        this.tris.push(b);
+        this.tris.push(c);
+    };
+    
+    Mesh.prototype.appendVerticies = function (other) {
+        this.vertices = this.vertices.concat(other.vertices);
+        this.normals = this.normals.concat(other.normals);
+        this.uvs = this.uvs.concat(other.uvs);
+        this.index += other.index;
     };
     
     return {
-        Room: Room
+        Room: Room,
+        Mesh: Mesh
     };
 }());
