@@ -432,6 +432,24 @@ var R2 = (function () {
                 v.scale(-2);
                 TEST.equals(v.x, -2);
                 TEST.equals(v.y, 4);
+            },
+            
+            function testCopy() {
+                var v = new V(1, -2),
+                    w = v.clone();
+                
+                TEST.equals(v.x, w.x);
+                TEST.equals(v.y, w.y);
+                
+                w.set(0, 0);
+                TEST.equals(w.x, 0);
+                TEST.equals(w.y, 0);
+                TEST.notEquals(v.x, w.x);
+                TEST.notEquals(v.y, w.y);
+                
+                v.copy(w);
+                TEST.equals(v.x, 0);
+                TEST.equals(v.y, 0);
             }
         ];
         

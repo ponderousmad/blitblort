@@ -28,6 +28,7 @@ var TEST = (function () {
     TEST.isNull = function (value) { if (value !== null) { fail(); } };
     TEST.notNull = function (value) { if (value === null) { fail(); } };
     TEST.equals = function (a, b) { TEST.isTrue(a === b); };
+    TEST.notEquals = function (a, b) { TEST.isFalse( a === b ); };
     TEST.same = function (a, b) { TEST.isTrue(a == b); };
     TEST.notSame = function (a, b) { TEST.isFalse(a == b); };
     TEST.isEmpty = function (list) { TEST.equals(list.length, 0); };
