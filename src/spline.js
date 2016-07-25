@@ -1,7 +1,10 @@
 var SPLINE = (function () {
     "use strict";
 
-    return {
+    function S() {
+    }
 
+    return {
+        S: S
     };
 }());

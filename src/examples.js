@@ -6,11 +6,16 @@ var EXAMPLES = (function () {
         this.updateInDraw = true;
         this.editArea = document.getElementById("points");
         this.editing = false;
+        this.editPoint = null;
 
         this.batch = new BLIT.Batch("images/");
         this.vertexImage = this.batch.load("vertex.png");
         this.vertexShadow = this.batch.load("vertexShadow.png");
         this.batch.commit();
+
+        this.splines = [
+            new SPLINE.S()
+        ];
     }
 
     SplineExample.prototype.update = function (now, elapsed, keyboard, pointer) {
@@ -27,6 +32,20 @@ var EXAMPLES = (function () {
             this.editing = !this.editing;
             this.editArea.className = this.editing ? "" : "hidden";
         }
+
+        if (pointer.activated()) {
+            this.editPoint = {
+                position: pointer.location()
+            };
+        }
+
+        if (this.editPoint) {
+            if (pointer.primary) {
+                this.editPoint.position = pointer.location();
+            } else {
+                this.editPoint = null;
+            }
+        }
     };
     
     SplineExample.prototype.draw = function (context, width, height) {
@@ -38,8 +57,11 @@ var EXAMPLES = (function () {
         this.drawLine(context, center, new R2.V(0, height), "rgba(255,0,0,1)");
 
         if (this.batch.loaded) {
-            BLIT.draw(context, this.vertexImage, center.x, center.y, BLIT.ALIGN.Center, null, null, BLIT.MIRROR.None, [0,1,0]);
-            BLIT.draw(context, this.vertexShadow, center.x, center.y, BLIT.ALIGN.Center);
+            if (this.editPoint != null) {
+                var point = this.editPoint.position;
+                BLIT.draw(context, this.vertexImage, point.x, point.y, BLIT.ALIGN.Center, null, null, BLIT.MIRROR.None, [0,1,0]);
+                BLIT.draw(context, this.vertexShadow, point.x, point.y, BLIT.ALIGN.Center);
+            }
         }
     };
 
