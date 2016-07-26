@@ -70,6 +70,13 @@ var R2 = (function () {
     V.prototype.dot = function (v) {
         return this.x * v.x + this.y * v.y;
     };
+
+    V.prototype.interpolate = function (v, p) {
+        return new V(
+            this.x * p + (1-p) * v.x,
+            this.y * p + (1-p) * v.y
+        );
+    };
     
     V.prototype.toString = function () {
         return "(" + this.x + ", " + this.y + ")";
