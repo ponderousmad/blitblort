@@ -21,7 +21,7 @@ var SPLINE = (function () {
             return results;
         }
         return this.evaluate(p, results);
-    }
+    };
 
     S.prototype.build = function (count) {
         var points = [],
