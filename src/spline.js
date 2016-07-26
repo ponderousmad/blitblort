@@ -25,7 +25,7 @@ var SPLINE = (function () {
 
     S.prototype.build = function (count) {
         var points = [],
-            stepSize = 1 / (count + 1)
+            stepSize = 1 / count;
         for (var c = 0; c <= count; ++c) {
             points.push(this.evaluate(c * stepSize)[0]);
         }
