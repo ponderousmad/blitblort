@@ -34,14 +34,21 @@ var EXAMPLES = (function () {
         }
 
         if (pointer.activated()) {
-            this.editPoint = {
-                position: pointer.location()
-            };
+            var stab = new R2.V(pointer.location().x, pointer.location().y);
+            for (var s = 0; s < this.splines.length; ++s) {
+                var spline = this.splines[s];
+                for (var p = 0; p < spline.points.length; ++p) {
+                    if (R2.pointDistance(spline.points[p], stab) < 10) {
+                        this.editPoint = spline.points[p];
+                    }
+                }
+            }
         }
 
         if (this.editPoint) {
             if (pointer.primary) {
-                this.editPoint.position = pointer.location();
+                this.editPoint.x = pointer.location().x;
+                this.editPoint.y = pointer.location().y;
             } else {
                 this.editPoint = null;
             }
@@ -53,24 +60,37 @@ var EXAMPLES = (function () {
 
         var center = new R2.V(width * 0.5, height * 0.5)
 
-        this.drawLine(context, center, new R2.V(width, height));
-        this.drawLine(context, center, new R2.V(0, height), "rgba(255,0,0,1)");
-
-        if (this.batch.loaded) {
-            if (this.editPoint != null) {
-                var point = this.editPoint.position;
-                BLIT.draw(context, this.vertexImage, point.x, point.y, BLIT.ALIGN.Center, null, null, BLIT.MIRROR.None, [0,1,0]);
-                BLIT.draw(context, this.vertexShadow, point.x, point.y, BLIT.ALIGN.Center);
+        for (var s = 0; s < this.splines.length; ++s) {
+            var spline = this.splines[s];
+            this.drawLines(context, spline.build(20), "rgba(0,0,0,1)");
+            for (var p = 0; p < spline.points.length; ++p) {
+                var isHandle = p == 1 || p == 2;
+                this.drawVertex(context, spline.points[p], isHandle ? [0,1,0] : [1,0,0]);
             }
+            this.drawLine(context, spline.points[0], spline.points[1], "rgba(0,0,0,0.5)");
+            this.drawLine(context, spline.points[2], spline.points[3], "rgba(0,0,0,0.5)");
+        }
+    }
+
+    SplineExample.prototype.drawVertex = function (context, location, tint) { 
+        if (this.batch.loaded) {
+            BLIT.draw(context, this.vertexImage, location.x, location.y, BLIT.ALIGN.Center, null, null, BLIT.MIRROR.None, tint);
+            BLIT.draw(context, this.vertexShadow, location.x, location.y, BLIT.ALIGN.Center);
         }
     };
-
+    
     SplineExample.prototype.drawLine = function (context, start, end, style) {
+        this.drawLines(context, [start, end], style);
+    }
+
+    SplineExample.prototype.drawLines = function (context, points, style) {
         context.save();
         context.strokeStyle = style || "rgba(0,0,0,.5)";
         context.beginPath();
-        context.moveTo(start.x, start.y);
-        context.lineTo(end.x, end.y);
+        context.moveTo(points[0].x, points[0].y);
+        for (var p = 1; p < points.length; ++p) {
+            context.lineTo(points[p].x, points[p].y);
+        }
         context.stroke();
         context.restore();
     };

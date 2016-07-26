@@ -4,9 +4,9 @@ var SPLINE = (function () {
     function S() {
         this.points =  [
             new R2.V(10, 10),
-            new R2.V(10, 20),
-            new R2.V(10, 20),
-            new R2.V(10, 20)
+            new R2.V(100, 200),
+            new R2.V(200, 100),
+            new R2.V(200, 200)
         ];
     }
 
@@ -22,6 +22,15 @@ var SPLINE = (function () {
         }
         return results;
     }
+
+    S.prototype.build = function (count) {
+        var points = [],
+            stepSize = 1 / (count + 1)
+        for (var c = 0; c <= count; ++c) {
+            points.push(this.evaluate(c * stepSize)[0]);
+        }
+        return points;
+    };
 
     return {
         S: S
