@@ -17,10 +17,10 @@ var SPLINE = (function () {
             var prime = points[i-1].interpolate(points[i], p);
             results.push(prime);
         }
-        if (results.length > 1) {
-            results = this.evaluate(p, results);
+        if (results.length === 1) {
+            return results;
         }
-        return results;
+        return this.evaluate(p, results);
     }
 
     S.prototype.build = function (count) {
