@@ -73,8 +73,8 @@ var R2 = (function () {
 
     V.prototype.interpolate = function (v, p) {
         return new V(
-            this.x * p + (1-p) * v.x,
-            this.y * p + (1-p) * v.y
+            this.x * (1 - p) + v.x * p,
+            this.y * (1 - p) + v.y * p
         );
     };
     
