@@ -206,6 +206,15 @@ var R3 = (function () {
         this.w = Math.max(0, this.w - v.w);
     };
 
+    V.prototype.interpolate = function (v, p) {
+        return new V(
+            this.x * (1 - p) + v.x * p,
+            this.y * (1 - p) + v.y * p,
+            this.z * (1 - p) + v.z * p,
+            Math.max(this.w, v.w)
+        );
+    };
+
     V.prototype.sub = function (v) {
         this.x -= v.x;
         this.y -= v.y;

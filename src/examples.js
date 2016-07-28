@@ -13,9 +13,18 @@ var EXAMPLES = (function () {
         this.vertexShadow = this.batch.load("vertexShadow.png");
         this.batch.commit();
 
-        this.splines = [
-            new SPLINE.S()
-        ];
+        this.splines = [];
+
+        var segment = new SPLINE.BezierCurve(),
+            spline = new SPLINE.Spline();
+
+        spline.addSegment(segment);
+        segment.addPoint(new R3.V(10,  10));
+        segment.addPoint(new R3.V(100, 200));
+        segment.addPoint(new R3.V(200, 100));
+        segment.addPoint(new R3.V(200, 200));
+
+        this.splines.push(spline);
     }
 
     SplineExample.prototype.update = function (now, elapsed, keyboard, pointer) {
@@ -37,9 +46,12 @@ var EXAMPLES = (function () {
             var stab = new R2.V(pointer.location().x, pointer.location().y);
             for (var s = 0; s < this.splines.length; ++s) {
                 var spline = this.splines[s];
-                for (var p = 0; p < spline.points.length; ++p) {
-                    if (R2.pointDistance(spline.points[p], stab) < 10) {
-                        this.editPoint = spline.points[p];
+                for (var t = 0; t < spline.segments.length; ++t) {
+                    var points = spline.segments[t].points;
+                    for (var p = 0; p < points.length; ++p) {
+                        if (R2.pointDistance(points[p], stab) < 10) {
+                            this.editPoint = points[p];
+                        }
                     }
                 }
             }
@@ -58,17 +70,22 @@ var EXAMPLES = (function () {
     SplineExample.prototype.draw = function (context, width, height) {
         context.clearRect(0, 0, width, height);
 
-        var center = new R2.V(width * 0.5, height * 0.5)
+        var center = new R2.V(width * 0.5, height * 0.5),
+            handleLineStyle = "rgba(0,0,0,0.5)",
+            lineStyle = "black";
 
         for (var s = 0; s < this.splines.length; ++s) {
             var spline = this.splines[s];
-            this.drawLines(context, spline.build(20), "rgba(0,0,0,1)");
-            for (var p = 0; p < spline.points.length; ++p) {
-                var isHandle = p == 1 || p == 2;
-                this.drawVertex(context, spline.points[p], isHandle ? [0,1,0] : [1,0,0]);
+            this.drawLines(context, spline.build(20), "black");
+            for (var t = 0; t < spline.segments.length; ++t) {
+                var points = spline.segments[t].points;
+                for (var p = 0; p < points.length; ++p) {
+                    var isHandle = p == 1 || p == 2;
+                    this.drawVertex(context, points[p], isHandle ? [0,1,0] : [1,0,0]);
+                }
+                this.drawLine(context, points[0], points[1], handleLineStyle);
+                this.drawLine(context, points[2], points[3], handleLineStyle);
             }
-            this.drawLine(context, spline.points[0], spline.points[1], "rgba(0,0,0,0.5)");
-            this.drawLine(context, spline.points[2], spline.points[3], "rgba(0,0,0,0.5)");
         }
     }
 

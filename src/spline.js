@@ -1,16 +1,15 @@
 var SPLINE = (function () {
     "use strict";
 
-    function S() {
-        this.points =  [
-            new R2.V(10, 10),
-            new R2.V(100, 200),
-            new R2.V(200, 100),
-            new R2.V(200, 200)
-        ];
+    function BezierCurve() {
+        this.points =  [];
     }
 
-    S.prototype.evaluate = function (p, points) {
+    BezierCurve.prototype.addPoint = function (p) {
+        this.points.push(p);
+    };
+
+    BezierCurve.prototype.evaluate = function (p, points) {
         var results = [];
         points = points || this.points;
         for (var i = 1; i < points.length; ++i) {
@@ -23,8 +22,8 @@ var SPLINE = (function () {
         return this.evaluate(p, results);
     };
 
-    S.prototype.build = function (count) {
-        var points = [],
+    BezierCurve.prototype.build = function (count, out) {
+        var points = out === undefined ? [] : out,
             stepSize = 1 / count;
         for (var c = 0; c <= count; ++c) {
             points.push(this.evaluate(c * stepSize)[0]);
@@ -32,7 +31,24 @@ var SPLINE = (function () {
         return points;
     };
 
+    function Spline() {
+        this.segments = [];
+    }
+
+    Spline.prototype.addSegment = function (segment) {
+        this.segments.push(segment);
+    };
+
+    Spline.prototype.build = function (segmentCount, out) {
+        var points = out === undefined ? [] : out;
+        for (var s = 0; s < this.segments.length; ++s) {
+            this.segments[s].build(segmentCount, points);
+        }
+        return points;
+    };
+
     return {
-        S: S
+        BezierCurve: BezierCurve,
+        Spline: Spline
     };
 }());
