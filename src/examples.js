@@ -87,7 +87,7 @@ var EXAMPLES = (function () {
                 this.drawLine(context, points[2], points[3], handleLineStyle);
             }
         }
-    }
+    };
 
     SplineExample.prototype.drawVertex = function (context, location, tint) { 
         if (this.batch.loaded) {
@@ -98,7 +98,7 @@ var EXAMPLES = (function () {
     
     SplineExample.prototype.drawLine = function (context, start, end, style) {
         this.drawLines(context, [start, end], style);
-    }
+    };
 
     SplineExample.prototype.drawLines = function (context, points, style) {
         context.save();
