@@ -113,12 +113,29 @@ var EXAMPLES = (function () {
     };
 
     SplineExample.prototype.save = function () {
-        var data = {};
-        return JSON.stringify(data);
+        var data = {
+            splines: this.splines
+        };
+        return JSON.stringify(data, null, 4);
     };
 
     SplineExample.prototype.load = function (data) {
-        console.log("Loaded");
+        var splines = data.splines;
+        this.splines = [];
+        for (var s = 0; s < splines.length; ++s) {
+            var spline = new SPLINE.Spline(),
+                segments = splines[s].segments;
+            this.splines.push(spline);
+            for (var t = 0; t < segments.length; ++t) {
+                var segment = new SPLINE.BezierCurve(),
+                    points = segments[t].points;
+                spline.addSegment(segment);
+                for (var i = 0; i < points.length; ++i) {
+                    var p = points[i];
+                    segment.addPoint(new R3.V(p.x, p.y, p.z, p.w));
+                }
+            }
+        }
     };
 
     SplineExample.prototype.checkpoint = function () {
@@ -126,7 +143,7 @@ var EXAMPLES = (function () {
     };
 
     SplineExample.prototype.loadCheckpoint = function () {
-        data = JSON.parse(this.editArea.value);
+        var data = JSON.parse(this.editArea.value);
         this.load(data);
     };
 
