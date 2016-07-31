@@ -71,15 +71,21 @@ var WGL = (function () {
         return R3.perspective(this.fov * R2.DEG_TO_RAD, aspect, this.near, this.far);
     };
 
-    Viewer.prototype.perspectiveFOV = function (fov) {
-        return R3.perspective(fov, this.near, this.far);
+    Viewer.prototype.perspectiveFOV = function (eye) {
+        return R3.perspectiveFOV(eye.fieldOfView, this.near, this.far);
     };
 
-    Viewer.prototype.view = function () {
+    Viewer.prototype.view = function (eye) {
         var v = R3.identity(),
             r = R3.makeRotateQ(this.orientation);
         v.translate(R3.toOrigin(this.position));
-        return R3.matmul(r, v);
+        var m = R3.matmul(r, v);
+        if (eye) {
+            var offset = new R3.V(eye.offset[0], eye.offset[1], eye.offset[2]);
+            offset.scale(-1);
+            m.translate(offset);
+        }
+        return m;
     };
 
     function Room(canvas) {
@@ -238,8 +244,8 @@ var WGL = (function () {
 
     Room.prototype.setupView = function (program, viewportRegion, viewVariable, perspectiveVariable, eye) {
         this.viewport(viewportRegion);
-        var perspective = this.viewer.perspective(this.aspect()),
-            view = this.viewer.view(),
+        var perspective = eye ? this.viewer.perspectiveFOV(eye) : this.viewer.perspective(this.aspect()),
+            view = this.viewer.view(eye),
             pLocation = this.gl.getUniformLocation(program, perspectiveVariable),
             vLocation = this.gl.getUniformLocation(program, viewVariable);
         this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
