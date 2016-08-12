@@ -56,18 +56,143 @@ var R3 = (function () {
         this.m[at(2,2)] *= v.z;
     };
 
-    M.prototype.extractEuler = function () {
-        var m02 = this.m[at(0, 2)],
+    // Adapted from setFromRotationMatrix in
+    // https://github.com/mrdoob/three.js/blob/dev/src/math/Euler.js
+    M.prototype.extractEuler = function (order) {
+        var x = 0.0, y = 0.0, z = 0.0;
+        if (order === "XYZ" || !order) {
+            var m02 = this.m[at(0, 2)];
             y = Math.asin(clamp(m02, -1, 1));
-
-        if (Math.abs(m02) < 0.9999) {
-            return new V(
-                Math.atan2(-this.m[at(1, 2)], this.m[at(2, 2)]),
-                y,
-                Math.atan2(-this.m[at(0, 1)], this.m[at(0, 0)])
-            );
+            if (Math.abs(m02) < 0.99999) {
+                x = Math.atan2(-this.m[at(1, 2)], this.m[at(2, 2)]);
+                z = Math.atan2(-this.m[at(0, 1)], this.m[at(0, 0)]);
+            } else {
+                x = Math.atan2( this.m[at(2, 1)], this.m[at(1, 1)]);
+            }
+        } else if (order === "ZYX") {
+            var m20 = this.m[at(2, 0)];
+            y = Math.asin(-clamp(m20, - 1, 1));
+            if (Math.abs(m20) < 0.99999 ) {
+                x = Math.atan2( this.m[at(2, 1)], this.m[at(2, 2)]);
+                z = Math.atan2( this.m[at(1, 0)], this.m[at(0, 0)]);
+            } else {
+                z = Math.atan2(-this.m[at(0, 1)], this.m[at(1, 1)]);
+            }
+        } else if (order === "YXZ") {
+            var m12 = this.m[at(1, 2)];
+            x = Math.asin(-clamp(m12, -1, 1));
+            if (Math.abs(m12) < 0.99999) {
+                y = Math.atan2( this.m[at(0, 2)], this.m[at(2, 2)]);
+                z = Math.atan2( this.m[at(1, 0)], this.m[at(1, 1)]);
+            } else {
+                y = Math.atan2(-this.m[at(2, 0)], this.m[at(0, 0)]);
+            }
+        } else if (order === "ZXY") {
+            var m21 = this.m[at(2, 1)];
+            x = Math.asin(clamp(m21, -1, 1));
+            if (Math.abs(m21) < 0.99999) {
+                y = Math.atan2(-this.m[at(2, 0)], this.m[at(2, 2)]);
+                z = Math.atan2(-this.m[at(0, 1)], this.m[at(1, 1)]);
+            } else {
+                z = Math.atan2( this.m[at(1, 0)], this.m[at(0, 0)]);
+            }
+        } else if (order === "YZX") {
+            var m10 = this.m[at(1, 0)];
+            z = Math.asin(clamp(m10, -1, 1));
+            if (Math.abs(m10) < 0.99999) {
+                x = Math.atan2(-this.m[at(1, 2)], this.m[at(1, 1)]);
+                y = Math.atan2(-this.m[at(2, 0)], this.m[at(0, 0)]);
+            } else {
+                y = Math.atan2( this.m[at(0, 2)], this.m[at(2, 2)]);
+            }
+        } else if (order === "XZY") {
+            var m01 = this.m[at(0, 1)];
+            z = Math.asin(-clamp(m01, -1, 1));
+            if (Math.abs(m01) < 0.99999) {
+                x = Math.atan2( this.m[at(2, 1)], this.m[at(1, 1)]);
+                y = Math.atan2( this.m[at(0, 2)], this.m[at(0, 0)]);
+            } else {
+                x = Math.atan2(-this.m[at(1, 2)], this.m[at(2, 2)]);
+            }
+        } else {
+            console.log("Unknown order");
         }
-        return new V(Math.atan2(this.m[at(2, 1)], this.m[at(1, 1)]), y, 0.0);
+        return new V(x, y, z);
+    };
+
+    // Based on http://paulbourke.net/miscellaneous/determinant/
+    M.prototype.determinant = function (i) {
+        i = i || 0; // Arbitrarily choose column i for calculating the determinant.
+        var det = 0;
+        for (var j = 0; j < D4; ++j) {
+            det += this.m[at(i, j)] * Math.pow(-1, i + j) * this.minor(i, j);
+        }
+        return det;
+    };
+
+    function skipIndex(skip, offset) {
+        offset = offset % D3;
+        return offset < skip ? offset : offset + 1;
+    }
+
+    M.prototype.minor = function (column, row, i) {
+        // https://en.wikipedia.org/wiki/Minor_(linear_algebra)
+        // Calculate the Minor, which is the determinant of the matrix
+        // obtained by ommiting the specified row and column
+        i = i || 0; // Arbitrarily choosen column for calculating the determinant.
+        var det = 0,
+            iA = skipIndex(column, i + 0),
+            iB = skipIndex(column, i + 1),
+            iC = skipIndex(column, i + 2);
+        for (var j = 0; j < D3; ++j) {
+            var jA = skipIndex(row, j + 0),
+                jB = skipIndex(row, j + 1),
+                jC = skipIndex(row, j + 2);
+                det2x2 = this.m[at(iB, jB)] * this.m[at(iC, jC)] -
+                         this.m[at(iB, jC)] * this.m[at(iC, jB)];
+            det += this.m[at(iA, jA)] * Math.pow(-1, i + j) * det2x2;
+        }
+        return det;
+    };
+
+    // Also based on http://paulbourke.net/miscellaneous/determinant/
+    M.prototype.inverse = function (skipI, skipJ) {
+        var det = this.determinant();
+
+        if (det === 0) {
+            // If the determinant zero, no inverse exists.
+            return null;
+        }
+        var inv = new M(),
+            scale = 1 / det;
+
+        for (var i = 0; i < D4; ++i) {
+            for (var j = 0; j < D4; ++j) {
+                var adjuct = this.minorDeterminant(j, i);
+                inv.m[at(i, j)] = Math.pow(-1, i + j) * adjuct * scale;
+            }
+        }
+        return inv;
+    };
+
+    M.prototype.transpose = function (out) {
+        for (var i = 0; i < D4; ++i) {
+            for (var j = i + 1; j < D4; ++j) {
+                var mIJ = this.m[at(i,j)];
+                this.m[at(i, j)] = this.m[at(j, i)];
+                this.m[at(j, i)] = mIJ;
+            }
+        }
+    };
+
+    M.prototype.transposed = function (out) {
+        var t = new M();
+        for (var i = 0; i < D4; ++i) {
+            for (var j = 0; j < D4; ++j) {
+                t.m[at(i, j)] = this.m[at(j, i)];
+            }
+        }
+        return t;
     };
 
     function makeRotateX(theta) {
@@ -376,8 +501,8 @@ var R3 = (function () {
         ]);
     }
 
-    function qToEuler(q) {
-        return makeRotateQ(q).extractEuler();
+    function qToEuler(q, order) {
+        return makeRotateQ(q).extractEuler(order);
     }
 
     var AABox = function () {
