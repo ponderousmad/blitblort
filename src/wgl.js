@@ -96,7 +96,6 @@ var WGL = (function () {
             this.gl.enable(this.gl.DEPTH_TEST);
             this.gl.depthFunc(this.gl.LEQUAL);
         }
-        this.modelView = R3.identity();
         this.viewer = new Viewer();
     }
 
@@ -242,12 +241,15 @@ var WGL = (function () {
         }
     };
 
-    Room.prototype.setupView = function (program, viewportRegion, viewVariable, perspectiveVariable, eye) {
+    Room.prototype.setupView = function (program, viewportRegion, viewVariable, perspectiveVariable, transform, eye) {
         this.viewport(viewportRegion);
         var perspective = eye ? this.viewer.perspectiveFOV(eye) : this.viewer.perspective(this.aspect()),
             view = this.viewer.view(eye),
             pLocation = this.gl.getUniformLocation(program, perspectiveVariable),
             vLocation = this.gl.getUniformLocation(program, viewVariable);
+        if (transform) {
+            view = R3.matmul(view, transform);
+        }
         this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
         this.gl.uniformMatrix4fv(vLocation, false, view.m);
     };
