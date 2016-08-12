@@ -5,25 +5,25 @@ var MAIN = (function () {
         var inner = window.innerWidth,
             client = document.documentElement.clientWidth || inner,
             body = document.getElementsByTagName('body')[0].clientWidth || inner;
-            
+
         return Math.min(inner, client, body);
     }
-    
+
     function safeHeight() {
         var inner = window.innerHeight,
             client = document.documentElement.clientHeight || inner,
             body = document.getElementsByTagName('body')[0].clientHeight || inner;
-            
+
         return Math.min(inner, client, body) - 5;
     }
-    
+
     function resizeCanvas(canvas, game) {
         if (game.maximize) {
             canvas.width  = safeWidth();
             canvas.height = safeHeight();
         }
     }
-    
+
     function setupUpdate(game, canvas) {
         var pointer = new IO.Pointer(canvas),
             keyboard = new IO.Keyboard(window, game.consumeKeys),
@@ -40,25 +40,25 @@ var MAIN = (function () {
             lastTime = now;
         };
     }
-    
+
     function setup2D(canvas, game, update) {
         var context = canvas.getContext("2d");
 
         function drawFrame() {
             requestAnimationFrame(drawFrame);
-            
+
             if (update) {
                 update();
             }
-            
+
             resizeCanvas(canvas, game);
-            
+
             game.draw(context, canvas.width, canvas.height);
         }
 
         drawFrame();
     }
-    
+
     function setup3D(canvas, game, update) {
         var room = new WGL.Room(canvas);
 
@@ -79,17 +79,17 @@ var MAIN = (function () {
 
         drawFrame3D();
     }
- 
+
     function runTestSuites() {
         // These tests are slow, don't want to run them all the time.
         if (TEST.INCLUDE_SLOW) {
             ENTROPY.testSuite();
         }
-        
+
         R2.testSuite();
         R3.testSuite();
     }
-    
+
     function start(canvas, game) {
         console.log("Starting game at:", TICK.now());
 
@@ -106,23 +106,23 @@ var MAIN = (function () {
             window.setInterval(update, game.updateInterval);
         }
     }
-    
+
     function Test2D() {
         this.batch = new BLIT.Batch("images/");
         this.image = this.batch.load("test.png");
         this.flip = new BLIT.Flip(this.batch, "test", 6, 2).setupPlayback(80, true);
         this.batch.commit();
-        
+
         this.maximize = false;
         this.updateInDraw = true;
     }
-    
+
     Test2D.prototype.update = function (now, elapsed, keyboard, pointer) {
         if (this.batch.loaded) {
             this.flip.update(elapsed);
         }
     };
-    
+
     Test2D.prototype.draw = function (context, width, height) {
         context.clearRect(0, 0, width, height);
         if (this.batch.loaded) {
@@ -137,11 +137,11 @@ var MAIN = (function () {
         this.updateInDraw = false;
         this.updateInterval = 16;
     }
-    
+
     Test3D.prototype.update = function (now, elapsed, keyboard, pointer) {
         // Should put something here.
     };
-    
+
     Test3D.prototype.render = function (room, width, height) {
         room.clear(this.clearColor);
         room.drawTest();
