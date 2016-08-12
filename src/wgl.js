@@ -65,7 +65,27 @@ var WGL = (function () {
         this.fov = 90;
         this.near = 0.1;
         this.far = 100;
+        this.vrDisplay = null;
+        this.size = new R2.V(0, 0);
+        this.safeSize = new R2.V(0, 0);
     }
+
+    Viewer.prototype.setVRDisplay = function (vrDisplay) {
+        this.vrDisplay = vrDisplay;
+    };
+
+    Viewer.prototype.inVR = function () {
+        return this.vrDisplay && this.vrDisplay.isPresenting;
+    };
+
+    Viewer.prototype.showOnPrimary = function () {
+        if (this.inVR()) {
+            if (!this.vrDisplay.capabilities.hasExternalDisplay) {
+                return false;
+            }
+        }
+        return true;
+    };
 
     Viewer.prototype.perspective = function (aspect) {
         return R3.perspective(this.fov * R2.DEG_TO_RAD, aspect, this.near, this.far);
@@ -88,9 +108,56 @@ var WGL = (function () {
         return m;
     };
 
+    Viewer.prototype.resizeCanvas = function (canvas, maximize, safeWidth, safeHeight) {
+        this.safeSize.set(safeWidth, safeHeight);
+        if (this.inVR()) {
+            var leftEye = this.vrDisplay.getEyeParameters("left");
+            var rightEye = this.vrDisplay.getEyeParameters("right");
+            canvas.width = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2;
+            canvas.height = Math.max(leftEye.renderHeight, rightEye.renderHeight);
+        } else if (maximize) {
+            canvas.width  = safeWidth;
+            canvas.height = safeHeight;
+        }
+    };
+
+    Viewer.prototype.viewport = function (gl, canvas, region) {
+        var isLeft = region == "left",
+            width = canvas.width,
+            height = canvas.height;
+        if (isLeft || region == "right") {
+            width = width * 0.5;
+            gl.viewport(isLeft ? 0 : width, 0, width, height);
+        } else {
+            if (region == "safe") {
+                width = this.safeSize.x;
+                height = this.safeSize.y;
+            }
+            gl.viewport(0, canvas.height - height, width, height);
+        }
+        return width / height;
+    };
+
+    Viewer.prototype.resetPose = function () {
+        if (this.vrDisplay) {
+            this.vrDisplay.resetPose();
+        }
+    };
+
+    Viewer.prototype.vrPose = function () {
+        return this.vrDisplay.getPose();
+    };
+
+    Viewer.prototype.vrEye = function (eye) {
+        return this.vrDisplay.getEyeParameters(eye);
+    };
+
+    Viewer.prototype.submitVR = function (pose) {
+        this.vrDisplay.submitFrame(pose);
+    };
+
     function Room(canvas) {
         this.canvas = canvas;
-        this.viewSize = new R2.V(0, 0);
         this.gl = getGlContext(canvas);
         if (this.gl) {
             this.gl.enable(this.gl.DEPTH_TEST);
@@ -105,10 +172,6 @@ var WGL = (function () {
             this.clearColor = clearColor;
         }
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-    };
-
-    Room.prototype.aspect = function () {
-        return this.viewSize.x / this.viewSize.y;
     };
 
     Room.prototype.setupShader = function (source, type) {
@@ -227,23 +290,9 @@ var WGL = (function () {
         this.gl.drawElements(this.gl.TRIANGLES, mesh.tris.length, this.gl.UNSIGNED_SHORT, 0);
     };
 
-    Room.prototype.viewport = function (region) {
-        var isLeft = region == "left";
-        if (isLeft || region == "right") {
-            this.viewSize.set(this.canvas.width * 0.5, this.canvas.height);
-            this.gl.viewport(isLeft ? 0 : this.viewSize.x, 0, this.viewSize.x, this.viewSize.y);
-        } else if (region == "safe") {
-            this.viewSize.set(MAIN.safeWidth(), MAIN.safeHeight());
-            this.gl.viewport(0, this.canvas.height - this.viewSize.y, this.viewSize.x, this.viewSize.y);
-        } else {
-            this.viewSize.set(this.canvas.width, this.canvas.height);
-            this.gl.viewport(0, 0, this.viewSize.x, this.viewSize.y);
-        }
-    };
-
     Room.prototype.setupView = function (program, viewportRegion, viewVariable, perspectiveVariable, transform, eye) {
-        this.viewport(viewportRegion);
-        var perspective = eye ? this.viewer.perspectiveFOV(eye) : this.viewer.perspective(this.aspect()),
+        var aspect = this.viewer.viewport(this.gl, this.canvas, viewportRegion),
+            perspective = eye ? this.viewer.perspectiveFOV(eye) : this.viewer.perspective(aspect),
             view = this.viewer.view(eye),
             pLocation = this.gl.getUniformLocation(program, perspectiveVariable),
             vLocation = this.gl.getUniformLocation(program, viewVariable);

@@ -59,12 +59,80 @@ var MAIN = (function () {
         drawFrame();
     }
 
+    function setupVR(room, canvas, game) {
+        if (!game.vrToggleIDs) {
+            return;
+        } else if (navigator.getVRDisplays) {
+            var gameIsMaximized = game.maximize;
+            // Check if any VR displays are attached/active.
+            navigator.getVRDisplays().then(function (displays) {
+                if (!displays.length) {
+                    console.log("WebVR supported, but no VRDisplays found.");
+                } else {
+                    var vrDisplay = displays[0];
+                    console.log("Found display:", vrDisplay);
+                    room.viewer.setVRDisplay(vrDisplay);
+
+                    var enterVrButton = document.getElementById(game.vrToggleIDs.enter),
+                        exitVrButton = document.getElementById(game.vrToggleIDs.exit),
+                        requestPresentVR = function () {
+                            // This can only be called in response to a user gesture.
+                            vrDisplay.requestPresent([{ source: canvas }]).then(
+                                function () { console.log("Started present."); },
+                                function () { console.log("Request present failed."); }
+                            );
+                        },
+                        requestExitVR = function () {
+                            if (!vrDisplay.isPresenting) {
+                                // (May get vrdisplaydeactivated when not presenting.)
+                                return;
+                            }
+                            vrDisplay.exitPresent().then(
+                                function () { },
+                                function () { }
+                            );
+                        },
+                        onPresentChange = function () {
+                            if (vrDisplay.isPresenting) {
+                                if (vrDisplay.capabilities.hasExternalDisplay) {
+                                    exitVrButton.className = "";
+                                    enterVrButton.className = "hidden";
+                                }
+                            } else {
+                                if (vrDisplay.capabilities.hasExternalDisplay) {
+                                    exitVrButton.className = "hidden";
+                                    enterVrButton.className = "";
+                                }
+                            }
+                        };
+
+                    if (vrDisplay.capabilities.canPresent) {
+                        enterVrButton.className = "";
+                    }
+
+                    enterVrButton.addEventListener("click", requestPresentVR, false);
+                    exitVrButton.addEventListener("click", requestExitVR, false);
+
+                    window.addEventListener("vrdisplayactivate", requestPresentVR, false);
+                    window.addEventListener("vrdisplaydeactivate", requestExitVR, false);
+                    window.addEventListener('vrdisplaypresentchange', onPresentChange, false);
+                }
+            });
+        } else if (navigator.getVRDevices) {
+            console.log("Old WebVR version.");
+        } else {
+            console.log("WebVR not supported.");
+        }
+    }
+
     function setup3D(canvas, game, update) {
         var room = new WGL.Room(canvas);
 
+        setupVR(room, canvas, game);
+
         function drawFrame3D() {
-            if (game.vrDisplay) {
-                game.vrDisplay.requestAnimationFrame(drawFrame3D);
+            if (room.viewer.vrDisplay) {
+                room.viewer.vrDisplay.requestAnimationFrame(drawFrame3D);
             } else {
                 requestAnimationFrame(drawFrame3D);
             }
@@ -73,7 +141,7 @@ var MAIN = (function () {
                 update();
             }
 
-            resizeCanvas(canvas, game);
+            room.viewer.resizeCanvas(canvas, game.maximize, safeWidth(), safeHeight());
             game.render(room, canvas.width, canvas.height);
         }
 
@@ -151,8 +219,6 @@ var MAIN = (function () {
         Test2D: Test2D,
         Test3D: Test3D,
         runTestSuites: runTestSuites,
-        start: start,
-        safeHeight: safeHeight,
-        safeWidth: safeWidth,
+        start: start
     };
 }());
