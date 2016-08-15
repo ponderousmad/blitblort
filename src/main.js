@@ -127,6 +127,9 @@ var MAIN = (function () {
 
     function setup3D(canvas, game, update) {
         var room = new WGL.Room(canvas);
+        if (game.setRoom) {
+            game.setRoom(room);
+        }
 
         setupVR(room, canvas, game);
 
