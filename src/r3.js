@@ -472,15 +472,25 @@ var R3 = (function () {
     }
 
     function testSuite() {
-        function testEqualsV(v, x, y, z, w) {
-            TEST.equals(v.x, x);
-            TEST.equals(v.y, y);
-            TEST.equals(v.z, z);
+        function testEqualsV(v, x, y, z, w, tolerance) {
+            if (tolerance !== undefined) {
+                TEST.tolEquals(v.x, x, tolerance);
+                TEST.tolEquals(v.y, y, tolerance);
+                TEST.tolEquals(v.z, z), tolerance;
+                if (w !== undefined) {
+                    TEST.tolEquals(v.w, w, tolerance);
+                }
+            } else {
+                TEST.equals(v.x, x);
+                TEST.equals(v.y, y);
+                TEST.equals(v.z, z);
 
-            if (w !== undefined) {
-                TEST.equals(v.w, w);
+                if (w !== undefined) {
+                    TEST.equals(v.w, w);
+                }
             }
         }
+        var TOLERANCE = 1e-6;
 
         var vectorTests = [
             function testConstruct() {
@@ -536,6 +546,26 @@ var R3 = (function () {
 
                 testEqualsV(t.transformV(p), 3, 4, 5, 1);
                 testEqualsV(t.transformV(v), 1, 1, 1, 0);
+            },
+
+            function testRotateEuler() {
+                var rotX = makeRotateX(Math.PI / 2),
+                    p = new V(1, 1, 1, 1),
+                    v = new V(1, 1, 1, 0);
+
+                testEqualsV(rotX.transformV(p), 1, -1, 1, 1, TOLERANCE);
+                testEqualsV(rotX.transformV(v), 1, -1, 1, 0, TOLERANCE);
+
+                var rotY = makeRotateY(Math.PI / 4),
+                    root2 = Math.sqrt(2);
+
+                testEqualsV(rotY.transformV(p), root2, 1, 0, 1, TOLERANCE);
+                testEqualsV(rotY.transformV(v), root2, 1, 0, 0, TOLERANCE);
+
+                var rotZ = makeRotateZ(Math.PI);
+
+                testEqualsV(rotX.transformV(p), 1, -1, 1, 1, TOLERANCE);
+                testEqualsV(rotX.transformV(v), 1, -1, 1, 0, TOLERANCE);
             }
         ];
 
