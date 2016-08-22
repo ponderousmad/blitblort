@@ -79,11 +79,12 @@ var R3 = (function () {
     function makeScale(s) {
         var m = new M();
 
-        if (s && s.x != undefined) {
+        if (s && s instanceof V) {
             m.scaleBy(s);
         } else {
             m.scale(s);
         }
+        return m;
     }
 
     function makeRotateX(theta) {
@@ -556,6 +557,20 @@ var R3 = (function () {
 
                 testEqualsV(t.transformV(p), 3, 4, 5, 1);
                 testEqualsV(t.transformV(v), 1, 1, 1, 0);
+            },
+
+            function testScale() {
+                var uniformScale = makeScale(10),
+                    p = new V(1, 1, 1, 1),
+                    v = new V(1, 1, 1, 0);
+
+                testEqualsV(uniformScale.transformV(p), 10, 10, 10, 1);
+                testEqualsV(uniformScale.transformV(v), 10, 10, 10, 0);
+
+                var nonUniformScale = makeScale(new V(2, 4, 6));
+
+                testEqualsV(nonUniformScale.transformV(p), 2, 4, 6, 1);
+                testEqualsV(nonUniformScale.transformV(v), 2, 4, 6, 0);
             },
 
             function testRotateEuler() {
