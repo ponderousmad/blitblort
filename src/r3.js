@@ -76,6 +76,16 @@ var R3 = (function () {
         return m;
     }
 
+    function makeScale(s) {
+        var m = new M();
+
+        if (s && s.x != undefined) {
+            m.scaleBy(s);
+        } else {
+            m.scale(s);
+        }
+    }
+
     function makeRotateX(theta) {
         var c = Math.cos(theta),
             s = Math.sin(theta);
@@ -591,6 +601,8 @@ var R3 = (function () {
         origin: function () { return new V(); },
         toOrigin: function (v) { var o = new V(); o.sub(v); return o; },
         zeroQ: function () { return new Q(0, 0, 0, 1); },
+        makeTranslate: makeTranslate,
+        makeScale: makeScale,
         makeRotateX: makeRotateX,
         makeRotateY: makeRotateY,
         makeRotateZ: makeRotateZ,
