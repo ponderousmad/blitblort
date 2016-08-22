@@ -70,6 +70,12 @@ var R3 = (function () {
         return new V(Math.atan2(this.m[at(2, 1)], this.m[at(1, 1)]), y, 0.0);
     };
 
+    function makeTranslate(v) {
+        var m = new M();
+        m.translate(v);
+        return m;
+    }
+
     function makeRotateX(theta) {
         var c = Math.cos(theta),
             s = Math.sin(theta);
@@ -466,21 +472,23 @@ var R3 = (function () {
     }
 
     function testSuite() {
+        function testEqualsV(v, x, y, z, w) {
+            TEST.equals(v.x, x);
+            TEST.equals(v.y, y);
+            TEST.equals(v.z, z);
+
+            if (w !== undefined) {
+                TEST.equals(v.w, w);
+            }
+        }
+
         var vectorTests = [
             function testConstruct() {
                 var v = new V();
-
-                TEST.equals(v.x, 0);
-                TEST.equals(v.y, 0);
-                TEST.equals(v.z, 0);
-                TEST.equals(v.w, 1);
+                testEqualsV(v, 0, 0, 0, 1);
 
                 var ones = new V(1,1,1);
-
-                TEST.equals(ones.x, 1);
-                TEST.equals(ones.y, 1);
-                TEST.equals(ones.z, 1);
-                TEST.equals(ones.w, 1);
+                testEqualsV(ones, 1, 1, 1, 1);
             },
 
             function testLength() {
@@ -493,37 +501,42 @@ var R3 = (function () {
                 var v = new V(1, 0, 0);
 
                 v.normalize();
-
-                TEST.equals(v.x, 1);
-                TEST.equals(v.y, 0);
-                TEST.equals(v.z, 0);
-                TEST.equals(v.w, 1);
+                testEqualsV(v, 1, 0, 0, 1);
 
                 var a = new V(1, 1, 1),
-                    n = a.normalized();
+                    n = a.normalized(),
+                    invRoot3 = 1 / Math.sqrt(3);
 
-                TEST.equals(a.x, 1);
-                TEST.equals(a.y, 1);
-                TEST.equals(a.z, 1);
-                TEST.equals(a.w, 1);
-
-                TEST.tolEquals(n.x, 1 / Math.sqrt(3));
-                TEST.tolEquals(n.y, 1 / Math.sqrt(3));
-                TEST.tolEquals(n.z, 1 / Math.sqrt(3));
-                TEST.tolEquals(n.w, 1);
+                testEqualsV(a, 1, 1, 1, 1);
+                testEqualsV(n, invRoot3, invRoot3, invRoot3, 1);
             },
 
             function testScale() {
                 var v = new V(1, -2, 0);
                 v.scale(-2);
-                TEST.equals(v.x, -2);
-                TEST.equals(v.y, 4);
-                TEST.equals(v.z, 0);
-                TEST.equals(v.w, 1);
+                testEqualsV(v, -2, 4, 0, 1);
             }
         ];
 
         var matrixTests = [
+            function testConstruct() {
+                var m = new M();
+
+                for (var i = 0; i < D4; ++i) {
+                    for (var j = 0; j < D4; ++j) {
+                        TEST.equals(m.at(i, j), i == j ? 1 : 0);
+                    }
+                }
+            },
+
+            function testTranslate() {
+                var t = makeTranslate(new V(2, 3, 4)),
+                    p = new V(1, 1, 1, 1),
+                    v = new V(1, 1, 1, 0);
+
+                testEqualsV(t.transformV(p), 3, 4, 5, 1);
+                testEqualsV(t.transformV(v), 1, 1, 1, 0);
+            }
         ];
 
         var aaboxTests = [
