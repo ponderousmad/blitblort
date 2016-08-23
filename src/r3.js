@@ -64,10 +64,11 @@ var R3 = (function () {
             return new V(
                 Math.atan2(-this.m[at(1, 2)], this.m[at(2, 2)]),
                 y,
-                Math.atan2(-this.m[at(0, 1)], this.m[at(0, 0)])
+                Math.atan2(-this.m[at(0, 1)], this.m[at(0, 0)]),
+                0
             );
         }
-        return new V(Math.atan2(this.m[at(2, 1)], this.m[at(1, 1)]), y, 0.0);
+        return new V(Math.atan2(this.m[at(2, 1)], this.m[at(1, 1)]), y, 0.0, 0);
     };
 
     function makeTranslate(v) {
@@ -642,17 +643,20 @@ var R3 = (function () {
 
                 testEqualsV(rotX.transformV(p), 1, -1, 1, 1, TOLERANCE);
                 testEqualsV(rotX.transformV(v), 1, -1, 1, 0, TOLERANCE);
+                testEqualsV(rotX.extractEuler(), Math.PI / 2, 0, 0, 0);
 
                 var rotY = makeRotateY(Math.PI / 4),
                     root2 = Math.sqrt(2);
 
                 testEqualsV(rotY.transformV(p), root2, 1, 0, 1, TOLERANCE);
                 testEqualsV(rotY.transformV(v), root2, 1, 0, 0, TOLERANCE);
+                testEqualsV(rotY.extractEuler(), 0, Math.PI / 4, 0, 0, TOLERANCE);
 
                 var rotZ = makeRotateZ(Math.PI);
 
-                testEqualsV(rotX.transformV(p), 1, -1, 1, 1, TOLERANCE);
-                testEqualsV(rotX.transformV(v), 1, -1, 1, 0, TOLERANCE);
+                testEqualsV(rotZ.transformV(p), -1, -1, 1, 1, TOLERANCE);
+                testEqualsV(rotZ.transformV(v), -1, -1, 1, 0, TOLERANCE);
+                testEqualsV(rotZ.extractEuler(), 0, 0, Math.PI, 0, TOLERANCE);
             }
         ];
 
