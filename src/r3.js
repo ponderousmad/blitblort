@@ -267,6 +267,9 @@ var R3 = (function () {
 
     V.prototype.normalize = function () {
         var length = this.length();
+        if (length === 0) {
+            return;
+        }
         this.x /= length;
         this.y /= length;
         this.z /= length;
@@ -274,7 +277,10 @@ var R3 = (function () {
 
     V.prototype.normalized = function () {
         var length = this.length();
-        return new V(this.x / length, this.y / length, this.z / length, this.w);
+        if (length) {
+            return new V(this.x / length, this.y / length, this.z / length, this.w);
+        }
+        return new V();
     };
 
     function pointDistanceSq(a, b) {
@@ -293,7 +299,7 @@ var R3 = (function () {
     }
 
     function subVectors(a, b) {
-        return new V(a.x - b.x, a.y - b.y, a.z - b.z, Math.max(0, a.z - b.z));
+        return new V(a.x - b.x, a.y - b.y, a.z - b.z, Math.max(0, a.w - b.w));
     }
 
     function Q(x, y, z, w) {
@@ -513,29 +519,85 @@ var R3 = (function () {
             },
 
             function testLength() {
-                var v = new V(3, 4, 12);
+                var zero = new V(0, 0, 0, 0),
+                    one = new V(1, 0, 0, 0),
+                    origin = new V(0, 0, 0, 1),
+                    v = new V(3, 4, 12);
+
+                TEST.tolEquals(zero.lengthSq(), 0);
+                TEST.tolEquals(zero.length(), 0);
+                TEST.tolEquals(one.lengthSq(), 1);
+                TEST.tolEquals(one.length(), 1);
+                TEST.tolEquals(origin.lengthSq(), 0);
+                TEST.tolEquals(origin.length(), 0);
                 TEST.tolEquals(v.lengthSq(), 13 * 13);
                 TEST.tolEquals(v.length(), 13);
             },
 
             function testNormalize() {
-                var v = new V(1, 0, 0);
-
-                v.normalize();
-                testEqualsV(v, 1, 0, 0, 1);
-
-                var a = new V(1, 1, 1),
-                    n = a.normalized(),
+                var one = new V(1, 0, 0),
+                    ones = new V(1, 1, 1),
+                    zero = new V(),
+                    v = new V(3, 4, 12),
+                    n = ones.normalized(),
                     invRoot3 = 1 / Math.sqrt(3);
 
-                testEqualsV(a, 1, 1, 1, 1);
+                one.normalize();
+                testEqualsV(one, 1, 0, 0, 1);
+
+                testEqualsV(ones, 1, 1, 1, 1);
                 testEqualsV(n, invRoot3, invRoot3, invRoot3, 1);
+
+                testEqualsV(zero.normalized(), 0, 0, 0, 1);
+                zero.normalize();
+                testEqualsV(zero, 0, 0, 0, 1);
+
+                testEqualsV(v.normalized(), 3 / 13, 4 / 13, 12 / 13, 1, TOLERANCE);
+                v.normalize();
+                testEqualsV(v, 3 / 13, 4 / 13, 12 / 13, 1, TOLERANCE);
             },
 
             function testScale() {
-                var v = new V(1, -2, 0);
+                var v = new V(1, -2, 0),
+                    zero = new V();
                 v.scale(-2);
                 testEqualsV(v, -2, 4, 0, 1);
+                zero.scale(27);
+                testEqualsV(zero, 0, 0, 0, 1);
+            },
+
+            function testArithmetic() {
+                var a = new V(1, 1, 1),
+                    b = new V(3, 4, 12, 0),
+                    zero = new V(0, 0, 0, 0),
+                    origin = new V(),
+                    r = addVectors(a, b);
+
+                testEqualsV(r, 4, 5, 13, 1);
+                testEqualsV(addVectors(a, zero), a.x, a.y, a.z, 1);
+
+                testEqualsV(subVectors(a, b), -2, -3, -11, 1);
+                testEqualsV(subVectors(a, origin), a.x, a.y, a.z, 0);
+
+                r = a.copy();
+                r.add(b);
+                testEqualsV(r, 4, 5, 13, 1);
+
+                r = a.copy();
+                r.add(zero);
+                testEqualsV(r, a.x, a.y, a.z, 1);
+
+                r = a.copy();
+                r.sub(b);
+                testEqualsV(r, -2, -3, -11, 1);
+
+                r = a.copy();
+                r.sub(origin);
+                testEqualsV(r, a.x, a.y, a.z, 0);
+
+                r = a.copy();
+                r.addScaled(b, -2);
+                testEqualsV(r, -5, -7, -23, 1);
             }
         ];
 
