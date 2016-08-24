@@ -28,9 +28,9 @@
         </div>
         <script type="text/javascript">
             window.onload = function(e) {
-                MAIN.runTestSuites();
                 MAIN.start(document.getElementById("canvas2D"), new MAIN.Test2D());
                 MAIN.start(document.getElementById("canvas3D"), new MAIN.Test3D());
+                MAIN.runTestSuites();
             };
         </script>
         <script id="vertex-test" type="x-shader/x-vertex">
