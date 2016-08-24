@@ -57,18 +57,18 @@ var R3 = (function () {
     };
 
     M.prototype.extractEuler = function () {
-        var m02 = this.m[at(0, 2)],
-            y = Math.asin(clamp(m02, -1, 1));
+        var m20 = this.m[at(2, 0)],
+            y = Math.asin(clamp(m20, -1, 1));
 
-        if (Math.abs(m02) < 0.9999) {
+        if (Math.abs(m20) < 0.9999) {
             return new V(
-                Math.atan2(-this.m[at(1, 2)], this.m[at(2, 2)]),
+                Math.atan2(-this.m[at(2, 1)], this.m[at(2, 2)]),
                 y,
-                Math.atan2(-this.m[at(0, 1)], this.m[at(0, 0)]),
+                Math.atan2(-this.m[at(1, 0)], this.m[at(0, 0)]),
                 0
             );
         }
-        return new V(Math.atan2(this.m[at(2, 1)], this.m[at(1, 1)]), y, 0.0, 0);
+        return new V(Math.atan2(this.m[at(1, 2)], this.m[at(1, 1)]), y, 0.0, 0);
     };
 
     function makeTranslate(v) {
