@@ -602,6 +602,18 @@ var R3 = (function () {
             }
         ];
 
+        var quaternionTests = [
+            function testConstruct() {
+                var zero = new Q(),
+                    q = new Q(0.6, 0, 0, 0.8),
+                    r = new Q(0.6, 0, 0);
+
+                testEqualsV(zero, 0, 0, 0, 1);
+                testEqualsV(q, 0.6, 0, 0, 0.8);
+                testEqualsV(r, 0.6, 0, 0, 0.8);
+            }
+        ];
+
         var matrixTests = [
             function testConstruct() {
                 var m = new M();
@@ -663,13 +675,10 @@ var R3 = (function () {
         var aaboxTests = [
         ];
 
-        var quaternionTests = [
-        ];
-
         TEST.run("R3 Vector", vectorTests);
+        TEST.run("Quaternion", quaternionTests);
         TEST.run("R3 Matrix", matrixTests);
         TEST.run("R3 AABox", aaboxTests);
-        TEST.run("Quaternion", quaternionTests);
     }
 
     return {
