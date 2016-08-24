@@ -39,9 +39,9 @@ var R3 = (function () {
     };
 
     M.prototype.translate = function (v) {
-        this.m[at(3, 0)] += v.x;
-        this.m[at(3, 1)] += v.y;
-        this.m[at(3, 2)] += v.z;
+        this.m[at(0, 3)] += v.x;
+        this.m[at(1, 3)] += v.y;
+        this.m[at(2, 3)] += v.z;
     };
 
     M.prototype.scale = function (s) {
@@ -117,7 +117,7 @@ var R3 = (function () {
         } else {
             console.log("Unknown order");
         }
-        return new V(x, y, z);
+        return new V(x, y, z, 0);
     };
 
     // Based on http://paulbourke.net/miscellaneous/determinant/
@@ -218,8 +218,8 @@ var R3 = (function () {
 
         return new M([
             1, 0, 0, 0,
-            0, c,-s, 0,
-            0, s, c, 0,
+            0, c, s, 0,
+            0,-s, c, 0,
             0, 0, 0, 1
         ]);
     }
@@ -229,9 +229,9 @@ var R3 = (function () {
             s = Math.sin(theta);
 
         return new M([
-            c, 0, s, 0,
+            c, 0,-s, 0,
             0, 1, 0, 0,
-           -s, 0, c, 0,
+            s, 0, c, 0,
             0, 0, 0, 1
         ]);
     }
@@ -241,8 +241,8 @@ var R3 = (function () {
             s = Math.sin(theta);
 
         return new M([
-            c,-s, 0, 0,
-            s, c, 0, 0,
+            c, s, 0, 0,
+           -s, c, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1
         ]);
@@ -284,7 +284,7 @@ var R3 = (function () {
         for (var i = 0; i < D4; ++i) {
             var value = 0;
             for (var j = 0; j < D4; ++j) {
-                value += v.v(j) * this.at(j, i);
+                value += v.v(j) * this.at(i, j);
             }
             result.setAt(i, value);
         }
