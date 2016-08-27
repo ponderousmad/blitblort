@@ -735,6 +735,18 @@ var R3 = (function () {
                 testEqualsV(zero, 0, 0, 0, 1);
                 testEqualsV(q, 0.6, 0, 0, 0.8);
                 testEqualsV(r, 0.6, 0, 0, 0.8);
+            },
+            
+            function testAngleAxisQ() {
+                var xAxis = angleAxisQ(Math.PI/4, new V(1, 0, 0, 0));
+                testEqualsV(xAxis, Math.sin(Math.PI/8), 0, 0, Math.cos(Math.PI/8));
+
+                var angle = Math.PI/6,
+                    q = angleAxisQ(Math.PI/6, new V(1, -1, 0.5));
+                testEqualsV(q, Math.sin(angle/2),
+                              -Math.sin(angle/2),
+                               Math.sin(angle/2) / 2,
+                               Math.cos(angle/2));
             }
         ];
 
@@ -793,6 +805,19 @@ var R3 = (function () {
                 testEqualsV(rotZ.transformV(p), -1, -1, 1, 1, TOLERANCE);
                 testEqualsV(rotZ.transformV(v), -1, -1, 1, 0, TOLERANCE);
                 testEqualsV(rotZ.extractEuler(), 0, 0, Math.PI, 0, TOLERANCE);
+            },
+
+            function testRotateQ() {
+                var i = makeRotateQ(new Q());
+
+                testEqualsV(i.transformV(new V(1, 2, 3)), 1, 2, 3, 1);
+
+                var xAxis = angleAxisQ(Math.PI / 2, new V(1, 0, 0)),
+                    rotX = makeRotateQ(xAxis);
+
+                testEqualsV(rotX.transformV(new V(1, 1, 1, 1)), 1, -1, 1, 1, TOLERANCE);
+                testEqualsV(rotX.transformV(new V(1, 1, 1, 0)), 1, -1, 1, 0, TOLERANCE);
+                testEqualsV(rotX.extractEuler(), Math.PI / 2, 0, 0, 0, TOLERANCE);
             }
         ];
 
