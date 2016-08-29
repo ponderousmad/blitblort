@@ -818,6 +818,21 @@ var R3 = (function () {
                 testEqualsV(rotX.transformV(new V(1, 1, 1, 1)), 1, -1, 1, 1, TOLERANCE);
                 testEqualsV(rotX.transformV(new V(1, 1, 1, 0)), 1, -1, 1, 0, TOLERANCE);
                 testEqualsV(rotX.extractEuler(), Math.PI / 2, 0, 0, 0, TOLERANCE);
+            },
+
+            function testMultiply() {
+                var rot = makeRotateX(Math.PI / 2),
+                    trans = makeTranslate(new V(10, 10, -10)),
+                    rt = matmul(rot, trans),
+                    tr = matmul(trans, rot),
+                    p = new V(1, 1, 1, 1),
+                    v = new V(1, 1, 1, 0);
+
+                testEqualsV(tr.transformV(p), 11, 9, -9, 1, TOLERANCE);
+                testEqualsV(tr.transformV(v), 1, -1, 1, 0, TOLERANCE);
+
+                testEqualsV(rt.transformV(p), 11, 9, 11, 1, TOLERANCE);
+                testEqualsV(rt.transformV(v), 1, -1, 1, 0, TOLERANCE);
             }
         ];
 
