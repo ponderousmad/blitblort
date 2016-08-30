@@ -822,7 +822,8 @@ var R3 = (function () {
 
             function testMultiply() {
                 var rot = makeRotateX(Math.PI / 2),
-                    trans = makeTranslate(new V(10, 10, -10)),
+                    offset = new V(10, 10, -10),
+                    trans = makeTranslate(offset),
                     rt = matmul(rot, trans),
                     tr = matmul(trans, rot),
                     p = new V(1, 1, 1, 1),
@@ -833,6 +834,8 @@ var R3 = (function () {
 
                 testEqualsV(rt.transformV(p), 11, 9, 11, 1, TOLERANCE);
                 testEqualsV(rt.transformV(v), 1, -1, 1, 0, TOLERANCE);
+
+                testEqualsV(offset, tr.at(0, 3), tr.at(1, 3), tr.at(2, 3));
             }
         ];
 
