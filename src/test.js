@@ -39,7 +39,7 @@ var TEST = (function () {
         if (!Array.isArray(tests)) {
             tests = [tests];
         }
-        if (tests.length == 0) {
+        if (tests.length === 0) {
             return;
         }
         console.log("Running " + name + " Tests");
