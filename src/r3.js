@@ -824,8 +824,10 @@ var R3 = (function () {
                 var rot = makeRotateX(Math.PI / 2),
                     offset = new V(10, 10, -10),
                     trans = makeTranslate(offset),
+                    transB = makeTranslate(new V(5, -4, 3)),
                     rt = matmul(rot, trans),
                     tr = matmul(trans, rot),
+                    tt = matmul(trans, transB),
                     p = new V(1, 1, 1, 1),
                     v = new V(1, 1, 1, 0);
 
@@ -836,6 +838,10 @@ var R3 = (function () {
                 testEqualsV(rt.transformV(v), 1, -1, 1, 0, TOLERANCE);
 
                 testEqualsV(offset, tr.at(3, 0), tr.at(3, 1), tr.at(3, 2));
+
+                testEqualsV(tt.transformV(p), 16, 7, -6, 1, TOLERANCE);
+                testEqualsV(tt.transformV(v), 1, 1, 1, 0, TOLERANCE);
+                testEqualsV(new V(15, 6, -7), tt.at(3, 0), tt.at(3, 1), tt.at(3, 2));
             }
         ];
 
