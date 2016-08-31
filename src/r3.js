@@ -2,7 +2,7 @@ var R3 = (function () {
     var D3 = 3,
         D4 = 4;
 
-    function at(column, row) {
+    function at(row, column) {
         return row * D4 + column;
     }
 
@@ -24,12 +24,12 @@ var R3 = (function () {
         this.m = new Float32Array(values);
     }
 
-    M.prototype.at = function (column, row) {
-        return this.m[at(column, row)];
+    M.prototype.at = function (row, column) {
+        return this.m[at(row, column)];
     };
 
-    M.prototype.setAt = function (column, row, value) {
-        this.m[at(column, row)] = value || 0;
+    M.prototype.setAt = function (row, column, value) {
+        this.m[at(row, column)] = value || 0;
     };
 
     M.prototype.setAll = function (values) {
@@ -39,9 +39,9 @@ var R3 = (function () {
     };
 
     M.prototype.translate = function (v) {
-        this.m[at(0, 3)] += v.x;
-        this.m[at(1, 3)] += v.y;
-        this.m[at(2, 3)] += v.z;
+        this.m[at(3, 0)] += v.x;
+        this.m[at(3, 1)] += v.y;
+        this.m[at(3, 2)] += v.z;
     };
 
     M.prototype.scale = function (s) {
@@ -61,58 +61,58 @@ var R3 = (function () {
     M.prototype.extractEuler = function (order) {
         var x = 0.0, y = 0.0, z = 0.0;
         if (order === "XYZ" || !order) {
-            var m02 = this.m[at(0, 2)];
-            y = Math.asin(clamp(m02, -1, 1));
-            if (Math.abs(m02) < 0.9999) {
-                x = Math.atan2(-this.m[at(1, 2)], this.m[at(2, 2)]);
-                z = Math.atan2(-this.m[at(0, 1)], this.m[at(0, 0)]);
+            var m20 = this.m[at(2, 0)];
+            y = Math.asin(clamp(m20, -1, 1));
+            if (Math.abs(m20) < 0.9999) {
+                x = Math.atan2(-this.m[at(2, 1)], this.m[at(2, 2)]);
+                z = Math.atan2(-this.m[at(1, 0)], this.m[at(0, 0)]);
             } else {
-                x = Math.atan2( this.m[at(2, 1)], this.m[at(1, 1)]);
+                x = Math.atan2( this.m[at(1, 2)], this.m[at(1, 1)]);
             }
         } else if (order === "ZYX") {
-            var m20 = this.m[at(2, 0)];
-            y = Math.asin(-clamp(m20, - 1, 1));
-            if (Math.abs(m20) < 0.99999 ) {
-                x = Math.atan2( this.m[at(2, 1)], this.m[at(2, 2)]);
-                z = Math.atan2( this.m[at(1, 0)], this.m[at(0, 0)]);
+            var m02 = this.m[at(0, 2)];
+            y = Math.asin(-clamp(m02, - 1, 1));
+            if (Math.abs(m02) < 0.99999 ) {
+                x = Math.atan2( this.m[at(1, 2)], this.m[at(2, 2)]);
+                z = Math.atan2( this.m[at(0, 1)], this.m[at(0, 0)]);
             } else {
-                z = Math.atan2(-this.m[at(0, 1)], this.m[at(1, 1)]);
+                z = Math.atan2(-this.m[at(1, 0)], this.m[at(1, 1)]);
             }
         } else if (order === "YXZ") {
-            var m12 = this.m[at(1, 2)];
-            x = Math.asin(-clamp(m12, -1, 1));
-            if (Math.abs(m12) < 0.99999) {
-                y = Math.atan2( this.m[at(0, 2)], this.m[at(2, 2)]);
-                z = Math.atan2( this.m[at(1, 0)], this.m[at(1, 1)]);
+            var m21 = this.m[at(2, 1)];
+            x = Math.asin(-clamp(m21, -1, 1));
+            if (Math.abs(m21) < 0.99999) {
+                y = Math.atan2( this.m[at(2, 0)], this.m[at(2, 2)]);
+                z = Math.atan2( this.m[at(0, 1)], this.m[at(1, 1)]);
             } else {
-                y = Math.atan2(-this.m[at(2, 0)], this.m[at(0, 0)]);
+                y = Math.atan2(-this.m[at(0, 2)], this.m[at(0, 0)]);
             }
         } else if (order === "ZXY") {
-            var m21 = this.m[at(2, 1)];
-            x = Math.asin(clamp(m21, -1, 1));
-            if (Math.abs(m21) < 0.99999) {
-                y = Math.atan2(-this.m[at(2, 0)], this.m[at(2, 2)]);
-                z = Math.atan2(-this.m[at(0, 1)], this.m[at(1, 1)]);
+            var m12 = this.m[at(1, 2)];
+            x = Math.asin(clamp(m12, -1, 1));
+            if (Math.abs(m12) < 0.99999) {
+                y = Math.atan2(-this.m[at(0, 2)], this.m[at(2, 2)]);
+                z = Math.atan2(-this.m[at(1, 0)], this.m[at(1, 1)]);
             } else {
-                z = Math.atan2( this.m[at(1, 0)], this.m[at(0, 0)]);
+                z = Math.atan2( this.m[at(0, 1)], this.m[at(0, 0)]);
             }
         } else if (order === "YZX") {
-            var m10 = this.m[at(1, 0)];
-            z = Math.asin(clamp(m10, -1, 1));
-            if (Math.abs(m10) < 0.99999) {
-                x = Math.atan2(-this.m[at(1, 2)], this.m[at(1, 1)]);
-                y = Math.atan2(-this.m[at(2, 0)], this.m[at(0, 0)]);
+            var m01 = this.m[at(0, 1)];
+            z = Math.asin(clamp(m01, -1, 1));
+            if (Math.abs(m01) < 0.99999) {
+                x = Math.atan2(-this.m[at(2, 1)], this.m[at(1, 1)]);
+                y = Math.atan2(-this.m[at(0, 2)], this.m[at(0, 0)]);
             } else {
-                y = Math.atan2( this.m[at(0, 2)], this.m[at(2, 2)]);
+                y = Math.atan2( this.m[at(2, 0)], this.m[at(2, 2)]);
             }
         } else if (order === "XZY") {
-            var m01 = this.m[at(0, 1)];
-            z = Math.asin(-clamp(m01, -1, 1));
-            if (Math.abs(m01) < 0.99999) {
-                x = Math.atan2( this.m[at(2, 1)], this.m[at(1, 1)]);
-                y = Math.atan2( this.m[at(0, 2)], this.m[at(0, 0)]);
+            var m10 = this.m[at(1, 0)];
+            z = Math.asin(-clamp(m10, -1, 1));
+            if (Math.abs(m10) < 0.99999) {
+                x = Math.atan2( this.m[at(1, 2)], this.m[at(1, 1)]);
+                y = Math.atan2( this.m[at(2, 0)], this.m[at(0, 0)]);
             } else {
-                x = Math.atan2(-this.m[at(1, 2)], this.m[at(2, 2)]);
+                x = Math.atan2(-this.m[at(2, 1)], this.m[at(2, 2)]);
             }
         } else {
             console.log("Unknown order");
@@ -121,11 +121,11 @@ var R3 = (function () {
     };
 
     // Based on http://paulbourke.net/miscellaneous/determinant/
-    M.prototype.determinant = function (i) {
-        i = i || 0; // Arbitrarily choose column i for calculating the determinant.
+    M.prototype.determinant = function (c) {
+        c = c || 0; // Arbitrarily choose column c for calculating the determinant.
         var det = 0;
-        for (var j = 0; j < D4; ++j) {
-            det += this.m[at(i, j)] * Math.pow(-1, i + j) * this.minor(i, j);
+        for (var r = 0; r < D4; ++r) {
+            det += this.m[at(r, c)] * Math.pow(-1, c + r) * this.minor(r, c);
         }
         return det;
     };
@@ -135,22 +135,22 @@ var R3 = (function () {
         return offset < skip ? offset : offset + 1;
     }
 
-    M.prototype.minor = function (column, row, i) {
+    M.prototype.minor = function (row, column, c) {
         // https://en.wikipedia.org/wiki/Minor_(linear_algebra)
         // Calculate the Minor, which is the determinant of the matrix
         // obtained by ommiting the specified row and column
-        i = i || 0; // Arbitrarily choosen column for calculating the determinant.
+        c = c || 0; // Arbitrarily choosen column for calculating the determinant.
         var det = 0,
-            iA = skipIndex(column, i + 0),
-            iB = skipIndex(column, i + 1),
-            iC = skipIndex(column, i + 2);
-        for (var j = 0; j < D3; ++j) {
-            var jA = skipIndex(row, j + 0),
-                jB = skipIndex(row, j + 1),
-                jC = skipIndex(row, j + 2);
-                det2x2 = this.m[at(iB, jB)] * this.m[at(iC, jC)] -
-                         this.m[at(iB, jC)] * this.m[at(iC, jB)];
-            det += this.m[at(iA, jA)] * Math.pow(-1, i + j) * det2x2;
+            cA = skipIndex(column, c + 0),
+            cB = skipIndex(column, c + 1),
+            cC = skipIndex(column, c + 2);
+        for (var r = 0; r < D3; ++r) {
+            var rA = skipIndex(row, r + 0),
+                rB = skipIndex(row, r + 1),
+                rC = skipIndex(row, r + 2);
+                det2x2 = this.m[at(rB, cB)] * this.m[at(rC, cC)] -
+                         this.m[at(rC, cB)] * this.m[at(rB, cC)];
+            det += this.m[at(rA, cA)] * Math.pow(-1, c + r) * det2x2;
         }
         return det;
     };
@@ -166,30 +166,30 @@ var R3 = (function () {
         var inv = new M(),
             scale = 1 / det;
 
-        for (var i = 0; i < D4; ++i) {
-            for (var j = 0; j < D4; ++j) {
-                var adjuct = this.minorDeterminant(j, i);
-                inv.m[at(i, j)] = Math.pow(-1, i + j) * adjuct * scale;
+        for (var c = 0; c < D4; ++c) {
+            for (var r = 0; r < D4; ++r) {
+                var adjuct = this.minor(r, c);
+                inv.m[at(r, c)] = Math.pow(-1, r + c) * adjuct * scale;
             }
         }
         return inv;
     };
 
     M.prototype.transpose = function (out) {
-        for (var i = 0; i < D4; ++i) {
-            for (var j = i + 1; j < D4; ++j) {
-                var mIJ = this.m[at(i,j)];
-                this.m[at(i, j)] = this.m[at(j, i)];
-                this.m[at(j, i)] = mIJ;
+        for (var c = 0; c < D4; ++c) {
+            for (var r = c + 1; r < D4; ++r) {
+                var atRC = this.m[at(r, c)];
+                this.m[at(r, c)] = this.m[at(c, r)];
+                this.m[at(c, r)] = atRC;
             }
         }
     };
 
     M.prototype.transposed = function (out) {
         var t = new M();
-        for (var i = 0; i < D4; ++i) {
-            for (var j = 0; j < D4; ++j) {
-                t.m[at(i, j)] = this.m[at(j, i)];
+        for (var c = 0; c < D4; ++c) {
+            for (var r = 0; r < D4; ++r) {
+                t.m[at(r, c)] = this.m[at(c, r)];
             }
         }
         return t;
@@ -261,9 +261,9 @@ var R3 = (function () {
             for (var r = 0; r < D4; ++r) {
                 var value = 0.0;
                 for (var k = 0; k < D4; ++k) {
-                    value += a.at(c, k) * b.at(k, r);
+                    value += a.at(k, c) * b.at(r, k);
                 }
-                result.m[at(c, r)] = value;
+                result.m[at(r, c)] = value;
             }
         }
 
@@ -284,7 +284,7 @@ var R3 = (function () {
         for (var c = 0; c < D4; ++c) {
             var value = 0;
             for (var r = 0; r < D4; ++r) {
-                value += v.v(r) * this.at(c, r);
+                value += v.v(r) * this.at(r, c);
             }
             result.setAt(c, value);
         }
@@ -754,9 +754,9 @@ var R3 = (function () {
             function testConstruct() {
                 var m = new M();
 
-                for (var i = 0; i < D4; ++i) {
-                    for (var j = 0; j < D4; ++j) {
-                        TEST.equals(m.at(i, j), i == j ? 1 : 0);
+                for (var c = 0; c < D4; ++c) {
+                    for (var r = 0; r < D4; ++r) {
+                        TEST.equals(m.at(r, c), r == c ? 1 : 0);
                     }
                 }
             },
@@ -835,7 +835,7 @@ var R3 = (function () {
                 testEqualsV(rt.transformV(p), 11, 9, 11, 1, TOLERANCE);
                 testEqualsV(rt.transformV(v), 1, -1, 1, 0, TOLERANCE);
 
-                testEqualsV(offset, tr.at(0, 3), tr.at(1, 3), tr.at(2, 3));
+                testEqualsV(offset, tr.at(3, 0), tr.at(3, 1), tr.at(3, 2));
             }
         ];
 
