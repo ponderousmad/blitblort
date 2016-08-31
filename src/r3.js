@@ -2,8 +2,8 @@ var R3 = (function () {
     var D3 = 3,
         D4 = 4;
 
-    function at(i, j) {
-        return i + j * D4;
+    function at(column, row) {
+        return row * D4 + column;
     }
 
     function clamp(v, min, max) {
@@ -24,12 +24,12 @@ var R3 = (function () {
         this.m = new Float32Array(values);
     }
 
-    M.prototype.at = function (i, j) {
-        return this.m[at(i, j)];
+    M.prototype.at = function (column, row) {
+        return this.m[at(column, row)];
     };
 
-    M.prototype.setAt = function (i, j, value) {
-        this.m[at(i, j)] = value || 0;
+    M.prototype.setAt = function (column, row, value) {
+        this.m[at(column, row)] = value || 0;
     };
 
     M.prototype.setAll = function (values) {
@@ -46,14 +46,14 @@ var R3 = (function () {
 
     M.prototype.scale = function (s) {
         for (var i = 0; i < D3; ++i) {
-            this.m[at(i,i)] *= s;
+            this.m[at(i, i)] *= s;
         }
     };
 
     M.prototype.scaleBy = function (v) {
-        this.m[at(0,0)] *= v.x;
-        this.m[at(1,1)] *= v.y;
-        this.m[at(2,2)] *= v.z;
+        this.m[at(0, 0)] *= v.x;
+        this.m[at(1, 1)] *= v.y;
+        this.m[at(2, 2)] *= v.z;
     };
 
     // Adapted from setFromRotationMatrix in
@@ -257,13 +257,13 @@ var R3 = (function () {
             result = new M();
         }
 
-        for (var i = 0; i < D4; ++i) {
-            for (var j = 0; j < D4; ++j) {
+        for (var c = 0; c < D4; ++c) {
+            for (var r = 0; r < D4; ++r) {
                 var value = 0.0;
                 for (var k = 0; k < D4; ++k) {
-                    value += a.at(i, k) * b.at(k, j);
+                    value += a.at(c, k) * b.at(k, r);
                 }
-                result.m[at(i, j)] = value;
+                result.m[at(c, r)] = value;
             }
         }
 
@@ -281,12 +281,12 @@ var R3 = (function () {
 
     M.prototype.transformV = function (v) {
         var result = new V();
-        for (var i = 0; i < D4; ++i) {
+        for (var c = 0; c < D4; ++c) {
             var value = 0;
-            for (var j = 0; j < D4; ++j) {
-                value += v.v(j) * this.at(i, j);
+            for (var r = 0; r < D4; ++r) {
+                value += v.v(r) * this.at(c, r);
             }
-            result.setAt(i, value);
+            result.setAt(c, value);
         }
         return result;
     };
