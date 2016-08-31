@@ -152,6 +152,7 @@ var MAIN = (function () {
     }
 
     function runTestSuites() {
+        TEST.resetCounts();
         // These tests are slow, don't want to run them all the time.
         if (TEST.INCLUDE_SLOW) {
             ENTROPY.testSuite();
@@ -159,6 +160,7 @@ var MAIN = (function () {
 
         R2.testSuite();
         R3.testSuite();
+        return TEST.failCount();
     }
 
     function start(canvas, game) {

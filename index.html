@@ -25,12 +25,16 @@
                 Sorry, your browser doesn't support the &lt;canvas&gt; element.
             </canvas>
             </span>
+            <div id="testResult"></div>
         </div>
         <script type="text/javascript">
             window.onload = function(e) {
                 MAIN.start(document.getElementById("canvas2D"), new MAIN.Test2D());
                 MAIN.start(document.getElementById("canvas3D"), new MAIN.Test3D());
-                MAIN.runTestSuites();
+                var failed = MAIN.runTestSuites();
+                if (failed === 0) {
+                    document.getElementById("testResult").innerHTML = "All Tests Passed!";
+                }
             };
         </script>
         <script id="vertex-test" type="x-shader/x-vertex">
