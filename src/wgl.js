@@ -96,14 +96,10 @@ var WGL = (function () {
     };
 
     Viewer.prototype.view = function (eye) {
-        var v = R3.identity(),
-            r = R3.makeRotateQ(this.orientation);
-        v.translate(R3.toOrigin(this.position));
-        var m = R3.matmul(r, v);
+        var m = R3.makeRotateQ(this.orientation);
+        m.translate(R3.toOrigin(this.position));
         if (eye) {
-            var offset = new R3.V(eye.offset[0], eye.offset[1], eye.offset[2]);
-            offset.scale(-1);
-            m.translate(offset);
+            m.translate(new R3.V(-eye.offset[0], -eye.offset[1], -eye.offset[2]));
         }
         return m;
     };
