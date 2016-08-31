@@ -618,7 +618,7 @@ var R3 = (function () {
             if (tolerance !== undefined) {
                 TEST.tolEquals(v.x, x, tolerance);
                 TEST.tolEquals(v.y, y, tolerance);
-                TEST.tolEquals(v.z, z), tolerance;
+                TEST.tolEquals(v.z, z, tolerance);
                 if (w !== undefined) {
                     TEST.tolEquals(v.w, w, tolerance);
                 }
