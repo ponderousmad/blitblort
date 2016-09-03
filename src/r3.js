@@ -56,6 +56,38 @@ var R3 = (function () {
         this.m[at(2, 2)] *= v.z;
     };
 
+    M.prototype.isAffine = function (tolerance) {
+        var x = new V(this.at(0, 0), this.at(0, 1), this.at(0, 2)),
+            y = new V(this.at(1, 0), this.at(1, 1), this.at(1, 2)),
+            z = new V(this.at(2, 0), this.at(2, 1), this.at(2, 2)),
+            xScale = x.length(),
+            yScale = y.length(),
+            zScale = z.length();
+        tolerance = tolerance || 1e-5;
+
+        if (Math.abs(yScale - xScale) > tolerance) {
+            return false;
+        }
+        if (Math.abs(zScale - xScale) > tolerance) {
+            return false;
+        }
+        x.scale(1.0/xScale);
+        y.scale(1.0/yScale);
+        z.scale(1.0/zScale);
+
+        if (Math.abs(x.dot(y)) > tolerance) {
+            return false;
+        }
+        if (Math.abs(x.dot(z)) > tolerance) {
+            return false;
+        }
+        if (Math.abs(y.dot(z)) > tolerance) {
+            return false;
+        }
+
+        return true;
+    };
+
     // Adapted from setFromRotationMatrix in
     // https://github.com/mrdoob/three.js/blob/dev/src/math/Euler.js
     M.prototype.extractEuler = function (order) {
@@ -406,6 +438,14 @@ var R3 = (function () {
             return new V(this.x / length, this.y / length, this.z / length, this.w);
         }
         return new V();
+    };
+
+    V.prototype.dot = function (v) {
+        return this.x * v.x + this.y * v.y + this.z * v.z;
+    };
+
+    V.prototype.cross = function (v) {
+        return new V(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
     };
 
     function pointDistanceSq(a, b) {
