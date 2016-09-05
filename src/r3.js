@@ -445,7 +445,7 @@ var R3 = (function () {
     };
 
     V.prototype.cross = function (v) {
-        return new V(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
+        return new V(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x, 0);
     };
 
     function pointDistanceSq(a, b) {
@@ -763,6 +763,29 @@ var R3 = (function () {
                 r = a.copy();
                 r.addScaled(b, -2);
                 testEqualsV(r, -5, -7, -23, 1);
+            },
+
+            function testProducts() {
+                var zero = new V(),
+                    xAxis = new V(1, 0, 0, 0),
+                    yAxis = new V(0, 1, 0, 0),
+                    bisector = new V(1, 1, 0),
+                    thirty = new V(0, Math.sqrt(3), 1),
+                    tolerance = 1e-4;
+
+                TEST.equals(zero.dot(xAxis), 0);
+                TEST.equals(xAxis.dot(yAxis), 0);
+                TEST.equals(xAxis.dot(xAxis), 1);
+                TEST.tolEquals(xAxis.dot(bisector), Math.sqrt(2) * Math.cos(Math.PI/4), tolerance);
+                TEST.tolEquals(bisector.dot(xAxis), Math.sqrt(2) * Math.cos(Math.PI/4), tolerance);
+                TEST.tolEquals(yAxis.dot(thirty), 2 * Math.cos(Math.PI/6), tolerance);
+
+                testEqualsV(zero.cross(xAxis), 0, 0, 0, 0);
+                testEqualsV(xAxis.cross(yAxis), 0, 0, 1, 0);
+                testEqualsV(xAxis.cross(xAxis), 0, 0, 0, 0);
+                testEqualsV(xAxis.cross(bisector), 0, 0, Math.sqrt(2) * Math.sin(Math.PI/4), 0, tolerance);
+                testEqualsV(bisector.cross(xAxis), 0, 0,-Math.sqrt(2) * Math.sin(Math.PI/4), 0, tolerance);
+                testEqualsV(yAxis.cross(thirty), 2 * Math.sin(Math.PI/6), 0, 0, 0, tolerance);
             }
         ];
 
