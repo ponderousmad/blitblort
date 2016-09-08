@@ -1,6 +1,6 @@
 var IO = (function (TICK, BLORT) {
     "use strict";
-    
+
     var KEYS = {
         Up : 38,
         Down : 40,
@@ -20,7 +20,7 @@ var IO = (function (TICK, BLORT) {
         this.pressed = {};
         this.lastPressed = {};
         var self = this;
-        
+
         if (element) {
             element.onkeydown = function (e) {
                 e = e || window.event;
@@ -59,15 +59,15 @@ var IO = (function (TICK, BLORT) {
     Keyboard.prototype.isAltDown = function () {
         return this.isKeyDown(18);
     };
-       
+
     Keyboard.prototype.isAsciiDown = function (ascii) {
         return this.isKeyDown(ascii.charCodeAt());
     };
-       
+
     Keyboard.prototype.wasAsciiPressed = function (ascii) {
         return this.wasKeyPressed(ascii.charCodeAt());
     };
-       
+
     Keyboard.prototype.keysDown = function () {
         var count = 0;
         for (var p in this.pressed) {
@@ -77,7 +77,7 @@ var IO = (function (TICK, BLORT) {
         }
         return count;
     };
-    
+
     Keyboard.prototype.postUpdate = function () {
         this.lastPressed = {};
         for (var p in this.pressed) {
@@ -86,7 +86,7 @@ var IO = (function (TICK, BLORT) {
             }
         }
     };
-    
+
     Keyboard.prototype.keyTime = function (keyCode) {
         return this.pressed[keyCode];
     };
@@ -108,7 +108,7 @@ var IO = (function (TICK, BLORT) {
         this.wheelX = 0;
         this.wheelY = 0;
         this.wheelZ = 0;
-        
+
         var self = this;
         var updateState = function (event) {
             var bounds = element.getBoundingClientRect(),
@@ -117,39 +117,39 @@ var IO = (function (TICK, BLORT) {
                 middle = (event.buttons & 4) == 4;
 
             self.location = [event.clientX - bounds.left, event.clientY - bounds.top];
-                      
+
             self.wasLeft = self.left;
             self.wasRight = self.right;
             self.wasMiddle = self.middle;
-            
+
             self.left = left;
             self.right = right;
             self.middle = middle;
 
             self.leftDown = self.leftDown || (self.left && !self.wasLeft);
             self.middleDown = self.middleDown || (self.middle && !self.wasMiddle);
-            self.rightDown = self.rightDown || (self.right && !self.wasRight);            
+            self.rightDown = self.rightDown || (self.right && !self.wasRight);
 
             self.shift = event.shiftKey;
             self.ctrl = event.ctrlKey;
             self.altKey = event.altKey;
         };
-        
+
         var updateWheel = function (event) {
             self.wheelX += event.deltaX;
             self.wheelY += event.deltaY;
             self.wheelZ += event.deltaZ;
-            
+
             event.preventDefault();
             event.stopImmediatePropagation();
         };
-        
+
         element.addEventListener("mousemove", updateState);
         element.addEventListener("mousedown", updateState);
         element.addEventListener("mouseup", updateState);
         element.addEventListener("wheel", updateWheel);
     }
-    
+
     Mouse.prototype.postUpdate = function () {
         this.leftDown = false;
         this.middleDown = false;
@@ -158,10 +158,10 @@ var IO = (function (TICK, BLORT) {
         this.wheelY = 0;
         this.wheelZ = 0;
     };
-    
+
     function Touch(element) {
         this.touches = [];
-        
+
         var self = this;
         var handleTouch = function(e) {
             BLORT.noteOn();
@@ -174,7 +174,7 @@ var IO = (function (TICK, BLORT) {
         element.addEventListener("touchmove", handleTouch);
         element.addEventListener("touchcancel", handleTouch);
     }
-    
+
     Touch.prototype.getTouch = function (id) {
         for (var t = 0; t < this.touches.length; ++t) {
             if (this.touches[t].identifier == id) {
@@ -183,14 +183,14 @@ var IO = (function (TICK, BLORT) {
         }
         return null;
     };
-    
+
     function Pointer(element) {
         this.mouse = new Mouse(element);
         this.touch = new Touch(element);
         this.firstTouch = null;
         this.primary = null;
     }
-    
+
     Pointer.prototype.update = function () {
         var spot = null;
         if (this.touch.touches.length > 0) {
@@ -224,15 +224,15 @@ var IO = (function (TICK, BLORT) {
         this.primary = spot;
         this.mouse.postUpdate();
     };
-    
+
     Pointer.prototype.activated = function() {
         return this.primary !== null && this.primary.isStart;
     };
-    
+
     Pointer.prototype.location = function() {
         return this.primary;
     };
-    
+
     return {
         KEYS: KEYS,
         Keyboard: Keyboard,

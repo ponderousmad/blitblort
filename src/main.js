@@ -26,7 +26,7 @@ var MAIN = (function () {
 
     function setupUpdate(game, canvas) {
         var pointer = new IO.Pointer(canvas),
-            keyboard = new IO.Keyboard(window, game.consumeKeys),
+            keyboard = new IO.Keyboard(game.inputElement ? game.inputElement : window, game.consumeKeys),
             lastTime = TICK.now();
 
         return function () {
@@ -57,6 +57,7 @@ var MAIN = (function () {
         }
 
         drawFrame();
+        return context;
     }
 
     function setupVR(room, canvas, game) {
@@ -127,10 +128,6 @@ var MAIN = (function () {
 
     function setup3D(canvas, game, update) {
         var room = new WGL.Room(canvas);
-        if (game.setRoom) {
-            game.setRoom(room);
-        }
-
         setupVR(room, canvas, game);
 
         function drawFrame3D() {
@@ -149,6 +146,7 @@ var MAIN = (function () {
         }
 
         drawFrame3D();
+        return room;
     }
 
     function runTestSuites() {
@@ -169,14 +167,14 @@ var MAIN = (function () {
         var update = setupUpdate(game, canvas),
             drawUpdate = (!game.updateInterval || game.updateInDraw) ? update : null;
 
-        if (game.render) {
-            setup3D(canvas, game, drawUpdate);
-        } else {
-            setup2D(canvas, game, drawUpdate);
-        }
-
         if (game.updateInterval) {
             window.setInterval(update, game.updateInterval);
+        }
+
+        if (game.render) {
+            return setup3D(canvas, game, drawUpdate);
+        } else {
+            return setup2D(canvas, game, drawUpdate);
         }
     }
 
