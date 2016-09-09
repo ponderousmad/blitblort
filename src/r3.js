@@ -10,6 +10,220 @@ var R3 = (function () {
         return Math.max(Math.min(v, max), min);
     }
 
+    function V(x, y, z) {
+        this.x = x || 0;
+        this.y = y || 0;
+        this.z = z || 0;
+    }
+
+    V.prototype.copy = function () {
+        return new V(this.x, this.y, this.z);
+    };
+
+    V.prototype.copyTo = function (array, offset) {
+        array[offset + 0] = this.x;
+        array[offset + 1] = this.y;
+        array[offset + 2] = this.z;
+        return offset + D3;
+    };
+
+    V.prototype.pushOn = function (array) {
+        array.push(this.x);
+        array.push(this.y);
+        array.push(this.z);
+    };
+
+    V.prototype.set = function (x, y, z) {
+        this.x = x || 0;
+        this.y = y || 0;
+        this.z = z || 0;
+    };
+
+    V.prototype.v = function (i, w) {
+        switch(i) {
+            case 0: return this.x;
+            case 1: return this.y;
+            case 2: return this.z;
+            case 3: return w || 0;
+        }
+    };
+
+    V.prototype.setAt = function (i, value) {
+        switch(i) {
+            case 0: this.x = value; return;
+            case 1: this.y = value; return;
+            case 2: this.z = value; return;
+        }
+    };
+
+    V.prototype.scale = function (s) {
+        this.x *= s;
+        this.y *= s;
+        this.z *= s;
+    };
+
+    V.prototype.add = function (v) {
+        this.x += v.x;
+        this.y += v.y;
+        this.z += v.z;
+    };
+
+    V.prototype.addScaled = function (v, s) {
+        this.x += s * v.x;
+        this.y += s * v.y;
+        this.z += s * v.z;
+    };
+
+    V.prototype.interpolate = function (v, p) {
+        return new V(
+            this.x * (1 - p) + v.x * p,
+            this.y * (1 - p) + v.y * p,
+            this.z * (1 - p) + v.z * p
+        );
+    };
+
+    V.prototype.sub = function (v) {
+        this.x -= v.x;
+        this.y -= v.y;
+        this.z -= v.z;
+    };
+
+    V.prototype.lengthSq = function () {
+        return this.x * this.x + this.y * this.y + this.z * this.z;
+    };
+
+    V.prototype.length = function () {
+        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+    };
+
+    V.prototype.normalize = function () {
+        var length = this.length();
+        if (length === 0) {
+            return;
+        }
+        this.x /= length;
+        this.y /= length;
+        this.z /= length;
+    };
+
+    V.prototype.normalized = function () {
+        var length = this.length();
+        if (length) {
+            return new V(this.x / length, this.y / length, this.z / length);
+        }
+        return new V();
+    };
+
+    V.prototype.dot = function (v) {
+        return this.x * v.x + this.y * v.y + this.z * v.z;
+    };
+
+    V.prototype.cross = function (v) {
+        return new V(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x, 0);
+    };
+
+    function pointDistanceSq(a, b) {
+        var xDiff = a.x - b.x,
+            yDiff = a.y - b.y,
+            zDiff = a.z - b.z;
+        return xDiff * xDiff + yDiff * yDiff + zDiff * zDiff;
+    }
+
+    function pointDistance(a, b) {
+        return Math.sqrt(pointDistanceSq(a, b));
+    }
+
+    function addVectors(a, b) {
+        return new V(a.x + b.x, a.y + b.y, a.z + b.z);
+    }
+
+    function subVectors(a, b) {
+        return new V(a.x - b.x, a.y - b.y, a.z - b.z);
+    }
+
+    function Q(x, y, z, w) {
+        this.x = x || 0;
+        this.y = y || 0;
+        this.z = z || 0;
+        if (!w || w === 1) {
+            w = Math.sqrt(1 - (this.x * this.x + this.y * this.y + this.z * this.z));
+        }
+        this.w = w || 1;
+    }
+
+    Q.prototype.copy = function () {
+        return new Q(this.x, this.y, this.z, this.w);
+    };
+
+    Q.prototype.set = function (x, y, z, w) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    };
+
+    Q.prototype.setAll = function (values) {
+        this.x = values[0];
+        this.y = values[1];
+        this.z = values[2];
+        this.w = values[3];
+    };
+
+    function qmul(a, b, target) {
+        // from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
+        var x =  a.x * b.w + a.y * b.z - a.z * b.y + a.w * b.x,
+            y = -a.x * b.z + a.y * b.w + a.z * b.x + a.w * b.y,
+            z =  a.x * b.y - a.y * b.x + a.z * b.w + a.w * b.z,
+            w = -a.x * b.x - a.y * b.y - a.z * b.z + a.w * b.w;
+
+        if (target) {
+            target.set(x, y, z, w);
+            return target;
+        }
+        return new Q(x, y, z, w);
+    }
+
+    Q.prototype.times = function (other) {
+        qmul(this, other, this);
+    };
+
+    Q.prototype.invert = function () {
+        var squareSum = this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w;
+        this.x /= -squareSum;
+        this.y /= -squareSum;
+        this.z /= -squareSum;
+        this.w /= squareSum;
+    };
+
+    Q.prototype.inverse = function () {
+        var squareSum = this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w;
+        return new Q(
+            this.x /= -squareSum,
+            this.y /= -squareSum,
+            this.z /= -squareSum,
+            this.w /= squareSum
+        );
+    };
+
+    function angleAxisQ(angle, axis) {
+        // http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm
+        // assumes axis is normalized
+        var s = Math.sin(angle/2);
+        return new Q(axis.x * s, axis.y * s, axis.z * s, Math.cos(angle/2));
+    }
+
+    function eulerToQ(x, y, z) {
+        var cosX = Math.cos(x / 2),    cosY = Math.cos(y / 2),    cosZ = Math.cos(z / 2),
+            sinX = Math.sin(x / 2),    sinY = Math.sin(y / 2),    sinZ = Math.sin(z / 2);
+
+        return new Q(
+            sinX * cosY * cosZ + cosX * sinY * sinZ,
+            cosX * sinY * cosZ - sinX * cosY * sinZ,
+            cosX * cosY * sinZ + sinX * sinY * cosZ,
+            cosX * cosY * cosZ - sinX * sinY * sinZ
+        );
+    }
+
     function M(values) {
         if (!values) {
             values = [
@@ -280,6 +494,24 @@ var R3 = (function () {
         ]);
     }
 
+    function makeRotateQ(q) {
+        var x2 = q.x + q.x,     y2 = q.y + q.y,     z2 = q.z + q.z,
+            xx = q.x * x2,      xy = q.x * y2,      xz = q.x * z2,
+            yy = q.y * y2,      yz = q.y * z2,      zz = q.z * z2,
+            wx = q.w * x2,      wy = q.w * y2,      wz = q.w * z2;
+
+        return new M([
+            1 - ( yy + zz ), xy + wz,         xz - wy,         0,
+            xy - wz,         1 - ( xx + zz ), yz + wx,         0,
+            xz + wy,         yz - wx,         1 - ( xx + yy ), 0,
+            0,               0,               0,               1
+        ]);
+    }
+
+    function qToEuler(q, order) {
+        return makeRotateQ(q).extractEuler(order);
+    }
+
     function matmul(a, b, target) {
         var result = null;
         if (target && target != a && target != b) {
@@ -331,242 +563,43 @@ var R3 = (function () {
         return this.transform(v, 1);
     };
 
-    function V(x, y, z) {
-        this.x = x || 0;
-        this.y = y || 0;
-        this.z = z || 0;
-    }
-
-    V.prototype.copy = function () {
-        return new V(this.x, this.y, this.z);
-    };
-
-    V.prototype.copyTo = function (array, offset) {
-        array[offset + 0] = this.x;
-        array[offset + 1] = this.y;
-        array[offset + 2] = this.z;
-        return offset + D3;
-    };
-
-    V.prototype.pushOn = function (array) {
-        array.push(this.x);
-        array.push(this.y);
-        array.push(this.z);
-    };
-
-    V.prototype.set = function (x, y, z) {
-        this.x = x || 0;
-        this.y = y || 0;
-        this.z = z || 0;
-    };
-
-    V.prototype.v = function (i, w) {
-        switch(i) {
-            case 0: return this.x;
-            case 1: return this.y;
-            case 2: return this.z;
-            case 3: return w || 0;
-        }
-    };
-
-    V.prototype.setAt = function (i, value) {
-        switch(i) {
-            case 0: this.x = value; return;
-            case 1: this.y = value; return;
-            case 2: this.z = value; return;
-        }
-    };
-
-    V.prototype.scale = function (s) {
-        this.x *= s;
-        this.y *= s;
-        this.z *= s;
-    };
-
-    V.prototype.add = function (v) {
-        this.x += v.x;
-        this.y += v.y;
-        this.z += v.z;
-    };
-
-    V.prototype.addScaled = function (v, s) {
-        this.x += s * v.x;
-        this.y += s * v.y;
-        this.z += s * v.z;
-    };
-
-    V.prototype.interpolate = function (v, p) {
-        return new V(
-            this.x * (1 - p) + v.x * p,
-            this.y * (1 - p) + v.y * p,
-            this.z * (1 - p) + v.z * p
-        );
-    };
-
-    V.prototype.sub = function (v) {
-        this.x -= v.x;
-        this.y -= v.y;
-        this.z -= v.z;
-    };
-
-    V.prototype.lengthSq = function () {
-        return this.x * this.x + this.y * this.y + this.z * this.z;
-    };
-
-    V.prototype.length = function () {
-        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-    };
-
-    V.prototype.normalize = function () {
-        var length = this.length();
-        if (length === 0) {
-            return;
-        }
-        this.x /= length;
-        this.y /= length;
-        this.z /= length;
-    };
-
-    V.prototype.normalized = function () {
-        var length = this.length();
-        if (length) {
-            return new V(this.x / length, this.y / length, this.z / length);
-        }
-        return new V();
-    };
-
-    V.prototype.dot = function (v) {
-        return this.x * v.x + this.y * v.y + this.z * v.z;
-    };
-
-    V.prototype.cross = function (v) {
-        return new V(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x, 0);
-    };
-
-    function pointDistanceSq(a, b) {
-        var xDiff = a.x - b.x,
-            yDiff = a.y - b.y,
-            zDiff = a.z - b.z;
-        return xDiff * xDiff + yDiff * yDiff + zDiff * zDiff;
-    }
-
-    function pointDistance(a, b) {
-        return Math.sqrt(pointDistanceSq(a, b));
-    }
-
-    function addVectors(a, b) {
-        return new V(a.x + b.x, a.y + b.y, a.z + b.z);
-    }
-
-    function subVectors(a, b) {
-        return new V(a.x - b.x, a.y - b.y, a.z - b.z);
-    }
-
-    function Q(x, y, z, w) {
-        this.x = x || 0;
-        this.y = y || 0;
-        this.z = z || 0;
-        if (!w || w === 1) {
-            w = Math.sqrt(1 - (this.x * this.x + this.y * this.y + this.z * this.z));
-        }
-        this.w = w || 1;
-    }
-
-    Q.prototype.copy = function () {
-        return new Q(this.x, this.y, this.z, this.w);
-    };
-
-    Q.prototype.set = function (x, y, z, w) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.w = w;
-    };
-
-    Q.prototype.setAll = function (values) {
-        this.x = values[0];
-        this.y = values[1];
-        this.z = values[2];
-        this.w = values[3];
-    };
-
-    function qmul(a, b, target) {
-        // from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
-        var x =  a.x * b.w + a.y * b.z - a.z * b.y + a.w * b.x,
-            y = -a.x * b.z + a.y * b.w + a.z * b.x + a.w * b.y,
-            z =  a.x * b.y - a.y * b.x + a.z * b.w + a.w * b.z,
-            w = -a.x * b.x - a.y * b.y - a.z * b.z + a.w * b.w;
-
-        if (target) {
-            target.set(x, y, z, w);
-            return target;
-        }
-        return new Q(x, y, z, w);
-    }
-
-    Q.prototype.times = function (other) {
-        qmul(this, other, this);
-    };
-
-    Q.prototype.invert = function () {
-        var squareSum = this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w;
-        this.x /= -squareSum;
-        this.y /= -squareSum;
-        this.z /= -squareSum;
-        this.w /= squareSum;
-    };
-
-    Q.prototype.inverse = function () {
-        var squareSum = this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w;
-        return new Q(
-            this.x /= -squareSum,
-            this.y /= -squareSum,
-            this.z /= -squareSum,
-            this.w /= squareSum
-        );
-    };
-
-    function angleAxisQ(angle, axis) {
-        // http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm
-        // assumes axis is normalized
-        var s = Math.sin(angle/2);
-        return new Q(axis.x * s, axis.y * s, axis.z * s, Math.cos(angle/2));
-    }
-
-    function eulerToQ(x, y, z) {
-        var cosX = Math.cos(x / 2),    cosY = Math.cos(y / 2),    cosZ = Math.cos(z / 2),
-            sinX = Math.sin(x / 2),    sinY = Math.sin(y / 2),    sinZ = Math.sin(z / 2);
-
-        return new Q(
-            sinX * cosY * cosZ + cosX * sinY * sinZ,
-            cosX * sinY * cosZ - sinX * cosY * sinZ,
-            cosX * cosY * sinZ + sinX * sinY * cosZ,
-            cosX * cosY * cosZ - sinX * sinY * sinZ
-        );
-    }
-
-    function makeRotateQ(q) {
-        var x2 = q.x + q.x,     y2 = q.y + q.y,     z2 = q.z + q.z,
-            xx = q.x * x2,      xy = q.x * y2,      xz = q.x * z2,
-            yy = q.y * y2,      yz = q.y * z2,      zz = q.z * z2,
-            wx = q.w * x2,      wy = q.w * y2,      wz = q.w * z2;
+    function perspective(fieldOfView, aspectRatio, near, far) {
+        var scale = 1.0 / (near - far),
+            f = Math.tan((Math.PI - fieldOfView) / 2);
 
         return new M([
-            1 - ( yy + zz ), xy + wz,         xz - wy,         0,
-            xy - wz,         1 - ( xx + zz ), yz + wx,         0,
-            xz + wy,         yz - wx,         1 - ( xx + yy ), 0,
-            0,               0,               0,               1
+            f, 0,               0,                      0,
+            0, f * aspectRatio, 0,                      0,
+            0, 0,               (near + far) * scale,  -1,
+            0, 0,               near * far * scale * 2, 0
         ]);
     }
 
-    function qToEuler(q, order) {
-        return makeRotateQ(q).extractEuler(order);
+    // Perspective matrix for VR FOV
+    // From https://github.com/toji/gl-matrix/blob/master/src/gl-matrix/mat4.js
+    function perspectiveFOV(fov, near, far) {
+        var right = Math.tan(fov.rightDegrees * R2.DEG_TO_RAD),
+            left  = Math.tan(fov.leftDegrees  * R2.DEG_TO_RAD),
+            up    = Math.tan(fov.upDegrees    * R2.DEG_TO_RAD),
+            down  = Math.tan(fov.downDegrees  * R2.DEG_TO_RAD),
+            xRange = right - left,
+            yRange = up - down,
+            xScale = 1.0 / (right + left),
+            yScale = 1.0 / (up + down),
+            zScale = 1.0 / (near - far);
+
+        return new M([
+            2 * xScale,      0,               0,             0,
+            0,               2 * yScale,      0,             0,
+            xRange * xScale, yRange * yScale, far * zScale, -1,
+            0,               0,        near * far * zScale,  0
+        ]);
     }
 
-    var AABox = function () {
+    function AABox() {
         this.min = null;
         this.max = null;
-    };
+    }
 
     AABox.prototype.contains = function (p) {
         if (this.min === null) {
@@ -614,39 +647,6 @@ var R3 = (function () {
         c.scale(0.5);
         return c;
     };
-
-    function perspective(fieldOfView, aspectRatio, near, far) {
-        var scale = 1.0 / (near - far),
-            f = Math.tan((Math.PI - fieldOfView) / 2);
-
-        return new M([
-            f, 0,               0,                      0,
-            0, f * aspectRatio, 0,                      0,
-            0, 0,               (near + far) * scale,  -1,
-            0, 0,               near * far * scale * 2, 0
-        ]);
-    }
-
-    // Perspective matrix for VR FOV
-    // From https://github.com/toji/gl-matrix/blob/master/src/gl-matrix/mat4.js
-    function perspectiveFOV(fov, near, far) {
-        var right = Math.tan(fov.rightDegrees * R2.DEG_TO_RAD),
-            left  = Math.tan(fov.leftDegrees  * R2.DEG_TO_RAD),
-            up    = Math.tan(fov.upDegrees    * R2.DEG_TO_RAD),
-            down  = Math.tan(fov.downDegrees  * R2.DEG_TO_RAD),
-            xRange = right - left,
-            yRange = up - down,
-            xScale = 1.0 / (right + left),
-            yScale = 1.0 / (up + down),
-            zScale = 1.0 / (near - far);
-
-        return new M([
-            2 * xScale,      0,               0,             0,
-            0,               2 * yScale,      0,             0,
-            xRange * xScale, yRange * yScale, far * zScale, -1,
-            0,               0,        near * far * zScale,  0
-        ]);
-    }
 
     function testSuite() {
         function testEqualsV(v, x, y, z, tolerance) {
