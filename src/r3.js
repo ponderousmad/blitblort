@@ -887,6 +887,46 @@ var R3 = (function () {
         ];
 
         var aaboxTests = [
+            function testEmpty() {
+                var box = new AABox();
+                TEST.isNull(box.min);
+                TEST.isNull(box.max);
+                TEST.isNull(box.center());
+                TEST.isFalse(box.contains(new V()));
+            },
+
+            function testPoint() {
+                var originBox = new AABox(),
+                    pointBox = new AABox(),
+                    p = new V(5, -1, 2);
+
+                originBox.envelope(new V());
+                TEST.isTrue(originBox.contains(new V()));
+                TEST.isFalse(originBox.contains(p));
+                testEqualsV(originBox.center(), 0, 0, 0);
+
+                pointBox.envelope(p);
+                TEST.isTrue(pointBox.contains(p));
+                TEST.isFalse(pointBox.contains(new V()));
+                testEqualsV(pointBox.center(), p.x, p.y, p.z);
+            },
+
+            function testPoints() {
+                var box = new AABox();
+                    points = [new V(), new V(5, -1, 2), new V(1, 1, -4)];
+
+                for (var p = 0; p < points.length; ++p) {
+                    var point = points[p];
+                    TEST.isFalse(box.contains(point));
+                    box.envelope(point);
+                    TEST.isTrue(box.contains(point));
+                }
+
+                TEST.isTrue(box.contains(new V(1, 1, 1)));
+                TEST.isTrue(box.contains(new V(2, 0, 0)));
+                TEST.isFalse(box.contains(new V(5, -1, 2.01)));
+                testEqualsV(box.center(), 2.5, 0, -1);
+            }
         ];
 
         TEST.run("R3 Vector", vectorTests);
