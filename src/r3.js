@@ -63,6 +63,10 @@ var R3 = (function () {
         this.z *= s;
     };
 
+    V.prototype.scaled = function (s) {
+        return new V(this.x * s, this.y * s, this.z * s);
+    };
+
     V.prototype.add = function (v) {
         this.x += v.x;
         this.y += v.y;
@@ -907,6 +911,17 @@ var R3 = (function () {
                 testEqualsV(tt.transformP(v), 16, 7, -6, TOLERANCE);
                 testEqualsV(tt.transformV(v), 1, 1, 1, TOLERANCE);
                 testEqualsV(new V(15, 6, -7), tt.at(3, 0), tt.at(3, 1), tt.at(3, 2));
+            },
+
+            function testInverse() {
+                var v = new V(1, -2, 3),
+                    a = Math.PI / 2,
+                    q = eulerToQ(a, 0, -Math.PI / 3);
+
+                TEST.isTrue(new M().inverse().equals(new M()));
+                TEST.isTrue(makeTranslate(v).inverse().equals(makeTranslate(v.scaled(-1))));
+                TEST.isTrue(makeRotateX(a).inverse().equals(makeRotateX(-a)));
+                TEST.isTrue(makeRotateQ(q).inverse().equals(makeRotateQ(q.inverse)));
             }
         ];
 
@@ -966,7 +981,7 @@ var R3 = (function () {
         AABox: AABox,
         identity: function () { return new M(); },
         origin: function () { return new V(); },
-        toOrigin: function (v) { var o = new V(); o.sub(v); return o; },
+        toOrigin: function (v) { return v.scaled(-1); },
         zeroQ: function () { return new Q(0, 0, 0, 1); },
         makeTranslate: makeTranslate,
         makeScale: makeScale,
