@@ -1,6 +1,7 @@
 var R3 = (function () {
     var D3 = 3,
-        D4 = 4;
+        D4 = 4,
+        TOLERANCE = 1e-6;
 
     function at(row, column) {
         return row * D4 + column;
@@ -252,6 +253,18 @@ var R3 = (function () {
         }
     };
 
+    M.prototype.equals = function (other, tolerance) {
+        tolerance = tolerance || TOLERANCE;
+        for (var r = 0; r < D4; ++r) {
+            for (var c = 0; c < D4; ++c) {
+                if (Math.abs(this.at(r, c) - other.at(r, c)) > tolerance) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
     M.prototype.translate = function (v) {
         this.m[at(3, 0)] += v.x;
         this.m[at(3, 1)] += v.y;
@@ -277,7 +290,7 @@ var R3 = (function () {
             xScale = x.length(),
             yScale = y.length(),
             zScale = z.length();
-        tolerance = tolerance || 1e-5;
+        tolerance = tolerance || TOLERANCE;
 
         if (Math.abs(yScale - xScale) > tolerance) {
             return false;
@@ -304,12 +317,13 @@ var R3 = (function () {
 
     // Adapted from setFromRotationMatrix in
     // https://github.com/mrdoob/three.js/blob/dev/src/math/Euler.js
-    M.prototype.extractEuler = function (order) {
+    M.prototype.extractEuler = function (order, tolerance) {
         var x = 0.0, y = 0.0, z = 0.0;
+        tolerance = tolerance || TOLERANCE;
         if (order === "XYZ" || !order) {
             var m20 = this.m[at(2, 0)];
             y = Math.asin(clamp(m20, -1, 1));
-            if (Math.abs(m20) < 0.9999) {
+            if ((1 - Math.abs(m20)) > tolerance) {
                 x = Math.atan2(-this.m[at(2, 1)], this.m[at(2, 2)]);
                 z = Math.atan2(-this.m[at(1, 0)], this.m[at(0, 0)]);
             } else {
@@ -318,7 +332,7 @@ var R3 = (function () {
         } else if (order === "ZYX") {
             var m02 = this.m[at(0, 2)];
             y = Math.asin(-clamp(m02, - 1, 1));
-            if (Math.abs(m02) < 0.99999 ) {
+            if ((1 - Math.abs(m02)) > tolerance) {
                 x = Math.atan2( this.m[at(1, 2)], this.m[at(2, 2)]);
                 z = Math.atan2( this.m[at(0, 1)], this.m[at(0, 0)]);
             } else {
@@ -327,7 +341,7 @@ var R3 = (function () {
         } else if (order === "YXZ") {
             var m21 = this.m[at(2, 1)];
             x = Math.asin(-clamp(m21, -1, 1));
-            if (Math.abs(m21) < 0.99999) {
+            if ((1 - Math.abs(m21)) > tolerance) {
                 y = Math.atan2( this.m[at(2, 0)], this.m[at(2, 2)]);
                 z = Math.atan2( this.m[at(0, 1)], this.m[at(1, 1)]);
             } else {
@@ -336,7 +350,7 @@ var R3 = (function () {
         } else if (order === "ZXY") {
             var m12 = this.m[at(1, 2)];
             x = Math.asin(clamp(m12, -1, 1));
-            if (Math.abs(m12) < 0.99999) {
+            if ((1 - Math.abs(m12)) > tolerance) {
                 y = Math.atan2(-this.m[at(0, 2)], this.m[at(2, 2)]);
                 z = Math.atan2(-this.m[at(1, 0)], this.m[at(1, 1)]);
             } else {
@@ -345,7 +359,7 @@ var R3 = (function () {
         } else if (order === "YZX") {
             var m01 = this.m[at(0, 1)];
             z = Math.asin(clamp(m01, -1, 1));
-            if (Math.abs(m01) < 0.99999) {
+            if ((1 - Math.abs(m01)) > tolerance) {
                 x = Math.atan2(-this.m[at(2, 1)], this.m[at(1, 1)]);
                 y = Math.atan2(-this.m[at(0, 2)], this.m[at(0, 0)]);
             } else {
@@ -354,7 +368,7 @@ var R3 = (function () {
         } else if (order === "XZY") {
             var m10 = this.m[at(1, 0)];
             z = Math.asin(-clamp(m10, -1, 1));
-            if (Math.abs(m10) < 0.99999) {
+            if ((1 - Math.abs(m10)) > tolerance) {
                 x = Math.atan2( this.m[at(1, 2)], this.m[at(1, 1)]);
                 y = Math.atan2( this.m[at(2, 0)], this.m[at(0, 0)]);
             } else {
@@ -660,7 +674,6 @@ var R3 = (function () {
                 TEST.equals(v.z, z);
             }
         }
-        var TOLERANCE = 1e-6;
 
         var vectorTests = [
             function testConstruct() {
@@ -797,13 +810,24 @@ var R3 = (function () {
 
         var matrixTests = [
             function testConstruct() {
-                var m = new M();
+                var m = new M(),
+                    c = 0, r = 0;
 
-                for (var c = 0; c < D4; ++c) {
-                    for (var r = 0; r < D4; ++r) {
+                for (c = 0; c < D4; ++c) {
+                    for (r = 0; r < D4; ++r) {
                         TEST.equals(m.at(r, c), r == c ? 1 : 0);
                     }
                 }
+
+                var indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                    a = new M(indices);
+                for (c = 0; c < D4; ++c) {
+                    for (r = 0; r < D4; ++r) {
+                        TEST.equals(a.at(r, c), at(r, c));
+                    }
+                }
+                m.setAll(indices);
+                TEST.isTrue(a.equals(m));
             },
 
             function testTranslate() {
