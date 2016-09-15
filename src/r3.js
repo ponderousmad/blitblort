@@ -921,7 +921,7 @@ var R3 = (function () {
                 TEST.isTrue(new M().inverse().equals(new M()));
                 TEST.isTrue(makeTranslate(v).inverse().equals(makeTranslate(v.scaled(-1))));
                 TEST.isTrue(makeRotateX(a).inverse().equals(makeRotateX(-a)));
-                TEST.isTrue(makeRotateQ(q).inverse().equals(makeRotateQ(q.inverse)));
+                TEST.isTrue(makeRotateQ(q).inverse().equals(makeRotateQ(q.inverse())));
             }
         ];
 
