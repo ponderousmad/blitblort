@@ -433,7 +433,7 @@ var R3 = (function () {
         for (var c = 0; c < D4; ++c) {
             for (var r = 0; r < D4; ++r) {
                 var adjuct = this.minor(r, c);
-                inv.m[at(r, c)] = Math.pow(-1, r + c) * adjuct * scale;
+                inv.m[at(c, r)] = Math.pow(-1, r + c) * adjuct * scale;
             }
         }
         return inv;
