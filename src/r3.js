@@ -403,17 +403,21 @@ var R3 = (function () {
         // https://en.wikipedia.org/wiki/Minor_(linear_algebra)
         // Calculate the Minor, which is the determinant of the matrix
         // obtained by ommiting the specified row and column
-        c = c || 0; // Arbitrarily choosen column for calculating the determinant.
+        c = c || 0; // Arbitrarily choosen column for calculating the determinant from [0,D3)
         var det = 0,
             cA = skipIndex(column, c + 0),
             cB = skipIndex(column, c + 1),
-            cC = skipIndex(column, c + 2);
+            cC = skipIndex(column, c + 2),
+            c0 = Math.min(cB, cC),
+            c1 = Math.max(cB, cC);
         for (var r = 0; r < D3; ++r) {
             var rA = skipIndex(row, r + 0),
                 rB = skipIndex(row, r + 1),
-                rC = skipIndex(row, r + 2);
-                det2x2 = this.m[at(rB, cB)] * this.m[at(rC, cC)] -
-                         this.m[at(rC, cB)] * this.m[at(rB, cC)];
+                rC = skipIndex(row, r + 2),
+                r0 = Math.min(rB, rC),
+                r1 = Math.max(rB, rC);
+                det2x2 = this.m[at(r0, c0)] * this.m[at(r1, c1)] -
+                         this.m[at(r1, c0)] * this.m[at(r0, c1)];
             det += this.m[at(rA, cA)] * Math.pow(-1, c + r) * det2x2;
         }
         return det;
@@ -432,8 +436,8 @@ var R3 = (function () {
 
         for (var c = 0; c < D4; ++c) {
             for (var r = 0; r < D4; ++r) {
-                var adjuct = this.minor(r, c);
-                inv.m[at(c, r)] = Math.pow(-1, r + c) * adjuct * scale;
+                var cofactor = Math.pow(-1, r + c) * this.minor(c, r);
+                inv.m[at(r, c)] = cofactor * scale;
             }
         }
         return inv;
@@ -913,15 +917,30 @@ var R3 = (function () {
                 testEqualsV(new V(15, 6, -7), tt.at(3, 0), tt.at(3, 1), tt.at(3, 2));
             },
 
+            function testDeterminant() {
+                var v = new V(1, -2, 3),
+                    a = Math.PI / 2,
+                    q = eulerToQ(a, 0, -Math.PI / 3),
+                    s = 5;
+
+                TEST.equals(new M().determinant(), 1);
+                TEST.equals(makeTranslate(v).determinant(), 1);
+                TEST.tolEquals(makeRotateX(a).determinant(), 1, TOLERANCE);
+                TEST.tolEquals(makeRotateQ(q).determinant(), 1, TOLERANCE);
+                TEST.tolEquals(makeScale(s).determinant(), s * s * s, TOLERANCE);
+            },
+
             function testInverse() {
                 var v = new V(1, -2, 3),
                     a = Math.PI / 2,
-                    q = eulerToQ(a, 0, -Math.PI / 3);
+                    q = eulerToQ(a, 0, -Math.PI / 3),
+                    s = 5;
 
                 TEST.isTrue(new M().inverse().equals(new M()));
-                TEST.isTrue(makeTranslate(v).inverse().equals(makeTranslate(v.scaled(-1))));
+                //TEST.isTrue(makeTranslate(v).inverse().equals(makeTranslate(v.scaled(-1))));
                 TEST.isTrue(makeRotateX(a).inverse().equals(makeRotateX(-a)));
                 TEST.isTrue(makeRotateQ(q).inverse().equals(makeRotateQ(q.inverse())));
+                TEST.isTrue(makeScale(s).inverse().equals(makeScale(1 / s)));
             }
         ];
 
