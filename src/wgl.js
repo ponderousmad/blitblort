@@ -68,6 +68,7 @@ var WGL = (function () {
         this.vrDisplay = null;
         this.size = new R2.V(0, 0);
         this.safeSize = new R2.V(0, 0);
+        this.vrFrameData = new VRFrameData();
     }
 
     Viewer.prototype.setVRDisplay = function (vrDisplay) {
@@ -91,16 +92,13 @@ var WGL = (function () {
         return R3.perspective(this.fov * R2.DEG_TO_RAD, aspect, this.near, this.far);
     };
 
-    Viewer.prototype.perspectiveFOV = function (eye) {
-        return R3.perspectiveFOV(eye.fieldOfView, this.near, this.far);
+    Viewer.prototype.perspectiveVR = function (region, frameData) {
+        return new R3.M(region == "left" ? frameData.leftProjectionMatrix : frameData.rightProjectionMatrix);
     };
 
-    Viewer.prototype.view = function (eye) {
+    Viewer.prototype.view = function () {
         var m = R3.makeRotateQ(this.orientation);
         m.translate(R3.toOrigin(this.position));
-        if (eye) {
-            m.translate(new R3.V(-eye.offset[0], -eye.offset[1], -eye.offset[2]));
-        }
         return m;
     };
 
@@ -140,16 +138,15 @@ var WGL = (function () {
         }
     };
 
-    Viewer.prototype.vrPose = function () {
-        return this.vrDisplay.getPose();
+    Viewer.prototype.vrFrame = function () {
+        if (this.vrDisplay.getFrameData(this.vrFrameData)) {
+            return this.vrFrameData;
+        }
+        return null;
     };
 
-    Viewer.prototype.vrEye = function (eye) {
-        return this.vrDisplay.getEyeParameters(eye);
-    };
-
-    Viewer.prototype.submitVR = function (pose) {
-        this.vrDisplay.submitFrame(pose);
+    Viewer.prototype.submitVR = function () {
+        this.vrDisplay.submitFrame();
     };
 
     function Room(canvas) {
@@ -286,14 +283,14 @@ var WGL = (function () {
         this.gl.drawElements(this.gl.TRIANGLES, mesh.tris.length, this.gl.UNSIGNED_SHORT, 0);
     };
 
-    Room.prototype.setupView = function (program, viewportRegion, viewVariable, perspectiveVariable, transform, eye) {
+    Room.prototype.setupView = function (program, viewportRegion, viewVariable, perspectiveVariable, transform, vrFrame) {
         var aspect = this.viewer.viewport(this.gl, this.canvas, viewportRegion),
-            perspective = eye ? this.viewer.perspectiveFOV(eye) : this.viewer.perspective(aspect),
-            view = this.viewer.view(eye),
+            perspective = vrFrame ? this.viewer.perspectiveVR(viewportRegion, vrFrame) : this.viewer.perspective(aspect),
+            view = this.viewer.view(),
             pLocation = this.gl.getUniformLocation(program, perspectiveVariable),
             vLocation = this.gl.getUniformLocation(program, viewVariable);
         if (transform) {
-            view = R3.matmul(view, transform);
+            view = R3.matmul(transform, view);
         }
         this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
         this.gl.uniformMatrix4fv(vLocation, false, view.m);
