@@ -1,6 +1,6 @@
 var BLIT = (function () {
     "use strict";
-    
+
     var ALIGN = {
         Center: 0,
         Left: 1,
@@ -9,14 +9,14 @@ var BLIT = (function () {
         TopLeft: 5,
         Bottom: 8
     };
-    
+
     var MIRROR = {
         None: 0,
         Horizontal: 1,
         Vertical: 2,
         Both: 3
     };
-    
+
     var batchesPending = 0,
         tintCache = {};
 
@@ -68,18 +68,18 @@ var BLIT = (function () {
         this._commited = true;
         this._checkComplete();
     };
-    
+
     function cacheTint(image, tint, canvas) {
         tintCache[image.src + tint] = canvas;
     }
-    
+
     function checkTintCache(image, tint) {
         return tintCache[image.src + tint];
     }
-    
+
     function drawTinted(context, image, x, y, width, height, tint, noCache) {
         var tintCanvas = noCache ? null : checkTintCache(image, tint);
-        
+
         if (!tintCanvas) {
             tintCanvas = document.createElement('canvas');
             var tintContext = tintCanvas.getContext('2d');
@@ -112,50 +112,50 @@ var BLIT = (function () {
         if (!height) {
             height = image.height;
         }
-        
+
         if ((alignment & ALIGN.Bottom) !== 0) {
             y -= height;
         } else if ((alignment & ALIGN.Top) === 0) { // center
             y -= height * 0.5;
         }
-        
+
         if ((alignment & ALIGN.Right) !== 0) {
             x -= width;
         } else if ((alignment & ALIGN.Left) === 0) { // center
             x -= width * 0.5;
         }
-        
+
         context.save();
         var flipX = mirror == MIRROR.Horizontal || mirror == MIRROR.Both,
             flipY = mirror == MIRROR.Vertical || mirror == MIRROR.Both,
             scaleX = flipX ? -1 : 1,
             scaleY = flipY ? -1 : 1;
-        
+
         if (mirror && mirror != MIRROR.None) {
             var midX = x + width * 0.5,
                 midY = y + height * 0.5;
-            
+
             context.translate(-midX, -midY);
             context.scale(scaleX, scaleY);
             context.translate(midX * scaleX, midY * scaleY);
         }
-        
+
         if (flipX) {
             x = -x - width;
         }
         if (flipY) {
             y = -y - height;
         }
-        
+
         if (tint) {
             drawTinted(context, image, x, y, width, height, tint, noCache);
         } else {
             context.drawImage(image, x, y, width, height);
         }
-        
+
         context.restore();
     }
-    
+
     function drawTextCentered(context, text, x, y, fill, shadow, offset) {
         context.textAlign = "center";
         if (shadow) {
@@ -170,7 +170,7 @@ var BLIT = (function () {
         }
         context.fillText(text, x, y);
     }
-    
+
     function Flip(imageBatch, baseName, frameCount, digits) {
         this.frames = [];
         for (var i = 0; i < frameCount; ++i) {
@@ -181,7 +181,7 @@ var BLIT = (function () {
             this.frames.push(imageBatch.load(baseName + number + ".png"));
         }
     }
-    
+
     Flip.prototype.setupPlayback = function(frameTime, loop, offset) {
         var time = offset ? offset : 0,
             flip = this;
@@ -198,7 +198,7 @@ var BLIT = (function () {
             height: function () { return flip.height(); }
         };
     };
-    
+
     Flip.prototype.updatePlayback = function(elapsed, playback) {
         var totalLength = playback.timePerFrame * this.frames.length;
         playback.elapsed += elapsed;
@@ -213,27 +213,27 @@ var BLIT = (function () {
             return false;
         }
     };
-    
+
     Flip.prototype.draw = function(context, playback, x, y, alignment, width, height, mirror, tint) {
         var index = Math.min(this.frames.length - 1, Math.floor(playback.elapsed / playback.timePerFrame));
-        
+
         draw(context, this.frames[index], x, y, alignment, width, height, mirror, tint, true);
     };
-    
+
     Flip.prototype.width = function () {
         return this.frames[0].width;
     };
-    
+
     Flip.prototype.height = function () {
         return this.frames[0].height;
     };
-    
+
     function updatePlaybacks(elapsed, playbacks) {
         for (var p = 0; p < playbacks.length; ++p) {
             playbacks[p].update(elapsed);
         }
     }
-    
+
     return {
         ALIGN: ALIGN,
         MIRROR: MIRROR,

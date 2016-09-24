@@ -7,7 +7,7 @@ var BLORT = (function () {
     try {
         var Constructor = window.AudioContext || window.webkitAudioContext;
         gAudioContext = new Constructor();
-        
+
         // http://diveintohtml5.info/everything.html#audio-vorbis
         var a = document.createElement('audio');
         if (!!(a.canPlayType && a.canPlayType('audio/ogg; codecs="vorbis"').replace(/no/, ''))) {
@@ -20,7 +20,7 @@ var BLORT = (function () {
         console.log("Error initializing audio:");
         console.log(error);
     }
-    
+
     function audioNoteOn() {
         if (!gNoteOn) {
             gNoteOn = true;
@@ -40,7 +40,7 @@ var BLORT = (function () {
             }
         }
     }
-    
+
     function setup(sound, resource, loop, forceMP3) {
         sound.resource = resource;
         sound.source = null;
@@ -74,7 +74,7 @@ var BLORT = (function () {
             request.send();
         }
     }
-    
+
     function play(sound, enableGain) {
         if (gAudioContext === null || sound.buffer === null) {
             return;
@@ -99,7 +99,7 @@ var BLORT = (function () {
     function Noise(resource) {
         setup(this, resource, false, false);
     }
-        
+
     Noise.prototype.isLoaded = function () {
         return gAudioContext === null || this.buffer !== null;
     };
@@ -107,14 +107,14 @@ var BLORT = (function () {
     Noise.prototype.play = function () {
         play(this, false);
     };
-    
+
     function Tune(resource, forceMP3) {
         setup(this, resource, true, forceMP3);
         this.playing = false;
         this.gain = null;
         this.volume = 1;
     }
-    
+
     Tune.prototype.isLoaded = function() {
         return gAudioContext === null || this.buffer !== null;
     };
@@ -123,14 +123,14 @@ var BLORT = (function () {
         play(this, true);
         this.playing = true;
     };
-    
+
     Tune.prototype.setVolume = function (volume) {
         this.volume = volume;
         if (this.playing) {
             this.gain.gain.value = volume;
         }
     };
-    
+
     Tune.prototype.stop = function () {
         if (this.source) {
             this.source.stop();
@@ -141,7 +141,7 @@ var BLORT = (function () {
         }
         this.playing = false;
     };
-    
+
     return {
         Noise: Noise,
         Tune: Tune,
