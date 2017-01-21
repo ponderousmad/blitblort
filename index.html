@@ -40,22 +40,26 @@
         <script id="vertex-test" type="x-shader/x-vertex">
             attribute vec3 aPos;
             attribute vec2 aUV;
+            attribute vec4 aColor;
 
             uniform mat4 uMVMatrix;
             uniform mat4 uPMatrix;
 
             varying highp vec2 vUV;
+            varying lowp vec4 vColor;
 
             void main(void) {
                 gl_Position = uPMatrix * uMVMatrix * vec4(aPos, 1.0);
                 vUV = aUV;
+                vColor = aColor;
             }
         </script>
         <script id="fragment-test" type="x-shader/x-fragment">
             varying highp vec2 vUV;
+            varying lowp vec4 vColor;
             uniform sampler2D uSampler;
             void main(void) {
-                gl_FragColor = texture2D(uSampler, vec2(vUV.s, vUV.t));
+                gl_FragColor = texture2D(uSampler, vec2(vUV.s, vUV.t)) * vColor;
             }
         </script>
     </body>
