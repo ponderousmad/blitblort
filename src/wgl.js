@@ -324,14 +324,14 @@ var WGL = (function () {
     Room.prototype.setupDrawTest = function (program) {
         var vertices = [
                 -1.0, -1.0, 0.0,
-                -1.0,  1.0, 0.0,
                  1.0, -1.0, 0.0,
+                -1.0,  1.0, 0.0,
                  1.0,  1.0, 0.0
             ],
             uvs = [
                 0.0,  1.0,
-                0.0,  0.0,
                 1.0,  1.0,
+                0.0,  0.0,
                 1.0,  0.0
             ],
             colors = [
@@ -339,7 +339,7 @@ var WGL = (function () {
                 1.0, 1.0, 0.0, 1.0,
                 0.0, 1.0, 1.0, 1.0,
                 1.0, 1.0, 1.0, 1.0
-            ]
+            ];
 
         program.batch = new BLIT.Batch("images/");
         program.square = this.setupFloatBuffer(vertices);
