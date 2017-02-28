@@ -154,6 +154,26 @@ var WGL = (function () {
         this.vrDisplay.submitFrame(pose);
     };
 
+    Viewer.prototype.stabDirection = function (canvas, canvasX, canvasY, viewportRegion) {
+        var width = canvas.width,
+            height = canvas.height;
+        if (viewportRegion == "safe") {
+            width = this.safeSize.x;
+            height = this.safeSize.y;
+        }
+        
+        var aspect = height / width,
+            viewScale =  Math.tan(this.fov * R2.DEG_TO_RAD * 0.5),
+            normalizedX = canvasX / (width * 0.5) - 1,
+            normalizedY = (1 - canvasY / (height * 0.5));
+
+        return new R3.V(
+            normalizedX * viewScale,
+            normalizedY * viewScale * aspect,
+            -1
+        );
+    };
+
     function Room(canvas) {
         this.canvas = canvas;
         this.gl = getGlContext(canvas);
@@ -223,6 +243,13 @@ var WGL = (function () {
         return buffer;
     };
 
+    Room.prototype.updateBuffer = function (buffer, data, elements) {
+        var hint = this.gl.DYNAMIC_DRAW;
+        var arrayType = elements ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
+        this.gl.bindBuffer(arrayType, buffer);
+        this.gl.bufferData(arrayType, new Float32Array(data), hint);
+    };
+
     Room.prototype.setupFloatBuffer = function (data, elements, hint) {
         return this.setupBuffer(new Float32Array(data), elements, hint);
     };
@@ -252,7 +279,7 @@ var WGL = (function () {
         return texture;
     };
 
-    Room.prototype.setupMesh = function (mesh) {
+    Room.prototype.setupMesh = function (mesh, dynamic) {
         if (!mesh.drawData) {
             if (mesh.index >= Math.pow(2, 16)) {
                 throw "Mesh has too many verticies to index!";
@@ -262,11 +289,13 @@ var WGL = (function () {
                     throw "Past end of verticies:" + mesh.tris[i] + ", " + mesh.index;
                 }
             }
+            var drawHint = dynamic ? this.gl.DYNAMIC_DRAW : this.gl.STATIC_DRAW;
 
             mesh.drawData = {
-                vertexBuffer: this.setupFloatBuffer(mesh.vertices),
+                vertexBuffer: this.setupFloatBuffer(mesh.vertices, false, drawHint),
+                normalBuffer: this.setupFloatBuffer(mesh.normals),
                 uvBuffer: this.setupFloatBuffer(mesh.uvs),
-                colorBuffer: this.setupFloatBuffer(mesh.colors),
+                colorBuffer: this.setupFloatBuffer(mesh.colors, false, drawHint),
                 triBuffer: this.setupElementBuffer(mesh.tris)
             };
             if (mesh.image) {
@@ -278,14 +307,29 @@ var WGL = (function () {
 
     Room.prototype.drawMesh = function (mesh, program) {
         var draw = this.setupMesh(mesh);
+
+        if (mesh.transform) {
+            this.pushTransform(program, mesh.transform);
+        }
+
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.vertexBuffer);
+        if (mesh.updated) {
+            this.updateBuffer(draw.vertexBuffer, mesh.vertices);
+        }
         this.gl.vertexAttribPointer(program.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
+        if (program.vertexNormal !== null) {
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.normalBuffer);
+            this.gl.vertexAttribPointer(program.vertexNormal, 3, this.gl.FLOAT, false, 0, 0);
+        }
         if (program.vertexUV !== null) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.uvBuffer);
             this.gl.vertexAttribPointer(program.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
         }
         if (program.vertexColor !== null) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.colorBuffer);
+            if (mesh.updated) {
+                this.updateBuffer(draw.colorBuffer, mesh.colors);
+            }
             this.gl.vertexAttribPointer(program.vertexColor, 4, this.gl.FLOAT, false, 0, 0);
         }
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, draw.triBuffer);
@@ -293,19 +337,40 @@ var WGL = (function () {
             this.bindTexture(program.shader, program.textureVariable, draw.texture);
         }
         this.gl.drawElements(this.gl.TRIANGLES, mesh.tris.length, this.gl.UNSIGNED_SHORT, 0);
+        mesh.updated = false;
     };
 
-    Room.prototype.setupView = function (program, viewportRegion, viewVariable, perspectiveVariable, transform, eye) {
-        var aspect = this.viewer.viewport(this.gl, this.canvas, viewportRegion),
+    Room.prototype.setupView = function (program, viewportRegion, transform, eye) {
+        var shader = program.shader,
+            aspect = this.viewer.viewport(this.gl, this.canvas, viewportRegion),
             perspective = eye ? this.viewer.perspectiveFOV(eye) : this.viewer.perspective(aspect),
             view = this.viewer.view(eye),
-            pLocation = this.gl.getUniformLocation(program, perspectiveVariable),
-            vLocation = this.gl.getUniformLocation(program, viewVariable);
+            pLocation = this.gl.getUniformLocation(shader, program.perspectiveUniform),
+            vLocation = this.gl.getUniformLocation(shader, program.mvUniform),
+            nLocation = program.normalUniform ? this.gl.getUniformLocation(shader, program.normalUniform) : null;
         if (transform) {
             view = R3.matmul(view, transform);
         }
         this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
         this.gl.uniformMatrix4fv(vLocation, false, view.m);
+        if (nLocation) {
+            var normal = view.inverse();
+            normal.transpose();
+            this.gl.uniformMatrix4fv(nLocation, false, normal.m);
+        }
+        program.view = view;
+    };
+
+    Room.prototype.pushTransform = function (program, transform) {
+        var shader = program.shader,
+            modelView = new R3.M(),
+            vLocation = this.gl.getUniformLocation(shader, program.mvUniform),
+            nLocation = this.gl.getUniformLocation(shader, program.normalUniform);
+        R3.matmul(program.view, transform, modelView);
+        this.gl.uniformMatrix4fv(vLocation, false, modelView.m);
+        var normal = modelView.inverse();
+        normal.transpose();
+        this.gl.uniformMatrix4fv(nLocation, false, normal.m);
     };
 
     Room.prototype.bindTexture = function (program, variable, texture) {
@@ -321,12 +386,22 @@ var WGL = (function () {
         return this.setupShaderProgram(vertexSource, fragmentSource);
     };
 
+    Room.prototype.stabDirection = function(canvasX, canvasY, viewportRegion) {
+        return this.viewer.stabDirection(this.canvas, canvasX, canvasY, viewportRegion);
+    };
+
     Room.prototype.setupDrawTest = function (program) {
         var vertices = [
                 -1.0, -1.0, 0.0,
                  1.0, -1.0, 0.0,
                 -1.0,  1.0, 0.0,
                  1.0,  1.0, 0.0
+            ],
+            normals = [
+                0.0, 0.0, 1.0,
+                0.0, 0.0, 1.0,
+                0.0, 0.0, 1.0,
+                0.0, 0.0, 1.0
             ],
             uvs = [
                 0.0,  1.0,
@@ -344,6 +419,7 @@ var WGL = (function () {
         program.batch = new BLIT.Batch("images/");
         program.square = this.setupFloatBuffer(vertices);
         program.squareUVs = this.setupFloatBuffer(uvs);
+        program.squareNormals = this.setupFloatBuffer(normals);
         program.squareColors = this.setupFloatBuffer(colors);
         program.squareTexture = this.loadTexture(program.batch, "uv.png");
         program.batch.commit();
@@ -356,6 +432,10 @@ var WGL = (function () {
         if (setup.vertexUV !== null) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareUVs);
             this.gl.vertexAttribPointer(setup.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
+        }
+        if (setup.vertexNormal !== null) {
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareNormals);
+            this.gl.vertexAttribPointer(setup.vertexNormal, 3, this.gl.FLOAT, false, 0, 0);
         }
         if (setup.vertexColor !== null) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareColors);
@@ -370,8 +450,12 @@ var WGL = (function () {
 
             this.testSetup = {
                 shader: program,
+                mvUniform: "uMVMatrix",
+                perspectiveUniform: "uPMatrix",
+                normalUniform: "uNormalMatrix",
                 vertexPosition: this.bindVertexAttribute(program, "aPos"),
                 vertexUV: this.bindVertexAttribute(program, "aUV"),
+                vertexNormal: this.bindVertexAttribute(program, "aNormal"),
                 vertexColor: this.bindVertexAttribute(program, "aColor"),
                 textureVariable: "uSampler"
             };
@@ -382,7 +466,7 @@ var WGL = (function () {
         if (!this.testSetup.batch.loaded) {
             return;
         }
-        this.setupView(this.testSetup.shader, "canvas", "uMVMatrix", "uPMatrix");
+        this.setupView(this.testSetup, "canvas");
         this.drawTestSquare(this.testSetup);
     };
 
@@ -394,15 +478,24 @@ var WGL = (function () {
         this.tris = [];
         this.index = 0;
         this.bbox = new R3.AABox();
+        this.transform = R3.identity();
+        this.updated = false;
+    }
+
+    function fixComponent(c) {
+        if (c === undefined || c === null) {
+            return 1;
+        }
+        return c;
     }
 
     Mesh.prototype.addVertex = function (p, n, u, v, r, g, b, a) {
         p.pushOn(this.vertices);
         n.pushOn(this.normals);
-        this.colors.push(r || 0);
-        this.colors.push(g || 0);
-        this.colors.push(b || 0);
-        this.colors.push(a || 0);
+        this.colors.push(fixComponent(r));
+        this.colors.push(fixComponent(g));
+        this.colors.push(fixComponent(b));
+        this.colors.push(fixComponent(a));
         this.uvs.push(u);
         this.uvs.push(v);
         this.index += 1;
@@ -411,8 +504,8 @@ var WGL = (function () {
 
     Mesh.prototype.addTri = function (a, b, c) {
         this.tris.push(a);
-        this.tris.push(b);
         this.tris.push(c);
+        this.tris.push(b);
     };
 
     Mesh.prototype.appendVerticies = function (other) {
@@ -422,8 +515,150 @@ var WGL = (function () {
         this.index += other.index;
     };
 
+    Mesh.prototype.finalize = function (min, max) {
+        if (min) {
+            this.bbox.envelope(min);
+        }
+        if (max) {
+            this.bbox.envelope(max);
+        }
+        this.index = this.vertices.length / 3;
+        if (this.index != this.normals.length / 3) {
+            throw "Normals missing!";
+        }
+        if (this.index != this.uvs.length / 2) {
+            throw "UVs missing!";
+        }
+        if (this.index != this.colors.length / 4) {
+            for (var i = this.colors.length / 4; i < this.index; ++i) {
+                this.colors.push(1);
+                this.colors.push(1);
+                this.colors.push(1);
+                this.colors.push(0);
+            }
+        }
+    };
+
+    function makeCube() {
+        var mesh = new Mesh();
+        mesh.verticies = [
+            -1, -1, -1, //0
+            -1, -1,  1, //1
+            -1,  1,  1, //2
+            -1,  1, -1, //3
+
+             1, -1, -1,
+             1, -1,  1,
+             1,  1,  1,
+             1,  1, -1,
+
+            -1, -1, -1,
+            -1, -1,  1,
+             1, -1,  1,
+             1, -1, -1,
+
+            -1,  1, -1,
+            -1,  1, -1,
+            -1,  1, -1,
+            -1,  1, -1,
+
+            -1, -1, -1,
+            -1,  1, -1,
+             1,  1, -1,
+             1, -1, -1,
+
+            -1, -1,  1,
+            -1,  1,  1,
+             1,  1,  1,
+             1, -1,  1
+        ];
+
+        mesh.normals = [
+            -1, 0, 0,
+            -1, 0, 0,
+            -1, 0, 0,
+            -1, 0, 0,
+
+             1, 0, 0,
+             1, 0, 0,
+             1, 0, 0,
+             1, 0, 0,
+
+            0, -1, 0,
+            0, -1, 0,
+            0, -1, 0,
+            0, -1, 0,
+
+            0,  1, 0,
+            0,  1, 0,
+            0,  1, 0,
+            0,  1, 0,
+
+            0, 0, -1,
+            0, 0, -1,
+            0, 0, -1,
+            0, 0, -1,
+
+            0, 0,  1,
+            0, 0,  1,
+            0, 0,  1,
+            0, 0,  1
+        ];
+
+        mesh.uvs = [
+            0.02, 0.02,
+            0.02, 0.32,
+            0.32, 0.32,
+            0.32, 0.02,
+
+            0.02, 0.35,
+            0.02, 0.65,
+            0.32, 0.65,
+            0.32, 0.35,
+
+            0.35, 0.02,
+            0.35, 0.32,
+            0.65, 0.32,
+            0.65, 0.02,
+
+            0.35, 0.35,
+            0.35, 0.65,
+            0.65, 0.65,
+            0.65, 0.35,
+
+            0.68, 0.01,
+            0.68, 0.31,
+            0.98, 0.31,
+            0.98, 0.01,
+
+            0.68, 0.35,
+            0.68, 0.65,
+            0.98, 0.65,
+            0.98, 0.35,
+        ];
+
+        var twoFace = [0, 1, 3, 1, 2, 3, 4, 7, 5, 5, 7, 6];
+        mesh.tris = [];
+
+        for (var f = 0; f < 3; ++f) {
+            for (var i = 0; i < twoFace.length; ++i) {
+                mesh.tris.push(twoFace[i] + f * twoFace.length);
+            }
+        }
+        mesh.finalize(new R3.V(1,1,1), new R3.V(-1,-1,-1));
+        return mesh;
+    }
+
+    function makeCylinder() {
+        var mesh = new Mesh();
+        mesh.finalize(new R3.V(1,1,1), new R3.V(-1,-1,-1));
+        return mesh;
+    }
+
     return {
         Room: Room,
-        Mesh: Mesh
+        Mesh: Mesh,
+        makeCube: makeCube,
+        makeCyclinder: makeCylinder
     };
 }());
