@@ -127,6 +127,10 @@ var R3 = (function () {
         return new V(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x, 0);
     };
 
+    V.prototype.projectedOnV = function (v) {
+        return v.scaled(this.dot(v) / v.lengthSq());
+    };
+
     function pointDistanceSq(a, b) {
         var xDiff = a.x - b.x,
             yDiff = a.y - b.y,
@@ -144,6 +148,10 @@ var R3 = (function () {
 
     function subVectors(a, b) {
         return new V(a.x - b.x, a.y - b.y, a.z - b.z);
+    }
+
+    function vectorOntoPlane(v, normal) {
+        return subVectors(v, v.projectedOnV(normal));
     }
 
     function Q(x, y, z, w) {
@@ -254,6 +262,14 @@ var R3 = (function () {
     M.prototype.setAll = function (values) {
         for (var i = 0; i < values.length; ++i) {
             this.m[i] = values[i];
+        }
+    };
+
+    M.prototype.setIdentity = function () {
+        for (var r = 0; r < D4; ++r) {
+            for (var c = 0; c < D4; ++c) {
+                this.setAt(r, c, r == c ? 1 : 0);
+            }
         }
     };
 
@@ -443,7 +459,7 @@ var R3 = (function () {
         return inv;
     };
 
-    M.prototype.transpose = function (out) {
+    M.prototype.transpose = function () {
         for (var c = 0; c < D4; ++c) {
             for (var r = c + 1; r < D4; ++r) {
                 var atRC = this.m[at(r, c)];
@@ -1017,6 +1033,7 @@ var R3 = (function () {
         pointDistance: pointDistance,
         addVectors: addVectors,
         subVectors: subVectors,
+        vectorOntoPlane: vectorOntoPlane,
         perspective: perspective,
         perspectiveFOV: perspectiveFOV,
         testSuite: testSuite
