@@ -96,6 +96,27 @@ var BLORT = (function () {
         sound.source.start();
     }
 
+    function playDynamic(processAudio, bufferSize) {
+        if (gAudioContext === null) {
+            return function() {};
+        }
+        var bufferSize = bufferSize,
+            scriptNode = gAudioContext.createScriptProcessor(bufferSize, 1, 1),
+            source = gAudioContext.createBufferSource();
+        scriptNode.onaudioprocess = processAudio;
+        source.buffer = gAudioContext.createBuffer(1, bufferSize, gAudioContext.sampleRate);
+        source.loop = true;
+        source.connect(scriptNode);
+        scriptNode.connect(gAudioContext.destination);
+        source.start();
+
+        return function() {
+            source.stop();
+            scriptNode.disconnect(gAudioContext.destination);
+            source.disconnect(scriptNode);
+        };
+    }
+
     function Noise(resource) {
         setup(this, resource, false, false);
     }
@@ -145,6 +166,7 @@ var BLORT = (function () {
     return {
         Noise: Noise,
         Tune: Tune,
+        playDynamic: playDynamic,
         noteOn: audioNoteOn
     };
 }());
