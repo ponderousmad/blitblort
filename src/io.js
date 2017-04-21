@@ -136,9 +136,9 @@ var IO = (function (TICK, BLORT) {
         };
 
         var updateWheel = function (event) {
-            self.wheelX += event.deltaX;
-            self.wheelY += event.deltaY;
-            self.wheelZ += event.deltaZ;
+            self.wheelX += Math.sign(event.deltaX);
+            self.wheelY += Math.sign(event.deltaY);
+            self.wheelZ += Math.sign(event.deltaZ);
 
             event.preventDefault();
             event.stopImmediatePropagation();
