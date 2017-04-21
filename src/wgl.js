@@ -61,7 +61,8 @@ var WGL = (function () {
 
     function Viewer() {
         this.position = R3.origin();
-        this.orientation = R3.zeroQ();
+        this.forward = new R3.V(0, 1, 0);
+        this.up = new R3.V(0, 0, 1);
         this.fov = 90;
         this.near = 0.1;
         this.far = 100;
@@ -70,6 +71,17 @@ var WGL = (function () {
         this.safeSize = new R2.V(0, 0);
         this.vrFrameData = null;
     }
+
+    Viewer.prototype.positionView = function (position, target, up) {
+        this.position = position.copy();
+        if (target) {
+            this.forward = R3.subVectors(target, position);
+            this.forward.normalize();
+        }
+        if (up) {
+            this.up = up.normalized();
+        }
+    };
 
     Viewer.prototype.setVRDisplay = function (vrDisplay) {
         this.vrDisplay = vrDisplay;
@@ -93,16 +105,25 @@ var WGL = (function () {
         return R3.perspective(this.fov * R2.DEG_TO_RAD, aspect, this.near, this.far);
     };
 
-    Viewer.prototype.perspectiveFOV = function (eye) {
-        return R3.perspectiveFOV(eye.fieldOfView, this.near, this.far);
+    Viewer.prototype.perspectiveVR = function (region, frameData) {
+        return new R3.M(region == "left" ? frameData.leftProjectionMatrix : frameData.rightProjectionMatrix);
     };
 
-    Viewer.prototype.view = function (eye) {
-        var m = R3.makeRotateQ(this.orientation);
-        m.translate(R3.toOrigin(this.position));
-        if (eye) {
-            m.translate(new R3.V(-eye.offset[0], -eye.offset[1], -eye.offset[2]));
-        }
+    Viewer.prototype.view = function () {
+        var forward = this.forward.scaled(1);
+        var right = forward.cross(this.up);
+        right.normalize();
+        var up = right.cross(forward);
+        up.normalize();
+        var posX = -right.dot(this.position);
+        var posY = -up.dot(this.position);
+        var posZ = forward.dot(this.position);
+        var m = new R3.M([
+            right.x, up.x, -forward.x, 0,
+            right.y, up.y, -forward.y, 0,
+            right.z, up.z, -forward.z, 0,
+            posX, posY, posZ, 1
+        ]);
         return m;
     };
 
@@ -142,19 +163,18 @@ var WGL = (function () {
         }
     };
 
-    Viewer.prototype.vrPose = function () {
-        return this.vrDisplay.getPose();
+    Viewer.prototype.vrFrame = function () {
+        if (this.vrDisplay && this.vrDisplay.getFrameData(this.vrFrameData)) {
+            return this.vrFrameData;
+        }
+        return null;
     };
 
-    Viewer.prototype.vrEye = function (eye) {
-        return this.vrDisplay.getEyeParameters(eye);
+    Viewer.prototype.submitVR = function () {
+        this.vrDisplay.submitFrame();
     };
 
-    Viewer.prototype.submitVR = function (pose) {
-        this.vrDisplay.submitFrame(pose);
-    };
-
-    Viewer.prototype.stabDirection = function (canvas, canvasX, canvasY, viewportRegion) {
+    Viewer.prototype.normalizedStabPoint = function (canvas, canvasX, canvasY, viewportRegion) {
         var width = canvas.width,
             height = canvas.height;
         if (viewportRegion == "safe") {
@@ -172,6 +192,19 @@ var WGL = (function () {
             normalizedY * viewScale * aspect,
             -1
         );
+    };
+
+    Viewer.prototype.stabDirection = function (canvas, canvasX, canvasY, viewportRegion) {
+        var right = this.forward.cross(this.up);
+        right.normalize();
+        var up = right.cross(this.forward);
+        up.normalize();
+
+        var point = this.normalizedStabPoint(canvas, canvasX, canvasY, viewportRegion),
+            stab = this.forward.normalized();
+        stab.addScaled(right, point.x);
+        stab.addScaled(up, point.y);
+        return stab;
     };
 
     function Room(canvas) {
@@ -247,11 +280,11 @@ var WGL = (function () {
         var hint = this.gl.DYNAMIC_DRAW;
         var arrayType = elements ? this.gl.ELEMENT_ARRAY_BUFFER : this.gl.ARRAY_BUFFER;
         this.gl.bindBuffer(arrayType, buffer);
-        this.gl.bufferData(arrayType, new Float32Array(data), hint);
+        this.gl.bufferData(arrayType, data, hint);
     };
 
     Room.prototype.setupFloatBuffer = function (data, elements, hint) {
-        return this.setupBuffer(new Float32Array(data), elements, hint);
+        return this.setupBuffer(data, elements, hint);
     };
 
     Room.prototype.setupElementBuffer = function (data, hint) {
@@ -292,10 +325,10 @@ var WGL = (function () {
             var drawHint = dynamic ? this.gl.DYNAMIC_DRAW : this.gl.STATIC_DRAW;
 
             mesh.drawData = {
-                vertexBuffer: this.setupFloatBuffer(mesh.vertices, false, drawHint),
-                normalBuffer: this.setupFloatBuffer(mesh.normals),
-                uvBuffer: this.setupFloatBuffer(mesh.uvs),
-                colorBuffer: this.setupFloatBuffer(mesh.colors, false, drawHint),
+                vertexBuffer: this.setupFloatBuffer(mesh.glVertices, false, drawHint),
+                normalBuffer: this.setupFloatBuffer(mesh.glNormals),
+                uvBuffer: this.setupFloatBuffer(mesh.glUVs),
+                colorBuffer: this.setupFloatBuffer(mesh.glColors, false, drawHint),
                 triBuffer: this.setupElementBuffer(mesh.tris)
             };
             if (mesh.image) {
@@ -314,7 +347,7 @@ var WGL = (function () {
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.vertexBuffer);
         if (mesh.updated) {
-            this.updateBuffer(draw.vertexBuffer, mesh.vertices);
+            this.updateBuffer(draw.vertexBuffer, mesh.glVertices);
         }
         this.gl.vertexAttribPointer(program.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
         if (program.vertexNormal !== null) {
@@ -328,7 +361,7 @@ var WGL = (function () {
         if (program.vertexColor !== null) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.colorBuffer);
             if (mesh.updated) {
-                this.updateBuffer(draw.colorBuffer, mesh.colors);
+                this.updateBuffer(draw.colorBuffer, mesh.glColors);
             }
             this.gl.vertexAttribPointer(program.vertexColor, 4, this.gl.FLOAT, false, 0, 0);
         }
@@ -340,22 +373,21 @@ var WGL = (function () {
         mesh.updated = false;
     };
 
-    Room.prototype.setupView = function (program, viewportRegion, transform, eye) {
+    Room.prototype.setupView = function (program, viewportRegion, transform, vrFrame) {
         var shader = program.shader,
             aspect = this.viewer.viewport(this.gl, this.canvas, viewportRegion),
-            perspective = eye ? this.viewer.perspectiveFOV(eye) : this.viewer.perspective(aspect),
-            view = this.viewer.view(eye),
+            perspective = vrFrame ? this.viewer.perspectiveVR(viewportRegion, vrFrame) : this.viewer.perspective(aspect),
+            view = this.viewer.view(),
             pLocation = this.gl.getUniformLocation(shader, program.perspectiveUniform),
             vLocation = this.gl.getUniformLocation(shader, program.mvUniform),
             nLocation = program.normalUniform ? this.gl.getUniformLocation(shader, program.normalUniform) : null;
         if (transform) {
-            view = R3.matmul(view, transform);
+            view = R3.matmul(transform, view);
         }
         this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
         this.gl.uniformMatrix4fv(vLocation, false, view.m);
         if (nLocation) {
-            var normal = view.inverse();
-            normal.transpose();
+            var normal = R3.identity();
             this.gl.uniformMatrix4fv(nLocation, false, normal.m);
         }
         program.view = view;
@@ -368,7 +400,7 @@ var WGL = (function () {
             nLocation = this.gl.getUniformLocation(shader, program.normalUniform);
         R3.matmul(program.view, transform, modelView);
         this.gl.uniformMatrix4fv(vLocation, false, modelView.m);
-        var normal = modelView.inverse();
+        var normal = transform.inverse();
         normal.transpose();
         this.gl.uniformMatrix4fv(nLocation, false, normal.m);
     };
@@ -391,35 +423,35 @@ var WGL = (function () {
     };
 
     Room.prototype.setupDrawTest = function (program) {
-        var vertices = [
+        var vertices = new Float32Array([
                 -1.0, -1.0, 0.0,
                  1.0, -1.0, 0.0,
                 -1.0,  1.0, 0.0,
                  1.0,  1.0, 0.0
-            ],
-            normals = [
+            ]),
+            normals = new Float32Array([
                 0.0, 0.0, 1.0,
                 0.0, 0.0, 1.0,
                 0.0, 0.0, 1.0,
                 0.0, 0.0, 1.0
-            ],
-            uvs = [
+            ]),
+            uvs = new Float32Array([
                 0.0,  1.0,
                 1.0,  1.0,
                 0.0,  0.0,
                 1.0,  0.0
-            ],
-            colors = [
+            ]),
+            colors = new Float32Array([
                 1.0, 0.0, 1.0, 1.0,
                 1.0, 1.0, 0.0, 1.0,
                 0.0, 1.0, 1.0, 1.0,
                 1.0, 1.0, 1.0, 1.0
-            ];
+            ]);
 
         program.batch = new BLIT.Batch("images/");
         program.square = this.setupFloatBuffer(vertices);
-        program.squareUVs = this.setupFloatBuffer(uvs);
         program.squareNormals = this.setupFloatBuffer(normals);
+        program.squareUVs = this.setupFloatBuffer(uvs);
         program.squareColors = this.setupFloatBuffer(colors);
         program.squareTexture = this.loadTexture(program.batch, "uv.png");
         program.batch.commit();
@@ -429,13 +461,13 @@ var WGL = (function () {
         this.bindTexture(setup.shader, setup.textureVariable, setup.squareTexture);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.square);
         this.gl.vertexAttribPointer(setup.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
-        if (setup.vertexUV !== null) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareUVs);
-            this.gl.vertexAttribPointer(setup.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
-        }
         if (setup.vertexNormal !== null) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareNormals);
             this.gl.vertexAttribPointer(setup.vertexNormal, 3, this.gl.FLOAT, false, 0, 0);
+        }
+        if (setup.vertexUV !== null) {
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareUVs);
+            this.gl.vertexAttribPointer(setup.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
         }
         if (setup.vertexColor !== null) {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareColors);
@@ -450,18 +482,18 @@ var WGL = (function () {
 
             this.testSetup = {
                 shader: program,
+                vertexPosition: this.bindVertexAttribute(program, "aPos"),
+                vertexNormal: this.bindVertexAttribute(program, "aNormal"),
+                vertexUV: this.bindVertexAttribute(program, "aUV"),
+                vertexColor: this.bindVertexAttribute(program, "aColor"),
                 mvUniform: "uMVMatrix",
                 perspectiveUniform: "uPMatrix",
                 normalUniform: "uNormalMatrix",
-                vertexPosition: this.bindVertexAttribute(program, "aPos"),
-                vertexUV: this.bindVertexAttribute(program, "aUV"),
-                vertexNormal: this.bindVertexAttribute(program, "aNormal"),
-                vertexColor: this.bindVertexAttribute(program, "aColor"),
                 textureVariable: "uSampler"
             };
 
             this.setupDrawTest(this.testSetup);
-            this.viewer.position.set(0, 0, 2);
+            this.viewer.positionView(new R3.V(0, 0, 1.5), R3.origin(), new R3.V(0, 1, 0))
         }
         if (!this.testSetup.batch.loaded) {
             return;
@@ -537,6 +569,10 @@ var WGL = (function () {
                 this.colors.push(0);
             }
         }
+        this.glVertices = new Float32Array(this.vertices);
+        this.glUVs = new Float32Array(this.uvs);
+        this.glColors = new Float32Array(this.colors);
+        this.glNormals = new Float32Array(this.normals);
     };
 
     function makeCube() {
