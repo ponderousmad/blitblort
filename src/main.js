@@ -158,6 +158,7 @@ var MAIN = (function () {
 
         R2.testSuite();
         R3.testSuite();
+        IMPROC.testSuite();
         return TEST.failCount();
     }
 
