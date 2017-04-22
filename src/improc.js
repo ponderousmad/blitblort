@@ -106,6 +106,7 @@ var IMPROC = (function () {
     }
 
     return {
+        BYTE_MAX: BYTE_MAX,
         byteToUnitValue: byteToUnitValue,
         byteToFraction: byteToFraction,
         processPixels: processPixels,
