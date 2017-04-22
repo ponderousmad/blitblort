@@ -208,15 +208,16 @@ var MAIN = (function () {
         this.maximize = false;
         this.updateInDraw = false;
         this.updateInterval = 16;
+        this.angle = 0;
     }
 
     Test3D.prototype.update = function (now, elapsed, keyboard, pointer) {
-        // Should put something here.
+        this.angle += elapsed * Math.PI * 0.0001;
     };
 
     Test3D.prototype.render = function (room, width, height) {
         room.clear(this.clearColor);
-        room.drawTest();
+        room.drawTest(this.angle);
     };
 
     return {
