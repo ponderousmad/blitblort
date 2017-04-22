@@ -49,7 +49,7 @@ var IMPROC = (function () {
     }
 
     function processImage(image, x, y, width, height, filter) {
-        var pixelBuffer = getPixels(image, x, y, width, height)
+        var pixelBuffer = getPixels(image, x, y, width, height);
         processPixels(pixelBuffer.data, width, height, filter);
     }
 
@@ -92,13 +92,13 @@ var IMPROC = (function () {
 
                 var count = 0;
                 processImage(canvas, 5, 5, 10, 10, function (x, y, r, g, b) {
-                    if (r == 255  && g == 0 && b == 0) {
+                    if (r == 255  && g === 0 && b === 0) {
                         ++count;
                     }
                 });
 
                 TEST.equals(count, 100);
-            }
+            };
 
             testConvertions();
             testCrop();
