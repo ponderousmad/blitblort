@@ -44,14 +44,14 @@ var BLUMP = (function () {
                 if (y < 2) {
                     if (y === 0) {
                         if (x === 0) {
-                            if (r == 0 && g == IMPROC.BYTE_MAX && b == IMPROC.BYTE_MAX) {
+                            if (r === 0 && g == IMPROC.BYTE_MAX && b == IMPROC.BYTE_MAX) {
                                 isCalibrated = true;
                             }
                         } else if (isCalibrated) {
                             if (x == 1) {
                                 range = decodeValue(r, g, b);
                             } else if (x == 2) {
-                                start = decodeValue(r, g, b)
+                                start = decodeValue(r, g, b);
                             }
                         }
                     } else if (y === 1 && isCalibrated) {
