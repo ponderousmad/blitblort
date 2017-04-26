@@ -1,4 +1,4 @@
-var THING = (function () {
+var BLOB = (function () {
    "use strict";
    
    function Thing() {
