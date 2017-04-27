@@ -695,6 +695,69 @@ var WGL = (function () {
         return mesh;
     }
 
+    function nextPowerOfTwo(target) {
+        var value = 1;
+        while (value < target) {
+            value *= 2;
+        }
+        return value;
+    }
+    
+    function atlasCount(width, height, size) {
+        var hCount = Math.floor(size / width),
+            vCount = Math.floor(size / height);
+        return hCount * vCount;
+    }
+
+    function sizeAtlas(width, height, count) {
+        var size = nextPowerOfTwo(max(width, height));
+        while(atlasCount(width, height, count, size) < count) {
+            size *= 2;
+        }
+        return size;
+    }
+
+    function TextureAtlas(width, height, count) {
+        this.width = width;
+        this.height = height;
+        this.xOffset = 0;
+        this.yOffset = 0;
+        this.placed = 0;
+        this.size = sizeAtlas(width, height, count);
+        this.capacity = atlasCount(width, height, size);
+        this.canvas = document.createElement('canvas');
+        this.context = canvas.getContext('2d');
+        this.context.clearRect(0, 0, this.size, this.size);
+    }
+
+    TextureAtlas.prototype.add = function(image, width, height) {
+        console.assert(width <= this.width);
+        console.assert(height <= this.height);
+        console.assert(this.placed < this.capacity);
+
+        var xSpare = Math.floor((width - this.width)/2),
+            ySpare = Math.floor((height - this.height)/2),
+            x = this.xOffset + xSpare,
+            y = this.yOffset + ySpare;
+
+        var texCoords = {
+            uMin: x / size,
+            vMin: y / size,
+            uSize: width / size,
+            vSize: height / size
+        };
+        this.context.drawImage(image, 0, 0, width, height, x, y, width, height);
+
+        ++this.placed;
+        this.xOffset += this.width;
+        if (this.xOffset > this.size) {
+            this.xOffset = 0;
+            this.yOffset += this.height;
+        }
+
+        return texCoords;
+    };
+
     return {
         Room: Room,
         Mesh: Mesh,

@@ -29,7 +29,7 @@ var BLUMP = (function () {
         } 
     }
 
-    function decodeDepth(image, intoMesh) {
+    function decodeDepths(image) {
         var width = image.width,
             height = image.height / 2,
             zScale = 0,
@@ -93,15 +93,15 @@ var BLUMP = (function () {
         return x + y * (width + 1);
     }
 
-    function constructMesh(depths, width, height, pixelSize, uMin, vMin, uSize, vSize) {
+    function constructMesh(depths, width, height, pixelSize, textureCoords) {
         var parameters = {
                 width: width,
                 height: height,
                 pixelSize: pixelSize,
-                uMin: uMin,
-                vMin: vMin,
-                uScale: uSize / width,
-                vScale: vSize / height
+                uMin: textureCoords.uMin,
+                vMin: textureCoords.vMin,
+                uScale: textureCoords.uSize / width,
+                vScale: textureCoords.vSize / height
             },
             validHeight = Math.floor(Math.pow(2, 16) / (width + 1)) - 1,
             mesh = new WGL.Mesh();
@@ -156,7 +156,18 @@ var BLUMP = (function () {
         return mesh;
     }
 
+    function imageToMesh(image, pixelSize, textureAtlas) {
+        var depths = decodeDepths(image),
+            width = image.width,
+            height = image.height / 2,
+            textureCoords = textureAtlas.add(image, width, height);
+
+        return constructMesh(depths, width, height, pixelSize, textureCoords);
+    }
+
     return {
-        decodeDepth: decodeDepth,
+        decodeDepths: decodeDepths,
+        atlasTexture: atlasTexture,
+        imageToMesh: imageToMesh
     };
 }());
