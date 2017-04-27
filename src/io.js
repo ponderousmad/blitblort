@@ -108,13 +108,55 @@ var IO = (function (TICK, BLORT) {
         this.wheelX = 0;
         this.wheelY = 0;
         this.wheelZ = 0;
+        this.lastButtons = 0;
+
+        function buttonToButtons(button) {
+            if (button === 1) {
+                return 4;
+            } else if(button === 2) {
+                return 2;
+            } else if(button >= 0) {
+                return 1 << b;
+            }
+            return 0;
+        }
+
+        function whichToButtons(which) {
+            if (which === 2) {
+                return 4;
+            } else if (which === 3) {
+                return 2;
+            } else if (which > 0) {
+                return 1 << (which - 1);
+            }
+        }
 
         var self = this;
-        var updateState = function (event) {
+        function mouseButtons(event, eventType) {
+            if ('buttons' in event) {
+                return event.buttons;
+            }
+            var buttons = 0;
+            if ('which' in event) {
+                buttons = whichToButtons(event.which);
+            } else if ('button' in ev) {
+                buttons = buttonToButtons(ev.button);
+            }
+
+            if (eventType === "down") {
+                self.lastButtons += buttons;
+            } else if (eventType === "up") {
+                self.lastButtons -= buttons;
+            }
+            return self.lastButtons;
+        }
+
+        var updateState = function (event, eventType) {
             var bounds = element.getBoundingClientRect(),
-                left = (event.buttons & 1) == 1,
-                right = (event.buttons & 2) == 2,
-                middle = (event.buttons & 4) == 4;
+                buttons = mouseButtons(event, eventType),
+                left = (buttons & 1) == 1,
+                right = (buttons & 2) == 2,
+                middle = (buttons & 4) == 4;
 
             self.location = [event.clientX - bounds.left, event.clientY - bounds.top];
 
@@ -144,9 +186,15 @@ var IO = (function (TICK, BLORT) {
             event.stopImmediatePropagation();
         };
 
-        element.addEventListener("mousemove", updateState);
-        element.addEventListener("mousedown", updateState);
-        element.addEventListener("mouseup", updateState);
+        element.addEventListener(
+            "mousemove", function(event) { updateState(event, "move"); }
+        );
+        element.addEventListener(
+            "mousedown", function(event) { updateState(event, "down"); }
+        );
+        element.addEventListener(
+            "mouseup", function(event) { updateState(event, "up"); }
+        );
         element.addEventListener("wheel", updateWheel);
     }
 
