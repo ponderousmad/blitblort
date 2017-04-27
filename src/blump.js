@@ -68,122 +68,92 @@ var BLUMP = (function () {
         return depths;
     }
 
-    function calculateVertex(mesh, parameters, x, y, depth) {
-        var pixel = new R3.V(
-            depth * (parameters.xOffset + x) / parameters.xFactor,
-            depth * (parameters.yOffset - y) / parameters.yFactor,
-            -depth
-        );
-        var normal = pixel.normalized();
-        mesh.addVertex(pixel, normal, x * parameters.uScale, y * parameters.vScale);
+    function calculateVertex(mesh, parameters, x, y, depth, leftDepth, upperDepth) {
+        var fromBottom = parameters.height - y,
+            fromCenter = x - parameters.halfWidth,
+            pixel = new R3.V(
+                fromCenter * parameters.pixelSize,
+                fromBottom * parameters.pixelSize,
+                depth
+            ),
+            left = new R3.V(-parameters.pixelSize, 0, leftDepth - depth),
+            up = new R3.V(0, -parameters.pixelSize, upperDepth - depth),
+            normal = left.cross(up),
+            u = parameters.uMin + x * parameters.uScale,
+            v = parameters.vMin + y * parameters.vScale;
+        normal.normalize();
+        mesh.addVertex(pixel, normal, u, v);
     }
 
-    function addTris(mesh, index, stride) {
-        mesh.addTri(index,    index + stride, index + 1);
-        mesh.addTri(index + 1,index + stride, index + stride + 1);
+    function lookupDepth(depths, x, y, height, width) {
+        return depths[Math.min(height - 1, y) * width + Math.min(width - 1, x)];
     }
 
-    function lookupDepth(depths, scene, x, y, height, width) {
-        return depths[Math.min(height - 1, y) * scene.width + Math.min(scene.width - 1, x)];
+    function vertexIndex(x, y, width) {
+        return x + y * (width + 1);
     }
 
-    function constructMesh(depths) {
-        var height = scene.height,
-            width = scene.width,
-            xStride = 1,
-            yStride = xStride,
-            rowIndexWidth = 1 + (width / xStride),
-            indexStride = stitch == "simple" ? rowIndexWidth : 2,
-            depthScale = 1,
-            pixelFOV = fov * R2.DEG_TO_RAD / scene.width,
-
-            parameters = {
-                // Following is from http://forums.structure.io/t/getting-colored-point-cloud-data-from-aligned-frames/4094
-                // Assume the following intrinsics, from the Structure SDK docs
-                // K_RGB_QVGA       = [305.73, 0, 159.69; 0, 305.62, 119.86; 0, 0, 1]
-                // Since those numbers are for 320x240, just multiply by 2.
-                xOffset:-159.69 * 2,
-                yOffset: 119.86 * 2,
-                xFactor: 305.73 * 2,
-                yFactor: 305.62 * 2,
-                uScale: scene.uMax / width,
-                vScale: scene.vMax / height
+    function constructMesh(depths, width, height, pixelSize, uMin, vMin, uSize, vSize) {
+        var parameters = {
+                width: width,
+                height: height,
+                pixelSize: pixelSize,
+                uMin: uMin,
+                vMin: vMin,
+                uScale: uSize / width,
+                vScale: vSize / height
             },
-            MAX_INDEX = Math.pow(2, 16),
-            SMART_STITCH_MAX_DIFFERENCE = 0.15,
-            SMART_STITCH_DIFFERENCE_THRESHOLD = 0.05,
-            pixelIndexStride = (stitch == "simple" ? 1 : 4),
-            rowVertexCount = pixelIndexStride * ((width / xStride) + 1),
-            rowsPerChunk = Math.floor(MAX_INDEX / rowVertexCount) - 1,
-            mesh = null,
-            meshes = [];
+            validHeight = Math.floor(Math.pow(2, 16) / (width + 1)) - 1,
+            mesh = new WGL.Mesh();
 
-        for (var y = 0; y <= height; y += yStride) {
-            var oldMesh = null,
-                generateTris = y < height;
-            if (generateTris && (y % rowsPerChunk) === 0) {
-                oldMesh = mesh;
-                mesh = new WGL.Mesh();
-                meshes.push(mesh);
-            }
-            for (var x = 0; x <= width; x += xStride) {
-                var depth = lookupDepth(depths, scene, x, y, width, height),
-                    index = mesh.index,
-                    generateTri = (generateTris && x < width) || stitch == "none";
+        if (height > validHeight) {
+            console.log("Image too large");
+            return mesh;
+        }
 
-                if (depth === null) {
-                    if (stitch == "smart") {
-                        depth = lookupDepth(scene.cleanDepths, scene, x, y, width, height);
-                        generateTri = false;
-                    } else {
-                        continue;
-                    }
-                }
+        for (var y = 0; y <= height; ++y) {
+            var generateTris = y > 1,
+                prevDepth = -1,
+                lowerLeft = false;
+            for (var x = 0; x <= width; ++x) {
+                var depth = lookupDepth(depths, x, y, width, height),
+                    upperDepth = lookupDepth(depths, x, y-1, width, height),
+                    generateTri = (generateTris && x > 1),
+                    lowerRight = depth >= 0,
+                    corners = lowerLeft + lowerRight;
 
-                if (stitch=="simple") {
-                    calculateVertex(mesh, parameters, x, y, depth);
-                } else {
-                    for (var yi = y; yi <= y+1; ++yi) {
-                        for (var xi = x; xi <= x+1; ++xi) {
-                            calculateVertex(mesh, parameters, xi, yi, depth);
+                calculateVertex(mesh, parameters, x, y, depth, prevDepth, upperDepth);
+
+                if (generateTri && corners > 0) {
+                    var upperLeft = lookupDepth(depths, x-1, y-1, width, height) >= 0,
+                        upperRight = upperDepth >= 0,
+                        iUL = vertexIndex(x-1, y-1, width),
+                        iUR = vertexIndex(x,   y-1, width),
+                        iLL = vertexIndex(x-1, y,   width),
+                        iLR = vertexIndex(x,   y,   width);
+
+                    corners += upperLeft + upperRight;
+                    if (corners > 3) {
+                        if (corners == 4) {
+                            mesh.addTri(iUR, index + iLL, index + iLR);
+                            mesh.addTri(iUL, index + iLR, index + iUR);
+                        } else if(!upperLeft) {
+                            mesh.addTri(iUR, index + iLL, index + iLR);
+                        } else if (!upperRight) {
+                            mesh.addTri(iUL, index + iLL, index + iLR);
+                        } else if (!lowerLeft) {
+                            mesh.addTri(iUL, index + iLR, index + iUR);
+                        } else if (!lowerRight) {
+                            mesh.addTri(iUL, index + iLL, index + iUR);
                         }
                     }
                 }
-
-                if (stitch == "smart") {
-                    if (generateTri) {
-                        var iUL = 0, iUR = 1, iDL = 2, iDR = 3;
-                        if (x < width && y < height) {
-                            var depthR = lookupDepth(depths, scene, x + 1, y, width, height),
-                                depthD = lookupDepth(depths, scene, x, y + 1, width, height),
-                                depthDR= lookupDepth(depths, scene, x + 1, y + 1, width, height),
-                                threshold = Math.min(SMART_STITCH_MAX_DIFFERENCE,
-                                                     depth * SMART_STITCH_DIFFERENCE_THRESHOLD);
-
-                            if (depthR !== null && Math.abs(depth-depthR) <= threshold) {
-                                iUR = pixelIndexStride;
-                            }
-                            if (depthD !== null && Math.abs(depth-depthD) <= threshold) {
-                                iDL = pixelIndexStride * rowIndexWidth;
-                            }
-                            if (depthDR !== null && Math.abs(depth-depthDR) <= threshold) {
-                                iDR = pixelIndexStride * (1 + rowIndexWidth);
-                            }
-                        }
-                        mesh.addTri(index + iUL, index + iDL, index + iUR);
-                        mesh.addTri(index + iUR, index + iDL, index + iDR);
-                    }
-                } else if (generateTri) {
-                    addTris(mesh, index, indexStride);
-                }
+                prevDepth = depth;
+                lowerLeft = lowerRight;
             }
+        }
 
-            if (oldMesh && stitch != "none") {
-                oldMesh.appendVerticies(mesh);
-            }
-       }
-
-        return meshes;
+        return mesh;
     }
 
     return {
