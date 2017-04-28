@@ -758,9 +758,14 @@ var WGL = (function () {
         return texCoords;
     };
 
+    TextureAtlas.prototype.texture = function () {
+        return this.canvas;
+    };
+
     return {
         Room: Room,
         Mesh: Mesh,
+        TextureAtlas: TextureAtlas,
         makeCube: makeCube,
         makeCyclinder: makeCylinder
     };

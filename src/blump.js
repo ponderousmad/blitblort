@@ -62,7 +62,7 @@ var BLUMP = (function () {
                         value = (r / 255.0) * range;
                     }
                 }
-                depths[y * width + x] = value;
+                depths[y * width + x] = value / 1000.0;
             }
         );
         return depths;
@@ -160,14 +160,79 @@ var BLUMP = (function () {
         var depths = decodeDepths(image),
             width = image.width,
             height = image.height / 2,
-            textureCoords = textureAtlas.add(image, width, height);
-
-        return constructMesh(depths, width, height, pixelSize, textureCoords);
+            textureCoords = textureAtlas.add(image, width, height),
+            mesh = constructMesh(depths, width, height, pixelSize, textureCoords);
+        mesh.image = textureAtlas.texture();
+        return mesh;
     }
+
+    function BlumpTest(viewport) {
+        this.clearColor = [0, 0, 0, 1];
+        this.maximize = viewport === "safe";
+        this.updateInDraw = false;
+        this.updateInterval = 16;
+        this.angle = 0;
+        this.viewport = viewport ? viewport : "canvas";
+        this.meshes = [];
+    }
+
+    BlumpTest.prototype.update = function (now, elapsed, keyboard, pointer) {
+        this.angle += elapsed * Math.PI * 0.0001;
+    };
+
+    BlumpTest.prototype.drawMeshes = function (room) {
+        if (this.meshes !== null) {
+            for (var m = 0; m < this.meshes.length; ++m) {
+                room.drawMesh(this.meshes[m], this.program);
+            }
+        }
+    };
+
+    BlumpTest.prototype.loadBlump = function (image) {
+        this.atlas = new WGL.TextureAtlas(image.width, image.height, 1);
+        this.meshes.push(imageToMesh(image, 0.01, this.atlas));
+    };
+
+    BlumpTest.prototype.render = function (room, width, height) {
+        room.clear(this.clearColor);
+        if (this.program === null) {
+            var shader = room.programFromElements("vertex-test", "fragment-test"),
+                self = this;
+            this.program = {
+                shader: shader,
+                mvUniform: "uMVMatrix",
+                perspectiveUniform: "uPMatrix",
+                normalUniform: "uNormalMatrix",
+                vertexPosition: room.bindVertexAttribute(shader, "aPos"),
+                vertexNormal: room.bindVertexAttribute(shader, "aNormal"),
+                vertexUV: room.bindVertexAttribute(shader, "aUV"),
+                vertexColor: room.bindVertexAttribute(shader, "aColor"),
+                textureVariable: "uSampler"
+            };
+            this.program = program;
+            this.batch = new BLIT.Batch("images/");
+            this.batch.load("dragonFront.png", function(image) {
+                 self.loadBlump(image);
+            });
+            this.batch.commit();
+        }
+        if (!this.batch.loaded) {
+            return;
+        }
+        if (room.viewer.showOnPrimary()) {
+            var d = 2,
+                a = angle ? angle : Math.PI / 2,
+                x = Math.cos(a) * d,
+                z = Math.sin(a) * d;
+            this.viewer.positionView(new R3.V(x, 0, z), R3.origin(), new R3.V(0, 1, 0));
+            room.setupView(this.program, this.viewport);
+            this.drawMeshes(room);
+        }
+    };
 
     return {
         decodeDepths: decodeDepths,
-        atlasTexture: atlasTexture,
-        imageToMesh: imageToMesh
+        imageToMesh: imageToMesh,
+        BlumpTest: BlumpTest
     };
 }());
