@@ -171,7 +171,7 @@ var BLUMP = (function () {
     function BlumpTest(viewport) {
         this.clearColor = [0, 0, 0, 1];
         this.maximize = viewport === "safe";
-        this.updateInDraw = false;
+        this.updateInDraw = true;
         this.updateInterval = 16;
         this.angle = -Math.PI / 2;
         this.viewport = viewport ? viewport : "canvas";
