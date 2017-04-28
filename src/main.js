@@ -203,12 +203,13 @@ var MAIN = (function () {
         }
     };
 
-    function Test3D() {
+    function Test3D(viewport) {
         this.clearColor = [0, 0, 0, 1];
-        this.maximize = false;
+        this.maximize = viewport === "safe";
         this.updateInDraw = false;
         this.updateInterval = 16;
         this.angle = 0;
+        this.viewport = viewport ? viewport : "canvas";
     }
 
     Test3D.prototype.update = function (now, elapsed, keyboard, pointer) {
@@ -217,7 +218,7 @@ var MAIN = (function () {
 
     Test3D.prototype.render = function (room, width, height) {
         room.clear(this.clearColor);
-        room.drawTest(this.angle);
+        room.drawTest(this.viewport, this.angle);
     };
 
     return {

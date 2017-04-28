@@ -476,7 +476,7 @@ var WGL = (function () {
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     };
 
-    Room.prototype.drawTest = function (angle) {
+    Room.prototype.drawTest = function (viewport, angle) {
         if (!this.testSetup) {
             var program = this.programFromElements("vertex-test", "fragment-test");
 
@@ -502,7 +502,7 @@ var WGL = (function () {
             x = Math.cos(a) * d,
             z = Math.sin(a) * d;
         this.viewer.positionView(new R3.V(x, 0, z), R3.origin(), new R3.V(0, 1, 0));
-        this.setupView(this.testSetup, "canvas");
+        this.setupView(this.testSetup, viewport);
         this.drawTestSquare(this.testSetup);
     };
 
