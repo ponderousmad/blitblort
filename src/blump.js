@@ -40,7 +40,7 @@ var BLUMP = (function () {
             depths = new Float32Array(width * height);
         IMPROC.processImage(image, 0, height, width, height,
             function (x, y, r, g, b) {
-                var value = -1;
+                var value = 0;
                 if (y < 2) {
                     if (y === 0) {
                         if (x === 0) {
@@ -135,16 +135,16 @@ var BLUMP = (function () {
                     corners += upperLeft + upperRight;
                     if (corners > 3) {
                         if (corners == 4) {
-                            mesh.addTri(iUR, index + iLL, index + iLR);
-                            mesh.addTri(iUL, index + iLR, index + iUR);
+                            mesh.addTri(iUR, iLL, iLR);
+                            mesh.addTri(iUL, iLR, iUR);
                         } else if(!upperLeft) {
-                            mesh.addTri(iUR, index + iLL, index + iLR);
+                            mesh.addTri(iUR, iLL, iLR);
                         } else if (!upperRight) {
-                            mesh.addTri(iUL, index + iLL, index + iLR);
+                            mesh.addTri(iUL, iLL, iLR);
                         } else if (!lowerLeft) {
-                            mesh.addTri(iUL, index + iLR, index + iUR);
+                            mesh.addTri(iUL, iLR, iUR);
                         } else if (!lowerRight) {
-                            mesh.addTri(iUL, index + iLL, index + iUR);
+                            mesh.addTri(iUL, iLL, iUR);
                         }
                     }
                 }
@@ -163,6 +163,7 @@ var BLUMP = (function () {
             textureCoords = textureAtlas.add(image, width, height),
             mesh = constructMesh(depths, width, height, pixelSize, textureCoords);
         mesh.image = textureAtlas.texture();
+        mesh.finalize();
         return mesh;
     }
 
@@ -174,6 +175,7 @@ var BLUMP = (function () {
         this.angle = 0;
         this.viewport = viewport ? viewport : "canvas";
         this.meshes = [];
+        this.program = null;
     }
 
     BlumpTest.prototype.update = function (now, elapsed, keyboard, pointer) {
@@ -209,7 +211,6 @@ var BLUMP = (function () {
                 vertexColor: room.bindVertexAttribute(shader, "aColor"),
                 textureVariable: "uSampler"
             };
-            this.program = program;
             this.batch = new BLIT.Batch("images/");
             this.batch.load("dragonFront.png", function(image) {
                  self.loadBlump(image);
@@ -221,10 +222,9 @@ var BLUMP = (function () {
         }
         if (room.viewer.showOnPrimary()) {
             var d = 2,
-                a = angle ? angle : Math.PI / 2,
-                x = Math.cos(a) * d,
-                z = Math.sin(a) * d;
-            this.viewer.positionView(new R3.V(x, 0, z), R3.origin(), new R3.V(0, 1, 0));
+                x = Math.cos(this.angle) * d,
+                z = Math.sin(this.angle) * d;
+            room.viewer.positionView(new R3.V(x, 0, z), R3.origin(), new R3.V(0, 1, 0));
             room.setupView(this.program, this.viewport);
             this.drawMeshes(room);
         }

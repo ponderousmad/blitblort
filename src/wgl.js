@@ -710,8 +710,8 @@ var WGL = (function () {
     }
 
     function sizeAtlas(width, height, count) {
-        var size = nextPowerOfTwo(max(width, height));
-        while(atlasCount(width, height, count, size) < count) {
+        var size = nextPowerOfTwo(Math.max(width, height));
+        while(atlasCount(width, height, size) < count) {
             size *= 2;
         }
         return size;
@@ -724,9 +724,11 @@ var WGL = (function () {
         this.yOffset = 0;
         this.placed = 0;
         this.size = sizeAtlas(width, height, count);
-        this.capacity = atlasCount(width, height, size);
+        this.capacity = atlasCount(width, height, this.size);
         this.canvas = document.createElement('canvas');
-        this.context = canvas.getContext('2d');
+        this.canvas.width = this.size;
+        this.canvas.height = this.size;
+        this.context = this.canvas.getContext('2d');
         this.context.clearRect(0, 0, this.size, this.size);
     }
 
@@ -741,10 +743,10 @@ var WGL = (function () {
             y = this.yOffset + ySpare;
 
         var texCoords = {
-            uMin: x / size,
-            vMin: y / size,
-            uSize: width / size,
-            vSize: height / size
+            uMin: x / this.size,
+            vMin: y / this.size,
+            uSize: width / this.size,
+            vSize: height / this.size
         };
         this.context.drawImage(image, 0, 0, width, height, x, y, width, height);
 
