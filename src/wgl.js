@@ -737,8 +737,8 @@ var WGL = (function () {
         console.assert(height <= this.height);
         console.assert(this.placed < this.capacity);
 
-        var xSpare = Math.floor((width - this.width)/2),
-            ySpare = Math.floor((height - this.height)/2),
+        var xSpare = Math.floor((this.width - width)/2),
+            ySpare = Math.floor((this.height - height)/2),
             x = this.xOffset + xSpare,
             y = this.yOffset + ySpare;
 
