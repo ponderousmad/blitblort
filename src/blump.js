@@ -75,7 +75,7 @@ var BLUMP = (function () {
             pixel = new R3.V(
                 xIndex * parameters.pixelSize,
                 yIndex * parameters.pixelSize,
-                -depth
+                depth
             ),
             left = new R3.V(-parameters.pixelSize, 0, depth - leftDepth),
             up = new R3.V(0, -parameters.pixelSize, depth - upperDepth),
