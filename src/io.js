@@ -269,6 +269,15 @@ var IO = (function (TICK, BLORT) {
         this.wheelX = this.mouse.wheelX;
         this.wheelY = this.mouse.wheelY;
         this.wheelZ = this.mouse.wheelZ;
+        if (spot) {
+            if (this.primary) {
+                spot.deltaX = spot.x - this.primary.x;
+                spot.deltaY = spot.y - this.primary.y;
+            } else {
+                spot.deltaX = 0;
+                spot.deltaY = 0;
+            }
+        }
         this.primary = spot;
         this.mouse.postUpdate();
     };
