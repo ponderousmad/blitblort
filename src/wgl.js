@@ -736,13 +736,21 @@ var WGL = (function () {
         this.context.clearRect(0, 0, this.size, this.size);
     }
 
-    TextureAtlas.prototype.add = function(image, width, height) {
+    TextureAtlas.prototype.add = function(image, left, top, width, height) {
+        if (!width) {
+            width = image.width;
+        }
+        if (!height) {
+            height = image.height;
+        }
         console.assert(width <= this.width);
         console.assert(height <= this.height);
         console.assert(this.placed < this.capacity);
 
         var xSpare = Math.floor((this.width - width)/2),
             ySpare = Math.floor((this.height - height)/2),
+            srcX = left ? left : 0,
+            srcY = top ? top : 0,
             x = this.xOffset + xSpare,
             y = this.yOffset + ySpare;
 
@@ -752,7 +760,7 @@ var WGL = (function () {
             uSize: width / this.size,
             vSize: height / this.size
         };
-        this.context.drawImage(image, 0, 0, width, height, x, y, width, height);
+        this.context.drawImage(image, srcX, srcY, width, height, x, y, width, height);
 
         ++this.placed;
         this.xOffset += this.width;

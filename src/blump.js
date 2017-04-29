@@ -77,6 +77,9 @@ var BLUMP = (function () {
         this.uMax = 0;
         this.uScale = 1;
         this.vScale = 1;
+
+        this.defaultBottom = 0;
+        this.color = [1, 1, 1, 1];
     }
 
     Builder.prototype.setAlignment = function (alignX, alignY) {
@@ -91,11 +94,12 @@ var BLUMP = (function () {
         this.vScale = coords.vSize / this.height;
     }
 
-    Builder.prototype.setupTextureWalls = function (coords, heightScale) {
+    Builder.prototype.setupTextureWalls = function (coords, heightRange) {
         this.uMin = coords.uMin;
         this.uMax = coords.uMax;
-        this.uScale = coords.uSize / (2 * (this.width + this.height));
-        this.vScale = coords.vScale / heightScale;
+        this.uScale = coords.uSize;
+        this.vScale = coords.vSize;
+        this.heightScale = 1 / heightRange;
     }
 
     Builder.prototype.calculatePosition = function (x, y, depth) {
@@ -119,8 +123,12 @@ var BLUMP = (function () {
         mesh.addVertex(position, normal, u, v, this.color);
     }
 
+    function depthIndex(x, y, width, height) {
+        return Math.min(height - 1, y) * width + Math.min(width - 1, x);
+    }
+
     function lookupDepth(depths, x, y, width, height) {
-        return depths[Math.min(height - 1, y) * width + Math.min(width - 1, x)];
+        return depths[depthIndex(x, y, width, height)];
     }
 
     function vertexIndex(x, y, width) {
@@ -184,26 +192,28 @@ var BLUMP = (function () {
         return mesh;
     }
 
-    Builder.prototype.addWallVerties = function (mesh, x, y, uFraction) {
-        var depthIndex = vertexIndex(x, y, this.width),
-            top = this.topDepth[depthIndex],
-            bottom = this.bottomDepths ? this.bottomDepths[depthIndex] :
+    Builder.prototype.addWallVertices = function (mesh, x, y, uFraction) {
+        var i = depthIndex(x, y, this.width, this.height),
+            top = this.topDepth[i],
+            bottom = this.bottomDepths ? this.bottomDepths[i] :
                                          this.defaultBottom,
             position = this.calculatePosition(x, y, bottom),
             u = this.uMin + uFraction * this.uScale,
-            v = this.vMin + (bottom - this.defaultBottom) * this.vScale;
-        mesh.addVertex(position, this.normal, u, v, this.color);
+            bottomFraction = (bottom - this.defaultBottom) * this.heightScale,
+            topFraction = (top - this.defaultBottom) * this.heightScale,
+            v = this.vMin + (1 - bottomFraction) * this.vScale;
+        mesh.addVertex(position, this.wallNormal, u, v, this.color);
         position.z = top;
-        v = this.vMin + (top - this.defaultBottom) * this.vScale;
-        mesh.addVertex(position, this.normal, u, v, this.color);
+        v = this.vMin + (1 - topFraction) * this.vScale;
+        mesh.addVertex(position, this.wallNormal, u, v, this.color);
     }
 
     Builder.prototype.extendWall = function (mesh, x, y, addTris) {
-        this.addWallVerties(mesh, x, y, this.uIndex * this.uStep);
+        this.addWallVertices(mesh, x, y, this.uIndex * this.uStep);
         if (addTris) {
-            var i = 2 * (quadIndex - 1);
-            mesh.addTri(i + 0, i + 1, i + 2);
-            mesh.addTri(i + 0, i + 2, i + 3);
+            var i = 2 * (this.quadIndex - 1);
+            mesh.addTri(i + 0, i + 2, i + 1);
+            mesh.addTri(i + 1, i + 2, i + 3);
             this.uIndex += 1;
         }
         this.quadIndex += 1;
@@ -212,10 +222,9 @@ var BLUMP = (function () {
     Builder.prototype.constructWall = function(bottomDepth, topDepth, texture) {
         var width = this.width,
             height = this.height,
-            x = 0, y = 0,
             mesh = new WGL.Mesh();
 
-        if (4 * (width + 1) * (height + 1) > MAX_VERTICIES) {
+        if ((4 * (width + height + 2)) > MAX_VERTICIES) {
             throw "Wall too large";
         }
 
@@ -226,20 +235,20 @@ var BLUMP = (function () {
         this.uStep = 0.5 / (width + height);
 
         this.wallNormal = new R3.V(0, -1, 0);
-        for (x = 0; x <= width; ++x) {
-            this.extendWall(mesh, x, y, x > 0);
+        for (var xUp = 0; xUp <= width; ++xUp) {
+            this.extendWall(mesh, xUp, 0, xUp > 0);
         }
         this.wallNormal = new R3.V(1, 0, 0);
-        for (y = 0; y <= height; ++y) {
-            this.extendWall(mesh, x, y, y > 0);
+        for (var yUp = 0; yUp <= height; ++yUp) {
+            this.extendWall(mesh, width, yUp, yUp > 0);
         }
         this.wallNormal = new R3.V(0, -1, 0);
-        for (x = width; x >= 0; --x) {
-            this.extendWall(mesh, x, y, x < height);
+        for (var xDown = width; xDown  >= 0; --xDown) {
+            this.extendWall(mesh, xDown, height, xDown < height);
         }
-        this.wallNormal = new R3.V(1, 0, 0);
-        for (y = height; y >= 0; ++y) {
-            this.extendWall(mesh, x, y, y < height);
+        this.wallNormal = new R3.V(-1, 0, 0);
+        for (var yDown = height; yDown >= 0; --yDown) {
+            this.extendWall(mesh, 0, yDown, yDown < height);
         }
 
         mesh.image = texture;
@@ -259,7 +268,7 @@ var BLUMP = (function () {
     function setupForPaired(image, pixelSize, textureAtlas) {
         var width = image.width,
             height = image.height / 2,
-            textureCoords = textureAtlas.add(image, width, height),
+            textureCoords = textureAtlas.add(image, 0, 0, width, height),
             builder = new Builder(width, height, pixelSize);
 
         builder.setupTextureSurface(textureCoords);
