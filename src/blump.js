@@ -29,7 +29,7 @@ var BLUMP = (function () {
         } 
     }
 
-    function decodeDepths(image) {
+    function decodeDepths(image, useCalibration) {
         var width = image.width,
             height = image.height / 2,
             zScale = 0,
@@ -41,7 +41,7 @@ var BLUMP = (function () {
         IMPROC.processImage(image, 0, height, width, height,
             function (x, y, r, g, b) {
                 var value = -1;
-                if (y < 2) {
+                if (useCalibration && y < 2) {
                     if (y === 0) {
                         if (x === 0) {
                             if (r === 0 && g == IMPROC.BYTE_MAX && b == IMPROC.BYTE_MAX) {
@@ -157,8 +157,8 @@ var BLUMP = (function () {
         return mesh;
     }
 
-    function imageToMesh(image, pixelSize, textureAtlas) {
-        var depths = decodeDepths(image),
+    function imageToMesh(image, pixelSize, textureAtlas, useCalibration) {
+        var depths = decodeDepths(image, useCalibration),
             width = image.width,
             height = image.height / 2,
             textureCoords = textureAtlas.add(image, width, height),
@@ -193,7 +193,7 @@ var BLUMP = (function () {
 
     BlumpTest.prototype.loadBlump = function (image) {
         this.atlas = new WGL.TextureAtlas(image.width, image.height / 2, 1);
-        this.meshes.push(imageToMesh(image, 0.0006, this.atlas));
+        this.meshes.push(imageToMesh(image, 0.0006, this.atlas, false));
     };
 
     BlumpTest.prototype.render = function (room, width, height) {
