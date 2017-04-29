@@ -67,22 +67,35 @@ var BLUMP = (function () {
         return depths;
     }
 
-    function Builder(width, height, pixelSize, textureCoords) {
+    function Builder(width, height, pixelSize) {
         this.width = width;
         this.height = height;
         this.pixelSize = pixelSize;
 
         this.setAlignment(0.5, 0.5);
-
-        this.uMin = textureCoords.uMin;
-        this.vMin = textureCoords.vMin;
-        this.uScale = textureCoords.uSize / width;
-        this.vScale = textureCoords.vSize / height;
+        this.uMin = 0;
+        this.uMax = 0;
+        this.uScale = 1;
+        this.vScale = 1;
     }
 
-    Builder.prototype.setAlignment = function(alignX, alignY) {
+    Builder.prototype.setAlignment = function (alignX, alignY) {
         this.xOffset = this.width * alignX;
         this.yOffset = this.height * alignY;
+    }
+
+    Builder.prototype.setupTextureSurface = function (coords) {
+        this.uMin = coords.uMin;
+        this.vMin = coords.vMin;
+        this.uScale = coords.uSize / this.width;
+        this.vScale = coords.vSize / this.height;
+    }
+
+    Builder.prototype.setupTextureWalls = function (coords, heightScale) {
+        this.uMin = coords.uMin;
+        this.uMax = coords.uMax;
+        this.uScale = coords.uSize / (2 * (this.width + this.height));
+        this.vScale = coords.vScale / heightScale;
     }
 
     Builder.prototype.calculatePosition = function (x, y, depth) {
@@ -171,17 +184,17 @@ var BLUMP = (function () {
         return mesh;
     }
 
-    Builder.prototype.addWallVerties = function (mesh, x, y, textureOffset) {
+    Builder.prototype.addWallVerties = function (mesh, x, y, uFraction) {
         var depthIndex = vertexIndex(x, y, this.width),
             top = this.topDepth[depthIndex],
             bottom = this.bottomDepths ? this.bottomDepths[depthIndex] :
                                          this.defaultBottom,
             position = this.calculatePosition(x, y, bottom),
-            u = this.uMin + x * this.uScale,
-            v = this.vMin + bottom * this.vScale;
+            u = this.uMin + uFraction * this.uScale,
+            v = this.vMin + (bottom - this.defaultBottom) * this.vScale;
         mesh.addVertex(position, this.normal, u, v, this.color);
         position.z = top;
-        v = this.vMin + top * this.vScale;
+        v = this.vMin + (top - this.defaultBottom) * this.vScale;
         mesh.addVertex(position, this.normal, u, v, this.color);
     }
 
@@ -246,8 +259,10 @@ var BLUMP = (function () {
     function setupForPaired(image, pixelSize, textureAtlas) {
         var width = image.width,
             height = image.height / 2,
-            texCoords = textureAtlas.add(image, width, height),
-            builder = new Builder(width, height, pixelSize, texCoords)
+            textureCoords = textureAtlas.add(image, width, height),
+            builder = new Builder(width, height, pixelSize);
+
+        builder.setupTextureSurface(textureCoords);
         return builder;
     }
 
