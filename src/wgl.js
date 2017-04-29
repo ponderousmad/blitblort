@@ -525,13 +525,17 @@ var WGL = (function () {
         return c;
     }
 
-    Mesh.prototype.addVertex = function (p, n, u, v, r, g, b, a) {
+    var DEFAULT_WHITE = [1, 1, 1, 1];
+
+    Mesh.prototype.addVertex = function (p, n, u, v, color) {
         p.pushOn(this.vertices);
         n.pushOn(this.normals);
-        this.colors.push(fixComponent(r));
-        this.colors.push(fixComponent(g));
-        this.colors.push(fixComponent(b));
-        this.colors.push(fixComponent(a));
+        if (!color || color.length != 4) {
+            color = DEFAULT_WHITE;
+        }
+        for (var c = 0; c < color.length; ++c) {
+            this.colors.push(color[c]);
+        }
         this.uvs.push(u);
         this.uvs.push(v);
         this.index += 1;
