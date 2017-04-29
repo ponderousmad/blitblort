@@ -1,7 +1,8 @@
 var BLUMP = (function () {
     "use strict";
 
-    var gammaMap = [];
+    var gammaMap = [],
+        MAX_VERTICIES = Math.pow(2, 16);
 
     (function () {
         for (var v = 0; v < IMPROC.BYTE_MAX; ++v) {
@@ -29,16 +30,14 @@ var BLUMP = (function () {
         } 
     }
 
-    function decodeDepths(image, useCalibration) {
-        var width = image.width,
-            height = image.height / 2,
-            zScale = 0,
+    function decodeDepths(image, left, top, width, height, useCalibration) {
+        var zScale = 0,
             zOffset = 0,
             isCalibrated = false,
             start = 450,
             range = 150,
             depths = new Float32Array(width * height);
-        IMPROC.processImage(image, 0, height, width, height,
+        IMPROC.processImage(image, left, top, width, height,
             function (x, y, r, g, b) {
                 var value = -1;
                 if (useCalibration && y < 2) {
@@ -78,15 +77,16 @@ var BLUMP = (function () {
         );
     }
 
-    function calculateVertex(mesh, parameters, x, y, depth, leftDepth, upperDepth) {
-        var texCoords = parameters.textureCoords,
+    function addSurfaceVertex(mesh, parameters, x, y, depth, leftDepth, upperDepth) {
+        var position = calculatePosition(parameters, x, y, depth),
+            texCoords = parameters.textureCoords,
             left = new R3.V(-parameters.pixelSize, 0, depth - leftDepth),
             up = new R3.V(0, -parameters.pixelSize, depth - upperDepth),
             normal = left.cross(up),
             u = texCoords.uMin + x * parameters.uScale,
             v = texCoords.vMin + y * parameters.vScale;
         normal.normalize();
-        mesh.addVertex(calculatePosition(parameters, x, y, depth), normal, u, v);
+        mesh.addVertex(position, normal, u, v, parameters.color);
     }
 
     function lookupDepth(depths, x, y, width, height) {
@@ -100,7 +100,7 @@ var BLUMP = (function () {
     function constructMesh(depths, parameters) {
         var width = parameters.width,
             height = parameters.height,
-            validHeight = Math.floor(Math.pow(2, 16) / (width + 1)) - 1,
+            validHeight = Math.floor(MAX_VERTICIES / (width + 1)) - 1,
             mesh = new WGL.Mesh();
 
         if (height > validHeight) {
@@ -119,7 +119,7 @@ var BLUMP = (function () {
                     lowerRight = depth >= 0,
                     corners = lowerLeft + lowerRight;
 
-                calculateVertex(mesh, parameters, x, y, depth, prevDepth, upperDepth);
+                addSurfaceVertex(mesh, parameters, x, y, depth, prevDepth, upperDepth);
 
                 if (generateTri && corners > 0) {
                     var upperLeft = lookupDepth(depths, x-1, y-1, width, height) >= 0,
@@ -153,6 +153,68 @@ var BLUMP = (function () {
         return mesh;
     }
 
+    function addWallVerties(parameters, x, y, textureOffset) {
+        var depthIndex = vertexIndex(x, y, parameters.width),
+            top = parameters.topDepth[depthIndex],
+            bottom = parameters.bottomDepths ? parameters.bottomDepths[depthIndex] :
+                                               parameters.defaultBottom,
+            position = calculatePosition(parameters, x, y, bottom),
+            texCoords = parameters.textureCoords,
+            u = texCoords.uMin + x * parameters.uScale,
+            v = texCoords.vMin + bottom * parameters.vScale;
+        parameters.mesh.addVertex(position, parameters.normal, u, v, parameters.color);
+        position.z = top;
+        v = texCoords.vMin + top * parameters.vScale;
+        parameters.mesh.addVertex(position, parameters.normal, u, v, parameters.color);
+    }
+
+    function extendWall(parameters, x, y, addTris) {
+        addWallVerties(parameters, x, y, parameters.uIndex * parameters.uStep);
+        if (addTris) {
+            var i = 2 * (quadIndex - 1);
+            parameters.mesh.addTri(i + 0, i + 1, i + 2);
+            parameters.mesh.addTri(i + 0, i + 2, i + 3);
+            parameters.uIndex += 1;
+        }
+        parameters.quadIndex += 1;
+    }
+
+    function constructWall(parameters, bottomDepth, topDepth) {
+        var width = parameters.width,
+            height = parameters.height,
+            x = 0, y = 0;
+
+        if (4 * (width + 1) * (height + 1) > MAX_VERTICIES) {
+            throw "Wall too large";
+        }
+
+        parameters.mesh = new WGL.Mesh();
+        parameters.topDepth = topDepth;
+        parameters.bottomDepth = bottomDepth;
+        parameters.quadIndex = 0;
+        parameters.uIndex = 0;
+        parameters.uStep = 0.5 / (width + height);
+
+        parameters.normal = new R3.V(0, -1, 0);
+        for (x = 0; x <= width; ++x) {
+            extendWall(parameters, x, y, x > 0);
+        }
+        parameters.normal = new R3.V(1, 0, 0);
+        for (y = 0; y <= height; ++y) {
+            extendWall(parameters, x, y, y > 0);
+        }
+        parameters.normal = new R3.V(0, -1, 0);
+        for (x = width; x >= 0; --x) {
+            extendWall(parameters, x, y, x < height);
+        }
+        parameters.normal = new R3.V(1, 0, 0);
+        for (y = height; y >= 0; ++y) {
+            extendWall(parameters, x, y, y < height);
+        }
+
+        return parameters.mesh;
+    }
+
     function imageToMesh(image, textureAtlas, parameters) {
         if (!parameters) {
             parameters = {
@@ -173,11 +235,11 @@ var BLUMP = (function () {
         parameters.uScale = parameters.textureCoords.uSize / width;
         parameters.vScale = parameters.textureCoords.vSize / height;
 
-        var depths = decodeDepths(image, parameters.useCalibration),
-            mesh = constructMesh(depths, parameters);
-        mesh.image = textureAtlas.texture();
-        mesh.finalize();
-        return mesh;
+        parameters.depths = decodeDepths(image, 0, height, width, height, parameters.useCalibration);
+        parameters.mesh = constructMesh(parameters.depths, parameters);
+        parameters.mesh.image = textureAtlas.texture();
+        parameters.mesh.finalize();
+        return parameters.mesh;
     }
 
     function BlumpTest(viewport) {
