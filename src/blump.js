@@ -94,12 +94,11 @@ var BLUMP = (function () {
         this.vScale = coords.vSize / this.height;
     }
 
-    Builder.prototype.setupTextureWalls = function (coords, heightRange) {
+    Builder.prototype.setupTextureWalls = function (coords) {
         this.uMin = coords.uMin;
         this.uMax = coords.uMax;
         this.uScale = coords.uSize;
         this.vScale = coords.vSize;
-        this.heightScale = 1 / heightRange;
     }
 
     Builder.prototype.calculatePosition = function (x, y, depth) {
@@ -199,12 +198,10 @@ var BLUMP = (function () {
                                          this.defaultBottom,
             position = this.calculatePosition(x, y, bottom),
             u = this.uMin + uFraction * this.uScale,
-            bottomFraction = (bottom - this.defaultBottom) * this.heightScale,
-            topFraction = (top - this.defaultBottom) * this.heightScale,
-            v = this.vMin + (1 - bottomFraction) * this.vScale;
+            v = this.vMin + this.vScale;
         mesh.addVertex(position, this.wallNormal, u, v, this.color);
         position.z = top;
-        v = this.vMin + (1 - topFraction) * this.vScale;
+        v = this.vMin;
         mesh.addVertex(position, this.wallNormal, u, v, this.color);
     }
 
