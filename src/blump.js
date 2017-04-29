@@ -68,22 +68,25 @@ var BLUMP = (function () {
         return depths;
     }
 
-    function calculateVertex(mesh, parameters, x, y, depth, leftDepth, upperDepth) {
+    function calculatePosition(parameters, x, y, depth) {
         var yIndex = (parameters.height - y) - parameters.yOffset,
-            xIndex = x - parameters.xOffset,
-            texCoords = parameters.textureCoords,
-            pixel = new R3.V(
-                xIndex * parameters.pixelSize,
-                yIndex * parameters.pixelSize,
-                depth
-            ),
+            xIndex = x - parameters.xOffset;
+        return new R3.V(
+            xIndex * parameters.pixelSize,
+            yIndex * parameters.pixelSize,
+            depth
+        );
+    }
+
+    function calculateVertex(mesh, parameters, x, y, depth, leftDepth, upperDepth) {
+        var texCoords = parameters.textureCoords,
             left = new R3.V(-parameters.pixelSize, 0, depth - leftDepth),
             up = new R3.V(0, -parameters.pixelSize, depth - upperDepth),
             normal = left.cross(up),
             u = texCoords.uMin + x * parameters.uScale,
             v = texCoords.vMin + y * parameters.vScale;
         normal.normalize();
-        mesh.addVertex(pixel, normal, u, v);
+        mesh.addVertex(calculatePosition(parameters, x, y, depth), normal, u, v);
     }
 
     function lookupDepth(depths, x, y, width, height) {
