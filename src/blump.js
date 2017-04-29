@@ -96,7 +96,7 @@ var BLUMP = (function () {
 
     Builder.prototype.setupTextureWalls = function (coords) {
         this.uMin = coords.uMin;
-        this.uMax = coords.uMax;
+        this.vMin = coords.vMin;
         this.uScale = coords.uSize;
         this.vScale = coords.vSize;
     }
@@ -193,7 +193,7 @@ var BLUMP = (function () {
 
     Builder.prototype.addWallVertices = function (mesh, x, y, uFraction) {
         var i = depthIndex(x, y, this.width, this.height),
-            top = this.topDepth[i],
+            top = this.topDepths[i],
             bottom = this.bottomDepths ? this.bottomDepths[i] :
                                          this.defaultBottom,
             position = this.calculatePosition(x, y, bottom),
@@ -216,7 +216,7 @@ var BLUMP = (function () {
         this.quadIndex += 1;
     }
 
-    Builder.prototype.constructWall = function(bottomDepth, topDepth, texture) {
+    Builder.prototype.constructWall = function(bottomDepths, topDepths, texture) {
         var width = this.width,
             height = this.height,
             mesh = new WGL.Mesh();
@@ -225,8 +225,8 @@ var BLUMP = (function () {
             throw "Wall too large";
         }
 
-        this.topDepth = topDepth;
-        this.bottomDepth = bottomDepth;
+        this.topDepths = topDepths;
+        this.bottomDepths = bottomDepths;
         this.quadIndex = 0;
         this.uIndex = 0;
         this.uStep = 0.5 / (width + height);
@@ -265,10 +265,11 @@ var BLUMP = (function () {
     function setupForPaired(image, pixelSize, textureAtlas) {
         var width = image.width,
             height = image.height / 2,
-            textureCoords = textureAtlas.add(image, 0, 0, width, height),
             builder = new Builder(width, height, pixelSize);
 
-        builder.setupTextureSurface(textureCoords);
+        if (textureAtlas) {
+            builder.setupTextureSurface(textureAtlas.add(image, 0, 0, width, height));
+        }
         return builder;
     }
 
