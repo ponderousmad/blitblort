@@ -69,18 +69,19 @@ var BLUMP = (function () {
     }
 
     function calculateVertex(mesh, parameters, x, y, depth, leftDepth, upperDepth) {
-        var fromBottom = parameters.height - y,
-            fromCenter = x - parameters.halfWidth,
+        var yIndex = (parameters.height - y) - parameters.yOffset,
+            xIndex = x - parameters.xOffset,
+            texCoords = parameters.textureCoords,
             pixel = new R3.V(
-                fromCenter * parameters.pixelSize,
-                fromBottom * parameters.pixelSize,
+                xIndex * parameters.pixelSize,
+                yIndex * parameters.pixelSize,
                 -depth
             ),
             left = new R3.V(-parameters.pixelSize, 0, depth - leftDepth),
             up = new R3.V(0, -parameters.pixelSize, depth - upperDepth),
             normal = left.cross(up),
-            u = parameters.uMin + x * parameters.uScale,
-            v = parameters.vMin + y * parameters.vScale;
+            u = texCoords.uMin + x * parameters.uScale,
+            v = texCoords.vMin + y * parameters.vScale;
         normal.normalize();
         mesh.addVertex(pixel, normal, u, v);
     }
@@ -93,22 +94,14 @@ var BLUMP = (function () {
         return x + (y * (width + 1));
     }
 
-    function constructMesh(depths, width, height, pixelSize, textureCoords) {
-        var parameters = {
-                width: width,
-                height: height,
-                halfWidth: width / 2,
-                pixelSize: pixelSize,
-                uMin: textureCoords.uMin,
-                vMin: textureCoords.vMin,
-                uScale: textureCoords.uSize / width,
-                vScale: textureCoords.vSize / height
-            },
+    function constructMesh(depths, parameters) {
+        var width = parameters.width,
+            height = parameters.height,
             validHeight = Math.floor(Math.pow(2, 16) / (width + 1)) - 1,
             mesh = new WGL.Mesh();
 
         if (height > validHeight) {
-            console.log("Image too large");
+            throw "Image too large";
             return mesh;
         }
 
@@ -136,16 +129,16 @@ var BLUMP = (function () {
                     corners += upperLeft + upperRight;
                     if (corners > 3) {
                         if (corners == 4) {
-                            mesh.addTri(iUR, iLL, iLR);
-                            mesh.addTri(iUR, iUL, iLL);
+                            mesh.addTri(iUR, iLR, iLL);
+                            mesh.addTri(iUR, iLL, iUL);
                         } else if(!upperLeft) {
-                            mesh.addTri(iUR, iLL, iLR);
+                            mesh.addTri(iUR, iLR, iLL);
                         } else if (!upperRight) {
-                            mesh.addTri(iUL, iLL, iLR);
+                            mesh.addTri(iUL, iLR, iLL);
                         } else if (!lowerLeft) {
                             mesh.addTri(iUL, iLR, iUR);
                         } else if (!lowerRight) {
-                            mesh.addTri(iUL, iLL, iUR);
+                            mesh.addTri(iUL, iUR, iLL);
                         }
                     }
                 }
@@ -157,12 +150,28 @@ var BLUMP = (function () {
         return mesh;
     }
 
-    function imageToMesh(image, pixelSize, textureAtlas, useCalibration) {
-        var depths = decodeDepths(image, useCalibration),
-            width = image.width,
-            height = image.height / 2,
-            textureCoords = textureAtlas.add(image, width, height),
-            mesh = constructMesh(depths, width, height, pixelSize, textureCoords);
+    function imageToMesh(image, textureAtlas, parameters) {
+        if (!parameters) {
+            parameters = {
+                alignX: 0.5,
+                alignY: 0.5,
+                useCalibration: false,
+                pixelSize: 1
+            };
+        }
+        var width = image.width,
+            height = image.height / 2;
+        parameters.width = width;
+        parameters.height = height;
+        parameters.xOffset = width * parameters.alignX;
+        parameters.yOffset = height * parameters.alignY;
+
+        parameters.textureCoords = textureAtlas.add(image, width, height);
+        parameters.uScale = parameters.textureCoords.uSize / width;
+        parameters.vScale = parameters.textureCoords.vSize / height;
+
+        var depths = decodeDepths(image, parameters.useCalibration),
+            mesh = constructMesh(depths, parameters);
         mesh.image = textureAtlas.texture();
         mesh.finalize();
         return mesh;
@@ -193,7 +202,13 @@ var BLUMP = (function () {
 
     BlumpTest.prototype.loadBlump = function (image) {
         this.atlas = new WGL.TextureAtlas(image.width, image.height / 2, 1);
-        this.meshes.push(imageToMesh(image, 0.0006, this.atlas, false));
+        var parameters = {
+            pixelSize: 0.0006,
+            alignX: -0.5,
+            alignY: 0,
+            useCalibration: false
+        };
+        this.meshes.push(imageToMesh(image, this.atlas, parameters));
     };
 
     BlumpTest.prototype.render = function (room, width, height) {
