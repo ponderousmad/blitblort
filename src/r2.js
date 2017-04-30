@@ -113,6 +113,10 @@ var R2 = (function () {
         return new V(parseFloat(data.x), parseFloat(data.y));
     };
 
+    r2.clamp = function (value, min, max) {
+        return Math.min(max, Math.max(min, value));
+    };
+
     r2.clampAngle = function (angle) {
         while (angle < -Math.PI) {
             angle += 2 * Math.PI;
