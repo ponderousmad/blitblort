@@ -191,6 +191,21 @@ var BLUMP = (function () {
         return mesh;
     }
 
+    Builder.prototype.updateSurface = function (mesh, depths) {
+        var width = this.width,
+            height = this.height,
+            vertexIndex = 0;
+
+        for (var y = 0; y <= height; ++y) {
+            for (var x = 0; x <= width; ++x) {
+                var depth = lookupDepth(depths, x, y, width, height);
+                mesh.glVertices[vertexIndex + 2] = depth;
+                vertexIndex += 3;
+            }
+        }
+        mesh.updated = true;
+    }
+
     Builder.prototype.addWallVertices = function (mesh, x, y, uFraction) {
         var i = depthIndex(x, y, this.width, this.height),
             top = this.topDepths[i],
@@ -203,6 +218,16 @@ var BLUMP = (function () {
         position.z = top;
         v = this.vMin;
         mesh.addVertex(position, this.wallNormal, u, v, this.color);
+    }
+
+    Builder.prototype.updateWallVertices = function (mesh, x, y, index) {
+        var i = depthIndex(x, y, this.width, this.height),
+            top = this.topDepths[i],
+            bottom = this.bottomDepths ? this.bottomDepths[i] :
+                                         this.defaultBottom;
+        mesh.glVertices[index + 2] = bottom;
+        mesh.glVertices[index + 5] = top;
+        return index + 6;
     }
 
     Builder.prototype.extendWall = function (mesh, x, y, addTris) {
@@ -251,6 +276,31 @@ var BLUMP = (function () {
         mesh.image = texture;
         mesh.finalize();
         return mesh;
+    }
+
+    Builder.prototype.updateWall = function(mesh, bottomDepths, topDepths) {
+        var width = this.width,
+            height = this.height,
+            index = 0;
+
+        this.topDepths = topDepths;
+        this.bottomDepths = bottomDepths;
+        for (var xUp = 0; xUp <= width; ++xUp) {
+            index = this.updateWallVertices(mesh, xUp, 0, index);
+        }
+        this.wallNormal = new R3.V(1, 0, 0);
+        for (var yUp = 0; yUp <= height; ++yUp) {
+            index = this.updateWallVertices(mesh, width, yUp, index);
+        }
+        this.wallNormal = new R3.V(0, -1, 0);
+        for (var xDown = width; xDown  >= 0; --xDown) {
+            index = this.updateWallVertices(mesh, xDown, height, index);
+        }
+        this.wallNormal = new R3.V(-1, 0, 0);
+        for (var yDown = height; yDown >= 0; --yDown) {
+            index = this.updateWallVertices(mesh, 0, yDown, index);
+        }
+        mesh.updated = true;
     }
 
     Builder.prototype.depthFromPaired = function(image, useCalibration) {
