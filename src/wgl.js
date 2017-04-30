@@ -312,7 +312,7 @@ var WGL = (function () {
         return texture;
     };
 
-    Room.prototype.setupMesh = function (mesh, dynamic) {
+    Room.prototype.setupMesh = function (mesh) {
         if (!mesh.drawData) {
             if (mesh.index >= Math.pow(2, 16)) {
                 throw "Mesh has too many verticies to index!";
@@ -322,7 +322,7 @@ var WGL = (function () {
                     throw "Past end of verticies:" + mesh.tris[i] + ", " + mesh.index;
                 }
             }
-            var drawHint = dynamic ? this.gl.DYNAMIC_DRAW : this.gl.STATIC_DRAW;
+            var drawHint = mesh.dynamic ? this.gl.DYNAMIC_DRAW : this.gl.STATIC_DRAW;
 
             mesh.drawData = {
                 vertexBuffer: this.setupFloatBuffer(mesh.glVertices, false, drawHint),
