@@ -71,6 +71,7 @@ var BLUMP = (function () {
         this.width = width;
         this.height = height;
         this.pixelSize = pixelSize;
+        this.depthOffset = 0;
 
         this.setAlignment(0.5, 0.5);
         this.uMin = 0;
@@ -126,8 +127,8 @@ var BLUMP = (function () {
         return Math.min(height - 1, y) * width + Math.min(width - 1, x);
     }
 
-    function lookupDepth(depths, x, y, width, height) {
-        return depths[depthIndex(x, y, width, height)];
+    function lookupDepth(depths, x, y, width, height, offset) {
+        return depths[depthIndex(x, y, width, height) + offset];
     }
 
     function vertexIndex(x, y, width) {
@@ -138,7 +139,8 @@ var BLUMP = (function () {
         var width = this.width,
             height = this.height,
             validHeight = Math.floor(MAX_VERTICIES / (width + 1)) - 1,
-            mesh = new WGL.Mesh();
+            mesh = new WGL.Mesh(),
+            dShift = this.depthOffset;
 
         if (height > validHeight) {
             throw "Image too large";
@@ -149,8 +151,8 @@ var BLUMP = (function () {
                 prevDepth = -1,
                 lowerLeft = false;
             for (var x = 0; x <= width; ++x) {
-                var depth = lookupDepth(depths, x, y, width, height),
-                    upperDepth = lookupDepth(depths, x, y-1, width, height),
+                var depth = lookupDepth(depths, x, y, width, height, dShift),
+                    upperDepth = lookupDepth(depths, x, y-1, width, height, dShift),
                     generateTri = (generateTris && x > 0),
                     lowerRight = depth >= 0,
                     corners = lowerLeft + lowerRight;
@@ -158,7 +160,7 @@ var BLUMP = (function () {
                 this.addSurfaceVertex(mesh, x, y, depth, prevDepth, upperDepth);
 
                 if (generateTri && corners > 0) {
-                    var upperLeft = lookupDepth(depths, x-1, y-1, width, height) >= 0,
+                    var upperLeft = lookupDepth(depths, x-1, y-1, width, height, dShift) >= 0,
                         upperRight = upperDepth >= 0,
                         iUL = vertexIndex(x-1, y-1, width),
                         iUR = vertexIndex(x,   y-1, width),
@@ -198,7 +200,7 @@ var BLUMP = (function () {
 
         for (var y = 0; y <= height; ++y) {
             for (var x = 0; x <= width; ++x) {
-                var depth = lookupDepth(depths, x, y, width, height);
+                var depth = lookupDepth(depths, x, y, width, height, this.depthOffset);
                 mesh.glVertices[vertexIndex + 2] = depth;
                 vertexIndex += 3;
             }
@@ -208,9 +210,9 @@ var BLUMP = (function () {
 
     Builder.prototype.addWallVertices = function (mesh, x, y, uFraction) {
         var i = depthIndex(x, y, this.width, this.height),
-            top = this.topDepths[i],
-            bottom = this.bottomDepths ? this.bottomDepths[i] :
-                                         this.defaultBottom,
+            top = this.topDepths[i] + this.depthOffset,
+            bottom =  this.depthOffset + (this.bottomDepths ? this.bottomDepths[i] :
+                                                              this.defaultBottom),
             position = this.calculatePosition(x, y, bottom),
             u = this.uMin + uFraction * this.uScale,
             v = this.vMin + this.vScale;
@@ -225,8 +227,8 @@ var BLUMP = (function () {
             top = this.topDepths[i],
             bottom = this.bottomDepths ? this.bottomDepths[i] :
                                          this.defaultBottom;
-        mesh.glVertices[index + 2] = bottom;
-        mesh.glVertices[index + 5] = top;
+        mesh.glVertices[index + 2] = bottom + this.depthOffset;
+        mesh.glVertices[index + 5] = top + this.depthOffset;
         return index + 6;
     };
 
@@ -328,9 +330,9 @@ var BLUMP = (function () {
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
         this.updateInterval = 16;
-        this.angle = -Math.PI / 2;
+        this.angle = 0;
         this.viewport = viewport ? viewport : "canvas";
-        this.meshe = null;
+        this.mesh = null;
         this.program = null;
 
         var self = this;
@@ -358,19 +360,20 @@ var BLUMP = (function () {
             builder = setupForPaired(image, 0.0006, atlas),
             depths = builder.depthFromPaired(image, false);
         builder.setAlignment(0.5, 0);
-        this.mesh = builder.constructSurface(depths, atlas.texture());
+        this.blump = new BLOB.Thing(builder.constructSurface(depths, atlas.texture()));
+        this.blump.move(new R3.V(0, 0, -0.08));
     };
 
     BlumpTest.prototype.render = function (room, width, height) {
         room.clear(this.clearColor);
-        if (this.mesh && room.viewer.showOnPrimary()) {
+        if (this.blump && room.viewer.showOnPrimary()) {
             var d = 0.2,
                 x = Math.cos(this.angle) * d,
                 z = Math.sin(this.angle) * d,
                 h = 0.05;
             room.viewer.positionView(new R3.V(x, h, z), new R3.V(0, h, 0), new R3.V(0, 1, 0));
             room.setupView(this.program, this.viewport);
-            room.drawMesh(this.mesh, this.program);
+            this.blump.render(room, this.program);
         }
     };
 
