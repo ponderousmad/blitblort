@@ -173,7 +173,10 @@ var MAIN = (function () {
         }
 
         if (game.render) {
-            return setup3D(canvas, game, drawUpdate);
+            var room = setup3D(canvas, game, drawUpdate);
+            if (game.setupRoom) {
+                game.setupRoom(room);
+            }
         } else {
             return setup2D(canvas, game, drawUpdate);
         }

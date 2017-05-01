@@ -330,20 +330,27 @@ var BLUMP = (function () {
         this.updateInterval = 16;
         this.angle = -Math.PI / 2;
         this.viewport = viewport ? viewport : "canvas";
-        this.meshes = [];
+        this.meshe = null;
         this.program = null;
+
+        var self = this;
+        this.batch = new BLIT.Batch("images/");
+        this.batch.load("blump.png", function(image) {
+            self.loadBlump(image);
+        });
+        this.batch.commit();
     }
+
+    BlumpTest.prototype.setupRoom = function (room) {
+        this.program = room.programFromElements("vertex-test", "fragment-test");
+
+        room.viewer.near = 0.01;
+        room.viewer.far = 10;
+        room.gl.enable(room.gl.CULL_FACE);
+    };
 
     BlumpTest.prototype.update = function (now, elapsed, keyboard, pointer) {
         this.angle += elapsed * Math.PI * 0.0001;
-    };
-
-    BlumpTest.prototype.drawMeshes = function (room) {
-        if (this.meshes !== null) {
-            for (var m = 0; m < this.meshes.length; ++m) {
-                room.drawMesh(this.meshes[m], this.program);
-            }
-        }
     };
 
     BlumpTest.prototype.loadBlump = function (image) {
@@ -351,46 +358,19 @@ var BLUMP = (function () {
             builder = setupForPaired(image, 0.0006, atlas),
             depths = builder.depthFromPaired(image, false);
         builder.setAlignment(0.5, 0);
-        this.meshes.push(builder.constructSurface(depths, atlas.texture()));
+        this.mesh = builder.constructSurface(depths, atlas.texture());
     };
 
     BlumpTest.prototype.render = function (room, width, height) {
         room.clear(this.clearColor);
-        if (this.program === null) {
-            var shader = room.programFromElements("vertex-test", "fragment-test"),
-                self = this;
-            this.program = {
-                shader: shader,
-                mvUniform: "uMVMatrix",
-                perspectiveUniform: "uPMatrix",
-                normalUniform: "uNormalMatrix",
-                vertexPosition: room.bindVertexAttribute(shader, "aPos"),
-                vertexNormal: room.bindVertexAttribute(shader, "aNormal"),
-                vertexUV: room.bindVertexAttribute(shader, "aUV"),
-                vertexColor: room.bindVertexAttribute(shader, "aColor"),
-                textureVariable: "uSampler"
-            };
-            
-            room.viewer.near = 0.01;
-            room.viewer.far = 10;
-            room.gl.enable(room.gl.CULL_FACE);
-            this.batch = new BLIT.Batch("images/");
-            this.batch.load("blump.png", function(image) {
-                 self.loadBlump(image);
-            });
-            this.batch.commit();
-        }
-        if (!this.batch.loaded) {
-            return;
-        }
-        if (room.viewer.showOnPrimary()) {
+        if (this.mesh && room.viewer.showOnPrimary()) {
             var d = 0.2,
                 x = Math.cos(this.angle) * d,
                 z = Math.sin(this.angle) * d,
                 h = 0.05;
             room.viewer.positionView(new R3.V(x, h, z), new R3.V(0, h, 0), new R3.V(0, 1, 0));
             room.setupView(this.program, this.viewport);
-            this.drawMeshes(room);
+            room.drawMesh(this.mesh, this.program);
         }
     };
 

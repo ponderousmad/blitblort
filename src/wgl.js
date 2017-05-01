@@ -411,12 +411,27 @@ var WGL = (function () {
         this.gl.uniform1i(this.gl.getUniformLocation(program, variable), 0);
     };
 
-    Room.prototype.programFromElements = function (vertexElement, fragmentElement) {
+    Room.prototype.shaderFromElements = function (vertexElement, fragmentElement) {
         var vertexSource = document.getElementById(vertexElement).innerHTML,
             fragmentSource = document.getElementById(fragmentElement).innerHTML;
 
         return this.setupShaderProgram(vertexSource, fragmentSource);
     };
+
+    Room.prototype.programFromElements = function (vertexElement, fragmentElement) {
+        var shader = this.shaderFromElements(vertexElement, fragmentElement);
+        return {
+            shader: shader,
+            mvUniform: "uMVMatrix",
+            perspectiveUniform: "uPMatrix",
+            normalUniform: "uNormalMatrix",
+            vertexPosition: this.bindVertexAttribute(shader, "aPos"),
+            vertexNormal: this.bindVertexAttribute(shader, "aNormal"),
+            vertexUV: this.bindVertexAttribute(shader, "aUV"),
+            vertexColor: this.bindVertexAttribute(shader, "aColor"),
+            textureVariable: "uSampler"
+        };
+    }
 
     Room.prototype.stabDirection = function(canvasX, canvasY, viewportRegion) {
         return this.viewer.stabDirection(this.canvas, canvasX, canvasY, viewportRegion);
