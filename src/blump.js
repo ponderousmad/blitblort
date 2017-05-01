@@ -85,21 +85,21 @@ var BLUMP = (function () {
     Builder.prototype.setAlignment = function (alignX, alignY) {
         this.xOffset = this.width * alignX;
         this.yOffset = this.height * alignY;
-    }
+    };
 
     Builder.prototype.setupTextureSurface = function (coords) {
         this.uMin = coords.uMin;
         this.vMin = coords.vMin;
         this.uScale = coords.uSize / this.width;
         this.vScale = coords.vSize / this.height;
-    }
+    };
 
     Builder.prototype.setupTextureWalls = function (coords) {
         this.uMin = coords.uMin;
         this.vMin = coords.vMin;
         this.uScale = coords.uSize;
         this.vScale = coords.vSize;
-    }
+    };
 
     Builder.prototype.calculatePosition = function (x, y, depth) {
         var yIndex = (this.height - y) - this.yOffset,
@@ -109,7 +109,7 @@ var BLUMP = (function () {
             yIndex * this.pixelSize,
             depth
         );
-    }
+    };
 
     Builder.prototype.addSurfaceVertex = function (mesh, x, y, depth, leftDepth, upperDepth) {
         var position = this.calculatePosition(x, y, depth),
@@ -120,7 +120,7 @@ var BLUMP = (function () {
             v = this.vMin + y * this.vScale;
         normal.normalize();
         mesh.addVertex(position, normal, u, v, this.color);
-    }
+    };
 
     function depthIndex(x, y, width, height) {
         return Math.min(height - 1, y) * width + Math.min(width - 1, x);
@@ -189,7 +189,7 @@ var BLUMP = (function () {
         mesh.image = texture;
         mesh.finalize();
         return mesh;
-    }
+    };
 
     Builder.prototype.updateSurface = function (mesh, depths) {
         var width = this.width,
@@ -204,7 +204,7 @@ var BLUMP = (function () {
             }
         }
         mesh.updated = true;
-    }
+    };
 
     Builder.prototype.addWallVertices = function (mesh, x, y, uFraction) {
         var i = depthIndex(x, y, this.width, this.height),
@@ -218,7 +218,7 @@ var BLUMP = (function () {
         position.z = top;
         v = this.vMin;
         mesh.addVertex(position, this.wallNormal, u, v, this.color);
-    }
+    };
 
     Builder.prototype.updateWallVertices = function (mesh, x, y, index) {
         var i = depthIndex(x, y, this.width, this.height),
@@ -228,7 +228,7 @@ var BLUMP = (function () {
         mesh.glVertices[index + 2] = bottom;
         mesh.glVertices[index + 5] = top;
         return index + 6;
-    }
+    };
 
     Builder.prototype.extendWall = function (mesh, x, y, addTris) {
         this.addWallVertices(mesh, x, y, this.uIndex * this.uStep);
@@ -239,7 +239,7 @@ var BLUMP = (function () {
             this.uIndex += 1;
         }
         this.quadIndex += 1;
-    }
+    };
 
     Builder.prototype.constructWall = function(bottomDepths, topDepths, texture) {
         var width = this.width,
@@ -276,7 +276,7 @@ var BLUMP = (function () {
         mesh.image = texture;
         mesh.finalize();
         return mesh;
-    }
+    };
 
     Builder.prototype.updateWall = function(mesh, bottomDepths, topDepths) {
         var width = this.width,
@@ -301,7 +301,7 @@ var BLUMP = (function () {
             index = this.updateWallVertices(mesh, 0, yDown, index);
         }
         mesh.updated = true;
-    }
+    };
 
     Builder.prototype.depthFromPaired = function(image, useCalibration) {
         return decodeDepths(
@@ -310,7 +310,7 @@ var BLUMP = (function () {
             this.width, this.height,
             useCalibration
         );
-    }
+    };
 
     function setupForPaired(image, pixelSize, textureAtlas) {
         var width = image.width,

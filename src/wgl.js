@@ -431,7 +431,7 @@ var WGL = (function () {
             vertexColor: this.bindVertexAttribute(shader, "aColor"),
             textureVariable: "uSampler"
         };
-    }
+    };
 
     Room.prototype.stabDirection = function(canvasX, canvasY, viewportRegion) {
         return this.viewer.stabDirection(this.canvas, canvasX, canvasY, viewportRegion);
