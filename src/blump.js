@@ -30,12 +30,12 @@ var BLUMP = (function () {
         } 
     }
 
-    function decodeDepths(image, left, top, width, height, useCalibration) {
+    function decodeDepths(image, left, top, width, height, useCalibration, defaultRange) {
         var zScale = 0,
             zOffset = 0,
             isCalibrated = false,
             start = 450,
-            range = 150,
+            range = defaultRange ? defaultRange : 210,
             depths = new Float32Array(width * height);
         IMPROC.processImage(image, left, top, width, height,
             function (x, y, r, g, b) {
@@ -65,6 +65,48 @@ var BLUMP = (function () {
             }
         );
         return depths;
+    }
+
+    function smoothIndex(x, y, width) {
+        return x + y * width;
+    }
+
+    function smoothDepths(depths, width, height, smoothThreshold, smoothFactor) {
+        var result = new Float32Array(depths.length),
+            threshold = smoothThreshold ? smoothThreshold : 0.02,
+            smoothing = smoothFactor ? smoothFactor : 5;
+        for (var y = 0; y < height; ++y) {
+            for (var x = 0; x < width; ++x) {
+                var count = 0,
+                    sum = 0,
+                    index = smoothIndex(x, y, width),
+                    depth = depths[index],
+                    coords = [];
+                if (depth >= 0) {
+                    for (var yi = y > 0 ? y-1 : y; yi < Math.min(height, y+2); ++yi) {
+                        for (var xi = x > 0 ? x-1 : x; xi < Math.min(width, x+2); ++xi) {
+                            if (xi != x || yi != y) {
+                                coords.push([xi, yi]);
+                                var value = depths[smoothIndex(xi, yi, width)];
+                                if (value >= 0) {
+                                    var diff = value - depth;
+                                    if (Math.abs(diff) < threshold) {
+                                        ++count;
+                                        sum += value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (count > 0) {
+                        var averageDifference = depth - (sum / count);
+                        depth += averageDifference * smoothing;
+                    }
+                }
+                result[index] = depth;
+            }
+        }
+        return result;
     }
 
     function Builder(width, height, pixelSize) {
@@ -112,10 +154,10 @@ var BLUMP = (function () {
         );
     };
 
-    Builder.prototype.addSurfaceVertex = function (mesh, x, y, depth, leftDepth, upperDepth) {
+    Builder.prototype.addSurfaceVertex = function (mesh, x, y, depth, dLeft, dTop, dRight, dBottom) {
         var position = this.calculatePosition(x, y, depth),
-            left = new R3.V(-this.pixelSize, 0, depth - leftDepth),
-            up = new R3.V(0, -this.pixelSize, depth - upperDepth),
+            left = new R3.V(2 * this.pixelSize, 0, dLeft - dRight),
+            up = new R3.V(0, 2 * this.pixelSize, dTop - dBottom),
             normal = left.cross(up),
             u = this.uMin + x * this.uScale,
             v = this.vMin + y * this.vScale;
@@ -147,20 +189,23 @@ var BLUMP = (function () {
 
         for (var y = 0; y <= height; ++y) {
             var generateTris = y > 0,
-                prevDepth = -1,
+                dLeft = -1,
+                dRight = lookupDepth(depths, 0, y, width, height),
                 lowerLeft = false;
             for (var x = 0; x <= width; ++x) {
-                var depth = lookupDepth(depths, x, y, width, height),
-                    upperDepth = lookupDepth(depths, x, y-1, width, height),
+                var depth = dRight,
+                    dTop = lookupDepth(depths, x, y-1, width, height),
+                    dBottom = lookupDepth(depths, x, y+1, width, height),
                     generateTri = (generateTris && x > 0),
                     lowerRight = depth >= 0,
                     corners = lowerLeft + lowerRight;
+                dRight = lookupDepth(depths, x+1, y, width, height);
 
-                this.addSurfaceVertex(mesh, x, y, depth, prevDepth, upperDepth);
+                this.addSurfaceVertex(mesh, x, y, depth, dLeft, dTop, depth, depth);
 
                 if (generateTri && corners > 0) {
                     var upperLeft = lookupDepth(depths, x-1, y-1, width, height) >= 0,
-                        upperRight = upperDepth >= 0,
+                        upperRight = dTop >= 0,
                         iUL = vertexIndex(x-1, y-1, width),
                         iUR = vertexIndex(x,   y-1, width),
                         iLL = vertexIndex(x-1, y,   width),
@@ -182,7 +227,7 @@ var BLUMP = (function () {
                         }
                     }
                 }
-                prevDepth = depth;
+                dLeft = depth;
                 lowerLeft = lowerRight;
             }
         }
@@ -335,7 +380,7 @@ var BLUMP = (function () {
 
         var self = this;
         this.batch = new BLIT.Batch("images/");
-        this.batch.load("blump.png", function(image) {
+        this.batch.load("dragon_0.png", function(image) {
             self.loadBlump(image);
         });
         this.batch.commit();
@@ -351,22 +396,24 @@ var BLUMP = (function () {
 
     BlumpTest.prototype.update = function (now, elapsed, keyboard, pointer) {
         if (this.blump) {
-            this.blump.rotate(elapsed * Math.PI * 0.0001, new R3.V(0, 1, 0));
+            var angleDelta = pointer.primary ? pointer.primary.deltaX * 0.01 :
+                                               elapsed * Math.PI * 0.0001;
+            this.blump.rotate(angleDelta, new R3.V(0, 1, 0));
         }
     };
 
     BlumpTest.prototype.loadBlump = function (image) {
         var atlas = new WGL.TextureAtlas(image.width, image.height / 2, 1),
-            builder = setupForPaired(image, 0.0006, atlas),
+            builder = setupForPaired(image, 0.001, atlas),
             depths = builder.depthFromPaired(image, false);
-        builder.setAlignment(0.5, 0, -0.08);
+        builder.setAlignment(0.5, 0, -0.105);
         this.blump = new BLOB.Thing(builder.constructSurface(depths, atlas.texture()));
     };
 
     BlumpTest.prototype.render = function (room, width, height) {
         room.clear(this.clearColor);
         if (this.blump && room.viewer.showOnPrimary()) {
-            var d = 0.2, h = 0.05;
+            var d = 0.22, h = 0.09;
             room.viewer.positionView(new R3.V(d, h, 0), new R3.V(0, h, 0), new R3.V(0, 1, 0));
             room.setupView(this.program, this.viewport);
             this.blump.render(room, this.program);
