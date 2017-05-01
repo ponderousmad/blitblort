@@ -74,7 +74,7 @@ var BLUMP = (function () {
     function smoothDepths(depths, width, height, smoothThreshold, smoothFactor) {
         var result = new Float32Array(depths.length),
             threshold = smoothThreshold ? smoothThreshold : 0.02,
-            smoothing = smoothFactor ? smoothFactor : 5;
+            smoothing = smoothFactor ? smoothFactor : 0.1;
         for (var y = 0; y < height; ++y) {
             for (var x = 0; x < width; ++x) {
                 var count = 0,
