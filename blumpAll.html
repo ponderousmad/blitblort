@@ -34,34 +34,53 @@
             <form>
                 <div>
                     <span>
-                        Images:
-                        <select name="select" id="selectImage">
-                        </select>
-                    </span>
-                </div>
-                <div>
-                    <span>
                         Turntable: <input type="checkbox" id="turntable" />
                     </span>
                 </div>
                 <div>
                     <span>
-                        Draw All: <input type="checkbox" id="drawAll" checked />
+                        Draw:
+                        <select name="select" id="selectDraw">
+                            <option value="all" selected>All</option>
+                            <option value="active">Active</option>
+                            <option value="angle">Angle</option>
+                            <option value="both">Angle + Active</option>
+                        </select>
+                    </span>
+                </div>
+                <div>
+                    <span>
+                        Images:
+                        <select name="select" id="selectImage">
+                        </select>
                     </span>
                 </div>
                 <button id="reload" type="button">Reload</button>
                 <div>
                     <div class="slider">
-                        <span>Heading: <input type="number" class="angleValue" id="headingDeg"></span>
-                        <input class="angleSlider" id="heading" type="range" min="-360" max= "360" value="0">
+                        <div>Angle:</div>
+                        <input type="number" class="angleValue" id="valueAngle">
+                        <input class="angleSlider" id="sliderAngle" type="range" min="-180" max= "180" value="0">
                     </div>
                     <div class="slider">
-                        <span>Tilt: <input type="number" class="angleValue" id="tiltDeg"></span>
-                        <input class="angleSlider" id="tilt" type="range" min="-90" max= "90" value="0">
+                        <div>LR-Offset:</div>
+                        <input type="number" class="linearValue" id="valueX">
+                        <input class="linearSlider" id="sliderX" type="range" min="-0.5" max= "0.5" step="0.001" value="0">
                     </div>
                     <div class="slider">
-                        <span>Twist: <input type="number" class="angleValue" id="twistDeg"></span>
-                        <input class="angleSlider" id="twist" type="range" min="-90" max= "90" value="0">
+                        <div>FB-Offset:</div>
+                        <input type="number" class="linearValue" id="valueZ">
+                        <input class="linearSlider" id="sliderZ" type="range" min="-0.5" max= "0.5" step="0.001" value="0">
+                    </div>
+                    <div class="slider">
+                        <div>Vertical Offset:</div>
+                        <input type="number" class="linearValue" id="valueY">
+                        <input class="linearSlider" id="sliderY" type="range" min="-0.5" max= "0.5" step="0.001" value="0">
+                    </div>
+                    <div class="slider">
+                        <div>Scale:</div>
+                        <input type="number" class="linearValue" id="valueScale">
+                        <input class="linearSlider" id="sliderScale" type="range" min="0.5" max= "1.5" step="0.001" value="1">
                     </div>
                 </div>
                 <div>
@@ -72,7 +91,7 @@
         </div>
         <script type="text/javascript">
             window.onload = function(e) {
-                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("canvas"));
+                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("safe"));
                 var failed = MAIN.runTestSuites(),
                     controlsVisible = false;
                 if (failed === 0) {
