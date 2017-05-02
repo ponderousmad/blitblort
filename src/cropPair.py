@@ -1,7 +1,7 @@
 
-cropLeft = 220
-cropTop = 88
-cropBottom = 350
+cropLeft = 190
+cropTop = 24
+cropBottom = 300
 
 for image in gimp.image_list():
     height = image.height / 2
@@ -16,4 +16,5 @@ for image in gimp.image_list():
     pdb.gimp_layer_resize_to_image_size(image.layers[1])
     pdb.gimp_image_resize(image, cropWidth, 2 * cropHeight, 0, 0)
     pdb.gimp_layer_translate(image.layers[1], 0, cropHeight)
+
 
