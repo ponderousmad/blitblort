@@ -452,15 +452,14 @@ var BLUMP = (function () {
         this.viewport = viewport ? viewport : "canvas";
         this.thing = null;
         this.program = null;
-        this.distance = 0.22;
+        this.distance = 0.5;
         this.zoom = 1;
         this.tilt = 0;
         this.TILT_MAX = Math.PI * 0.49;
 
         var blumpValues = null;
         if (!baseName) {
-            baseName = "me_";
-            //baseName = "dragon_";
+            baseName = "dragon_";
         }
         if (baseName == "me_") {
             blumpValues = [

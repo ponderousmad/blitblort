@@ -91,7 +91,7 @@
         </div>
         <script type="text/javascript">
             window.onload = function(e) {
-                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("safe"));
+                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("safe", "me_"));
                 var failed = MAIN.runTestSuites(),
                     controlsVisible = false;
                 if (failed === 0) {
