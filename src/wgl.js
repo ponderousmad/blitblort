@@ -463,11 +463,11 @@ var WGL = (function () {
                 1.0, 1.0, 1.0, 1.0
             ]);
 
-        program.batch = new BLIT.Batch("images/");
         program.square = this.setupFloatBuffer(vertices);
         program.squareNormals = this.setupFloatBuffer(normals);
         program.squareUVs = this.setupFloatBuffer(uvs);
         program.squareColors = this.setupFloatBuffer(colors);
+        program.batch = new BLIT.Batch("images/");
         program.squareTexture = this.loadTexture(program.batch, "uv.png");
         program.batch.commit();
     };
@@ -492,24 +492,11 @@ var WGL = (function () {
     };
 
     Room.prototype.drawTest = function (viewport, angle) {
-        if (!this.testSetup) {
-            var program = this.programFromElements("vertex-test", "fragment-test");
-
-            this.testSetup = {
-                shader: program,
-                vertexPosition: this.bindVertexAttribute(program, "aPos"),
-                vertexNormal: this.bindVertexAttribute(program, "aNormal"),
-                vertexUV: this.bindVertexAttribute(program, "aUV"),
-                vertexColor: this.bindVertexAttribute(program, "aColor"),
-                mvUniform: "uMVMatrix",
-                perspectiveUniform: "uPMatrix",
-                normalUniform: "uNormalMatrix",
-                textureVariable: "uSampler"
-            };
-
-            this.setupDrawTest(this.testSetup);
+        if (!this.testProgram) {
+            this.testProgram = this.programFromElements("vertex-test", "fragment-test");
+            this.setupDrawTest(this.testProgram);
         }
-        if (!this.testSetup.batch.loaded) {
+        if (!this.testProgram.batch.loaded) {
             return;
         }
         var d = 2,
@@ -517,8 +504,8 @@ var WGL = (function () {
             x = Math.cos(a) * d,
             z = Math.sin(a) * d;
         this.viewer.positionView(new R3.V(x, 0, z), R3.origin(), new R3.V(0, 1, 0));
-        this.setupView(this.testSetup, viewport);
-        this.drawTestSquare(this.testSetup);
+        this.setupView(this.testProgram, viewport);
+        this.drawTestSquare(this.testProgram);
     };
 
     function Mesh() {
