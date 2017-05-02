@@ -20,7 +20,7 @@
         <script type="text/javascript" src="src/main.js"></script>
     </head>
     <body>
-        <canvas id="canvas3D" width="400" height="400">
+        <canvas id="canvas3D" width="800" height="900">
             Sorry, your browser doesn't support the &lt;canvas&gt; element.
         </canvas>
         <div class="controls" id="controls">
@@ -31,6 +31,33 @@
             </div>
             <form>
                 <div>
+                    <span>
+                        Images:
+                        <select name="select" id="imageSelect">
+                        </select>
+                    </span>
+                </div>
+                <div>
+                    <span>
+                        <u>T</u>urntable: <input type="checkbox" id="turntable" />
+                    </span>
+                </div>
+                <button id="reload" type="button">Reload</button>
+                <div>
+                    <div class="slider">
+                        <span>Heading: <input type="number" class="angleValue" id="headingDeg"></span>
+                        <input class="angleSlider" id="heading" type="range" min="-360" max= "360" value="0">
+                    </div>
+                    <div class="slider">
+                        <span>Tilt: <input type="number" class="angleValue" id="tiltDeg"></span>
+                        <input class="angleSlider" id="tilt" type="range" min="-90" max= "90" value="0">
+                    </div>
+                    <div class="slider">
+                        <span>Twist: <input type="number" class="angleValue" id="twistDeg"></span>
+                        <input class="angleSlider" id="twist" type="range" min="-90" max= "90" value="0">
+                    </div>
+                </div>
+                <div>
                     <button id="enterVR" type="button" class="hidden">Enter VR</button>
                     <button id="exitVR" type="button" class="hidden">Exit VR</button>
                 </div>
@@ -38,11 +65,20 @@
         </div>
         <script type="text/javascript">
             window.onload = function(e) {
-                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("safe", true));
-                var failed = MAIN.runTestSuites();
+                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("canvas", true));
+                var failed = MAIN.runTestSuites(),
+                    controlsVisible = false;
                 if (failed === 0) {
                     console.log("All Tests Passed!");
                 }
+
+                document.getElementById("menuButton").addEventListener("click", function(e) {
+                    controlsVisible = !controlsVisible;
+                    var slide = controlsVisible ? " slideIn" : "";
+                    controls.className = "controls" + slide;
+                    e.preventDefault = true;
+                    return false;
+                });
             };
         </script>
         <script id="vertex-test" type="x-shader/x-vertex">
