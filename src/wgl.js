@@ -339,37 +339,38 @@ var WGL = (function () {
     };
 
     Room.prototype.drawMesh = function (mesh, program, transform) {
-        var draw = this.setupMesh(mesh);
+        var draw = this.setupMesh(mesh),
+            gl = this.gl;
 
         if (transform) {
             this.setTransform(program, transform);
         }
 
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.vertexBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, draw.vertexBuffer);
         if (mesh.updated) {
             this.updateBuffer(draw.vertexBuffer, mesh.glVertices);
         }
-        this.gl.vertexAttribPointer(program.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(program.vertexPosition, 3, gl.FLOAT, false, 0, 0);
         if (program.vertexNormal !== null) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.normalBuffer);
-            this.gl.vertexAttribPointer(program.vertexNormal, 3, this.gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, draw.normalBuffer);
+            gl.vertexAttribPointer(program.vertexNormal, 3, gl.FLOAT, false, 0, 0);
         }
         if (program.vertexUV !== null) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.uvBuffer);
-            this.gl.vertexAttribPointer(program.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, draw.uvBuffer);
+            gl.vertexAttribPointer(program.vertexUV, 2, gl.FLOAT, false, 0, 0);
         }
         if (program.vertexColor !== null) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.colorBuffer);
+            gl.bindBuffer(gl.ARRAY_BUFFER, draw.colorBuffer);
             if (mesh.updated) {
                 this.updateBuffer(draw.colorBuffer, mesh.glColors);
             }
-            this.gl.vertexAttribPointer(program.vertexColor, 4, this.gl.FLOAT, false, 0, 0);
+            gl.vertexAttribPointer(program.vertexColor, 4, gl.FLOAT, false, 0, 0);
         }
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, draw.triBuffer);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, draw.triBuffer);
         if (draw.texture) {
             this.bindTexture(program.shader, program.textureVariable, draw.texture);
         }
-        this.gl.drawElements(this.gl.TRIANGLES, mesh.tris.length, this.gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, mesh.tris.length, gl.UNSIGNED_SHORT, 0);
         mesh.updated = false;
     };
 
