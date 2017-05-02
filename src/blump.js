@@ -393,8 +393,6 @@ var BLUMP = (function () {
 
     Blump.prototype.load = function (batch) {
         this.image = batch.load(this.resource);
-        this.width = this.image.width;
-        this.height = this.image.height / 2;
     };
 
     Blump.prototype.construct = function (atlas) {
@@ -405,7 +403,7 @@ var BLUMP = (function () {
         this.mesh = builder.constructSurface(depths, atlas.texture());
     };
 
-    function BlumpTest(viewport) {
+    function BlumpTest(viewport, baseName) {
         this.clearColor = [0, 0, 0, 1];
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
@@ -415,16 +413,20 @@ var BLUMP = (function () {
         this.distance = 0.22;
         this.zoom = 1;
 
-        this.blumps = [
-            new Blump("dragon_0.png",   0),
-            new Blump("dragon_45.png",  45),
-            new Blump("dragon_90.png",  90),
-            new Blump("dragon_135.png", 135),
-            new Blump("dragon_180.png", 180),
-            new Blump("dragon_225.png", 225),
-            new Blump("dragon_270.png", 270),
-            new Blump("dragon_315.png", 315)
-        ];
+
+        var angles = [0, 45, 90, 135, 180, 225, 270, 315];
+        if (!baseName) {
+            baseName = "dragon_";
+        }
+        if (baseName == "me_") {
+            angles = [0, 45, 90, 270, 315];
+        }
+
+        this.blumps = [];
+        for (var a = 0; a < angles.length; ++a) {
+            var angle = angles[a];
+            this.blumps.push(new Blump(baseName + angle + ".png", angle));
+        }
 
         var self = this;
         this.batch = new BLIT.Batch("images/", function() {
@@ -449,15 +451,30 @@ var BLUMP = (function () {
                 self.loadBlumps();
             }, false);
         }
+
+        this.selectImage = document.getElementById("selectImage");
+        if (this.selectImage) {
+            for (var b = 0; b < this.blumps.length; ++b) {
+                var blump = this.blumps[b],
+                    option = new Option(blump.resource, b, b === 0, b === 0);
+                this.selectImage.appendChild(option);
+            }
+        }
     };
 
     BlumpTest.prototype.loadBlumps = function () {
         var blumps = this.blumps,
-            atlas = new WGL.TextureAtlas(blumps[0].width, blumps[0].height, blumps.length);
+            image = blumps[0].image,
+            atlas = new WGL.TextureAtlas(image.width, image.height/2, blumps.length);
         for (var b = 0; b < blumps.length; ++b) {
             blumps[b].construct(atlas);
         }
         this.thing = new BLOB.Thing();
+
+        var atlasDiv = document.getElementById("atlas");
+        if (atlasDiv) {
+            atlasDiv.appendChild(atlas.canvas);
+        }
     };
 
     BlumpTest.prototype.setupRoom = function (room) {

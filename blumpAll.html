@@ -23,6 +23,8 @@
         <canvas id="canvas3D" width="800" height="900">
             Sorry, your browser doesn't support the &lt;canvas&gt; element.
         </canvas>
+        <div id="atlas">
+        </div>
         <div class="controls" id="controls">
             <div class="menuBorder">
                 <div class="menuToggle">
@@ -70,7 +72,7 @@
         </div>
         <script type="text/javascript">
             window.onload = function(e) {
-                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("canvas", true));
+                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("canvas"));
                 var failed = MAIN.runTestSuites(),
                     controlsVisible = false;
                 if (failed === 0) {
@@ -107,7 +109,7 @@
 
                 highp vec3 ambient = vec3(0.2, 0.2, 0.2);
                 highp vec3 lightColor = vec3(1.0, 1.0, 1.0);
-                highp vec3 lightDirection = vec3(0.2, 0.7, -0.3);
+                highp vec3 lightDirection = vec3(0.254, 0.889, 0.381);
 
                 highp vec3 worldNormal = normalize((uNormalMatrix * vec4(aNormal, 1.0)).xyz);
                 highp float lighting = max(dot(worldNormal.xyz, lightDirection), 0.0);
