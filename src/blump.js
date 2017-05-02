@@ -115,6 +115,8 @@ var BLUMP = (function () {
         this.pixelSize = pixelSize;
 
         this.setAlignment(0.5, 0.5, 0);
+        this.transform = new R3.M();
+        this.inverse = this.transform;
         this.uMin = 0;
         this.uMax = 0;
         this.uScale = 1;
@@ -128,6 +130,11 @@ var BLUMP = (function () {
         this.xOffset = this.width * alignX;
         this.yOffset = this.height * alignY;
         this.depthOffset = depthOffset;
+    };
+
+    Builder.prototype.applyTransform = function (transform) {
+        this.transform = transform;
+        this.inverse = transform.inverse();
     };
 
     Builder.prototype.setupTextureSurface = function (coords) {
@@ -162,7 +169,11 @@ var BLUMP = (function () {
             u = this.uMin + x * this.uScale,
             v = this.vMin + y * this.vScale;
         normal.normalize();
-        mesh.addVertex(position, normal, u, v, this.color);
+        mesh.addVertex(
+            this.transform.transformP(position),
+            this.inverse.transformV(normal),
+            u, v, this.color
+        );
     };
 
     function depthIndex(x, y, width, height) {
@@ -349,12 +360,13 @@ var BLUMP = (function () {
         mesh.updated = true;
     };
 
-    Builder.prototype.depthFromPaired = function(image, useCalibration) {
+    Builder.prototype.depthFromPaired = function(image, useCalibration, defaultRange) {
         return decodeDepths(
             image,
             0, this.height,
             this.width, this.height,
-            useCalibration
+            useCalibration,
+            defaultRange
         );
     };
 
@@ -376,15 +388,40 @@ var BLUMP = (function () {
         this.updateInterval = 16;
         this.viewport = viewport ? viewport : "canvas";
         this.blump = null;
+        this.meshes = [];
         this.program = null;
 
-        var self = this;
-        this.batch = new BLIT.Batch("images/");
-        this.batch.load("dragon_0.png", function(image) {
-            self.loadBlump(image);
+        var self = this,
+            blumpImages = [];
+        this.batch = new BLIT.Batch("images/", function() {
+            self.loadBlumps(blumpImages);
         });
+        blumpImages.push([0,   this.batch.load("dragon_0.png")]);
+        blumpImages.push([45,  this.batch.load("dragon_45.png")]);
+        blumpImages.push([90,  this.batch.load("dragon_90.png")]);
+        blumpImages.push([135, this.batch.load("dragon_135.png")]);
+        blumpImages.push([180, this.batch.load("dragon_180.png")]);
+        blumpImages.push([225, this.batch.load("dragon_225.png")]);
+        blumpImages.push([270, this.batch.load("dragon_270.png")]);
+        blumpImages.push([315, this.batch.load("dragon_315.png")]);
         this.batch.commit();
     }
+
+    BlumpTest.prototype.loadBlumps = function (images) {
+        var first = images[0][1],
+            atlas = new WGL.TextureAtlas(first.width, first.height / 2, images.length);
+        for (var i = 0; i < images.length; ++i) {
+            var entry = images[i],
+                angle = R2.clampAngle(entry[0] * R2.DEG_TO_RAD),
+                image = entry[1];
+            var builder = setupForPaired(image, 0.001, atlas),
+                depths = builder.depthFromPaired(image, false, 210);
+            builder.setAlignment(0.5, 0, -0.105);
+            builder.applyTransform(R3.makeRotateY(angle + Math.PI));
+            this.meshes.push([angle, builder.constructSurface(depths, atlas.texture())]);
+        }
+        this.blump = new BLOB.Thing(this.meshes[0][1]);
+    };
 
     BlumpTest.prototype.setupRoom = function (room) {
         this.program = room.programFromElements("vertex-test", "fragment-test");
@@ -402,19 +439,29 @@ var BLUMP = (function () {
         }
     };
 
-    BlumpTest.prototype.loadBlump = function (image) {
-        var atlas = new WGL.TextureAtlas(image.width, image.height / 2, 1),
-            builder = setupForPaired(image, 0.001, atlas),
-            depths = builder.depthFromPaired(image, false);
-        builder.setAlignment(0.5, 0, -0.105);
-        this.blump = new BLOB.Thing(builder.constructSurface(depths, atlas.texture()));
+    BlumpTest.prototype.eyePosition = function () {
+        return new R3.V(0.22, 0.09, 0);
     };
 
     BlumpTest.prototype.render = function (room, width, height) {
         room.clear(this.clearColor);
         if (this.blump && room.viewer.showOnPrimary()) {
-            var d = 0.22, h = 0.09;
-            room.viewer.positionView(new R3.V(d, h, 0), new R3.V(0, h, 0), new R3.V(0, 1, 0));
+            var eye = this.eyePosition(),
+                localEye = this.blump.toLocalP(eye),
+                eyeAngle = R2.clampAngle(Math.atan2(localEye.z, localEye.x)),
+                minAngle = 4 * Math.PI,
+                bestAngle = null;
+            for (var m = 0; m < this.meshes.length; ++m) {
+                var entry = this.meshes[m],
+                    angle = entry[0],
+                    angleDifference = Math.abs(R2.clampAngle(eyeAngle + angle) + Math.PI * 0.5);
+                if (angleDifference < minAngle) {
+                    this.blump.mesh = entry[1];
+                    minAngle = angleDifference;
+                    bestAngle = angle;
+                }
+            }
+            room.viewer.positionView(eye, new R3.V(0, eye.y, 0), new R3.V(0, 1, 0));
             room.setupView(this.program, this.viewport);
             this.blump.render(room, this.program);
         }
