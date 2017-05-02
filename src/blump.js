@@ -381,7 +381,7 @@ var BLUMP = (function () {
         return builder;
     }
 
-    function BlumpTest(viewport) {
+    function BlumpTest(viewport, drawAll) {
         this.clearColor = [0, 0, 0, 1];
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
@@ -390,6 +390,7 @@ var BLUMP = (function () {
         this.blump = null;
         this.meshes = [];
         this.program = null;
+        this.drawAll = drawAll ? true : false;
 
         var self = this,
             blumpImages = [];
@@ -451,6 +452,8 @@ var BLUMP = (function () {
                 eyeAngle = R2.clampAngle(Math.atan2(localEye.z, localEye.x)),
                 minAngle = 4 * Math.PI,
                 bestAngle = null;
+            room.viewer.positionView(eye, new R3.V(0, eye.y, 0), new R3.V(0, 1, 0));
+            room.setupView(this.program, this.viewport);
             for (var m = 0; m < this.meshes.length; ++m) {
                 var entry = this.meshes[m],
                     angle = entry[0],
@@ -460,10 +463,14 @@ var BLUMP = (function () {
                     minAngle = angleDifference;
                     bestAngle = angle;
                 }
+                if (this.drawAll) {
+                    this.blump.mesh = entry[1];
+                    this.blump.render(room, this.program);
+                }
             }
-            room.viewer.positionView(eye, new R3.V(0, eye.y, 0), new R3.V(0, 1, 0));
-            room.setupView(this.program, this.viewport);
-            this.blump.render(room, this.program);
+            if (!this.drawAll) {
+                this.blump.render(room, this.program);
+            }
         }
     };
 
