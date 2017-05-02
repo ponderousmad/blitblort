@@ -387,6 +387,8 @@ var BLUMP = (function () {
         this.image = null;
         this.mesh = null;
         this.visible = true;
+        this.offset = R3.origin();
+        this.scale = 1;
     }
 
     Blump.prototype.load = function (batch) {
@@ -399,18 +401,17 @@ var BLUMP = (function () {
         var builder = setupForPaired(this.image, 0.001, atlas),
             depths = builder.depthFromPaired(this.image, false, 210);
         builder.setAlignment(0.5, 0, -0.105);
-        builder.applyTransform(R3.makeRotateY(this.angle + Math.PI));
+        builder.applyTransform(R3.makeRotateY(this.angle));
         this.mesh = builder.constructSurface(depths, atlas.texture());
     };
 
-    function BlumpTest(viewport, drawAll) {
+    function BlumpTest(viewport) {
         this.clearColor = [0, 0, 0, 1];
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
         this.viewport = viewport ? viewport : "canvas";
         this.thing = null;
         this.program = null;
-        this.drawAll = drawAll ? true : false;
         this.distance = 0.22;
         this.zoom = 1;
 
@@ -439,6 +440,7 @@ var BLUMP = (function () {
 
     BlumpTest.prototype.setupControls = function () {
         this.turntableCheckbox = document.getElementById("turntable");
+        this.drawAllCheckbox = document.getElementById("drawAll");
 
         var reload = document.getElementById("reload"),
             self = this;
@@ -473,7 +475,7 @@ var BLUMP = (function () {
             if (pointer.primary) {
                 angleDelta = pointer.primary.deltaX * 0.01;
             } else if (!this.turntableCheckbox || this.turntableCheckbox.checked) {
-                angleDelta = elapsed * Math.PI * 0.0001;
+                angleDelta = elapsed * Math.PI * 0.001;
             }
             this.thing.rotate(angleDelta, new R3.V(0, 1, 0));
         }
@@ -493,14 +495,15 @@ var BLUMP = (function () {
         if (this.thing && room.viewer.showOnPrimary()) {
             var eye = this.eyePosition(),
                 localEye = this.thing.toLocalP(eye),
-                eyeAngle = R2.clampAngle(Math.atan2(localEye.z, localEye.x)),
-                minAngle = 4 * Math.PI;
+                eyeAngle = R2.clampAngle(Math.atan2(-localEye.x, localEye.z)),
+                minAngle = 4 * Math.PI,
+                drawAll = this.drawAllCheckbox ? this.drawAllCheckbox.checked : false;
             room.viewer.positionView(eye, new R3.V(0, eye.y, 0), new R3.V(0, 1, 0));
             room.setupView(this.program, this.viewport);
             for (var b = 0; b < this.blumps.length; ++b) {
                 var blump = this.blumps[b],
-                    angleDifference = Math.abs(R2.clampAngle(eyeAngle + blump.angle) + Math.PI * 0.5);
-                if (this.drawAll) {
+                    angleDifference = Math.abs(R2.clampAngle(eyeAngle + blump.angle));
+                if (drawAll) {
                     this.thing.mesh = blump.mesh;
                     this.thing.render(room, this.program);
                 } else if (angleDifference < minAngle) {
@@ -508,7 +511,7 @@ var BLUMP = (function () {
                     minAngle = angleDifference;
                 }
             }
-            if (!this.drawAll) {
+            if (!drawAll) {
                 this.thing.render(room, this.program);
             }
         }
