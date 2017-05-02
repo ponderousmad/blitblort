@@ -440,7 +440,7 @@ var R3 = (function () {
     };
 
     // Also based on http://paulbourke.net/miscellaneous/determinant/
-    M.prototype.inverse = function (skipI, skipJ) {
+    M.prototype.inverse = function () {
         var det = this.determinant();
 
         if (det === 0) {
