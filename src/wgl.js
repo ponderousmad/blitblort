@@ -338,11 +338,11 @@ var WGL = (function () {
         return mesh.drawData;
     };
 
-    Room.prototype.drawMesh = function (mesh, program) {
+    Room.prototype.drawMesh = function (mesh, program, transform) {
         var draw = this.setupMesh(mesh);
 
-        if (mesh.transform) {
-            this.pushTransform(program, mesh.transform);
+        if (transform) {
+            this.setTransform(program, transform);
         }
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, draw.vertexBuffer);
@@ -393,7 +393,7 @@ var WGL = (function () {
         program.view = view;
     };
 
-    Room.prototype.pushTransform = function (program, transform) {
+    Room.prototype.setTransform = function (program, transform) {
         var shader = program.shader,
             modelView = new R3.M(),
             vLocation = this.gl.getUniformLocation(shader, program.mvUniform),
@@ -779,7 +779,7 @@ var WGL = (function () {
 
         ++this.placed;
         this.xOffset += this.width;
-        if (this.xOffset >= this.size) {
+        if (this.xOffset + this.width >= this.size) {
             this.xOffset = 0;
             this.yOffset += this.height;
         }
