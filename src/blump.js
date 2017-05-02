@@ -454,6 +454,8 @@ var BLUMP = (function () {
         this.program = null;
         this.distance = 0.22;
         this.zoom = 1;
+        this.tilt = 0;
+        this.TILT_MAX = Math.PI * 0.49;
 
         var blumpValues = null;
         if (!baseName) {
@@ -462,11 +464,11 @@ var BLUMP = (function () {
         }
         if (baseName == "me_") {
             blumpValues = [
-                [  0,   0, new R3.V( 0,     0,      0),     1],
-                [ 45,  45, new R3.V( 0.053, 0,      0),     1],
-                [ 90,  70, new R3.V( 0.048, 0.011, -0.053), 1],
-                [270, -69, new R3.V( 0.005, 0.005, -0.053), 1],
-                [315, -36, new R3.V(-0.021, 0.005, -0.032), 1]
+                [  0,   0, new R3.V( 0.000, 0.000,  0.000), 1],
+                [ 45,  45, new R3.V( 0.053, 0.005,  0.000), 1],
+                [ 90,  70, new R3.V( 0.069, 0.011, -0.016), 1],
+                [270, -65, new R3.V(-0.037, 0.005, -0.026), 1],
+                [315, -42, new R3.V(-0.021, 0.000, -0.011), 1]
             ];
         } else if (baseName == "dragon_") {
             blumpValues = [
@@ -634,6 +636,11 @@ var BLUMP = (function () {
             this.thing.rotate(angleDelta, new R3.V(0, 1, 0));
         }
 
+        if (pointer.primary) {
+            this.tilt += pointer.primary.deltaY * 0.5 * R2.DEG_TO_RAD;
+            this.tilt = R2.clamp(this.tilt, -this.TILT_MAX, this.TILT_MAX);
+        }
+
         if (pointer.wheelY) {
             var WHEEL_BASE = 20;
             this.zoom *= (WHEEL_BASE + pointer.wheelY) / WHEEL_BASE;
@@ -641,7 +648,10 @@ var BLUMP = (function () {
     };
 
     BlumpTest.prototype.eyePosition = function () {
-        return new R3.V(this.distance * this.zoom, 0, 0);
+        var d = this.distance * this.zoom,
+            x = Math.cos(this.tilt),
+            y = Math.sin(this.tilt);
+        return new R3.V(x * d, y * d, 0);
     };
 
     BlumpTest.prototype.render = function (room, width, height) {
@@ -652,7 +662,7 @@ var BLUMP = (function () {
                 eyeAngle = R2.clampAngle(Math.atan2(-localEye.x, localEye.z)),
                 minAngle = 4 * Math.PI,
                 drawMode = this.selectDraw ? this.selectDraw.value : "angle";
-            room.viewer.positionView(eye, new R3.V(0, eye.y, 0), new R3.V(0, 1, 0));
+            room.viewer.positionView(eye, R3.origin(), new R3.V(0, 1, 0));
             room.setupView(this.program, this.viewport);
             if (drawMode === "active" || drawMode === "both") {
                 this.thing.mesh = this.activeBlump.mesh;
