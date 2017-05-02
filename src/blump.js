@@ -151,6 +151,19 @@ var BLUMP = (function () {
         this.vScale = coords.vSize;
     };
 
+    Builder.prototype.calculatePositionPerspective = function (x, y, depth) {
+        var yIndex = (this.height - y) - this.yOffset,
+            xIndex = x - this.xOffset,
+            trueDepth = depth + 0.450,
+            xFactor = 305.73 * 2,
+            yFactor = 305.62 * 2;
+        return new R3.V(
+            trueDepth * xIndex / xFactor,
+            trueDepth * yIndex / yFactor,
+            depth + this.depthOffset
+        );
+    };
+
     Builder.prototype.calculatePosition = function (x, y, depth) {
         var yIndex = (this.height - y) - this.yOffset,
             xIndex = x - this.xOffset;
