@@ -20,8 +20,10 @@
         <script type="text/javascript" src="src/main.js"></script>
     </head>
     <body>
-        <canvas id="canvas3D" width="800" height="900">
+        <canvas id="canvas3D" class="beside" width="800" height="900">
             Sorry, your browser doesn't support the &lt;canvas&gt; element.
+        </canvas>
+        <canvas id="canvasEdit" class="beside" width="800" height="900">
         </canvas>
         <div id="atlas">
         </div>
@@ -87,24 +89,15 @@
                     <button id="enterVR" type="button" class="hidden">Enter VR</button>
                     <button id="exitVR" type="button" class="hidden">Exit VR</button>
                 </div>
+                <div>
+                    <canvas id="canvasPreview" width="255" height="255">
+                    </canvas>
+                </div>
             </form>
         </div>
         <script type="text/javascript">
             window.onload = function(e) {
-                MAIN.start(document.getElementById("canvas3D"), new BLUMP.BlumpTest("safe"));
-                var failed = MAIN.runTestSuites(),
-                    controlsVisible = false;
-                if (failed === 0) {
-                    console.log("All Tests Passed!");
-                }
-
-                document.getElementById("menuButton").addEventListener("click", function(e) {
-                    controlsVisible = !controlsVisible;
-                    var slide = controlsVisible ? " slideIn" : "";
-                    controls.className = "controls" + slide;
-                    e.preventDefault = true;
-                    return false;
-                });
+                BLUMP.start("dragon_");
             };
         </script>
         <script id="vertex-test" type="x-shader/x-vertex">

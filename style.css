@@ -7,23 +7,27 @@ html, body {
     overflow-y: hidden;
 }
 
+.beside {
+    display: inline-block;
+}
+
 
 .angleSlider {
-    width: 200px;
+    width: 250px;
     margin-right: 30px;
 }
 
 .angleValue {
-    width: 60px;
+    width: 100px;
 }
 
 .linearSlider {
-    width: 200px;
+    width: 250px;
     margin-right: 30px;
 }
 
 .linearValue {
-    width: 60px;
+    width: 100px;
 }
 
 .controls {
@@ -60,11 +64,11 @@ html, body {
 }
 
 .slideIn {
-    -webkit-transform: translate(-215px,0px);
-    -moz-transform: translate(-215px,0px);
-    -o-transform: translate(-215px,0px);
-    -ms-transform: translate(-215px,0px);
-    transform: translate(-215px,0px);
+    -webkit-transform: translate(-275px,0px);
+    -moz-transform: translate(-275px,0px);
+    -o-transform: translate(-275px,0px);
+    -ms-transform: translate(-275px,0px);
+    transform: translate(-275px,0px);
 }
 
 .hidden {

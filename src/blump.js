@@ -445,11 +445,67 @@ var BLUMP = (function () {
         this.mesh.updated = true;
     };
 
-    function BlumpTest(viewport, baseName) {
+    function BlumpEdit(viewport) {
+        this.maximize = viewport === "safe";
+        this.updateInDraw = true;
+        this.preview = null;
+        this.blump = null;
+        this.zoom = 4;
+        this.xOffset = 0;
+        this.yOffset = 0;
+    }
+
+    BlumpEdit.prototype.update = function (now, elapsed, keyboard, pointer) {
+        if (pointer.primary) {
+            if (pointer.mouse.shift) {
+                this.xOffset += pointer.primary.deltaX;
+                this.yOffset += pointer.primary.deltaY;
+            }
+        }
+
+        var oldZoom = this.zoom;
+        if (pointer.wheelY < 0) {
+            this.zoom += 1;
+        } else if (pointer.wheelY > 0) {
+            this.zoom = Math.max(1, this.zoom - 1);
+        }
+        if (oldZoom != this.zoom) {
+            var canvasPos = pointer.mouse.location;
+            this.xOffset = canvasPos[0] - (canvasPos[0] - this.xOffset) * this.zoom / oldZoom;
+            this.yOffset = canvasPos[1] - (canvasPos[1] - this.yOffset) * this.zoom / oldZoom;
+        }
+    };
+
+    BlumpEdit.prototype.draw = function (context, width, height) {
+        BLIT.toggleSmooth(context, false);
+        context.fillStyle = "rgba(0,0,0,1)";
+        context.fillRect(0, 0, width, height);
+        if (this.blump) {
+            var image = this.blump.image,
+                blumpHeight = image.height / 2,
+                scaleWidth = image.width * this.zoom,
+                scaleHeight = blumpHeight * this.zoom;
+            context.drawImage(
+                image,
+                0, blumpHeight,
+                image.width, blumpHeight,
+                this.xOffset, this.yOffset,
+                scaleWidth, scaleHeight
+            );
+        }
+    };
+
+    BlumpEdit.prototype.editBlump = function (blump, previewContext) {
+        this.blump = blump;
+        this.preview = previewContext;
+    };
+
+    function BlumpTest(viewport, baseName, editor) {
         this.clearColor = [0, 0, 0, 1];
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
         this.viewport = viewport ? viewport : "canvas";
+        this.editor = editor;
         this.thing = null;
         this.program = null;
         this.distance = 0.5;
@@ -506,6 +562,8 @@ var BLUMP = (function () {
     BlumpTest.prototype.setupControls = function () {
         this.turntableCheckbox = document.getElementById("turntable");
         this.selectDraw = document.getElementById("selectDraw");
+        this.preview = document.getElementById("canvasPreview");
+        this.previewContext = this.preview.getContext("2d");
 
         function setupSlider(idBase, handleChange) {
             var slider = document.getElementById("slider" + idBase),
@@ -533,6 +591,14 @@ var BLUMP = (function () {
                 if (value) { value.value = initialValue; }
                 if (slider) { slider.value = initialValue; }
             };
+        }
+
+        function initPreview(image) {
+            var w = image.width, h = image.height;
+            self.preview.width = w;
+            self.preview.height = h;
+            self.previewContext.clearRect(0, 0, w, h);
+            self.previewContext.drawImage(image, 0, 0, w, h, 0, 0, w, h);
         }
 
         this.activeBlump = this.blumps[0];
@@ -575,6 +641,11 @@ var BLUMP = (function () {
             initY(self.activeBlump.offset.y);
             initZ(self.activeBlump.offset.z);
             initScale(self.activeBlump.scale);
+            initPreview(self.activeBlump.image);
+
+            if (self.editor) {
+                self.editor.editBlump(self.activeBlump, self.previewContext);
+            }
         }
         initialize();
 
@@ -686,9 +757,30 @@ var BLUMP = (function () {
         }
     };
 
+    function start(baseName) {
+        var editor = new BlumpEdit("canvas");
+        MAIN.start(document.getElementById("canvas3D"), new BlumpTest("canvas", baseName, editor));
+        MAIN.start(document.getElementById("canvasEdit"), editor);
+        var failed = MAIN.runTestSuites(),
+            controlsVisible = false;
+        if (failed === 0) {
+            console.log("All Tests Passed!");
+        }
+
+        document.getElementById("menuButton").addEventListener("click", function(e) {
+            controlsVisible = !controlsVisible;
+            var slide = controlsVisible ? " slideIn" : "";
+            controls.className = "controls" + slide;
+            e.preventDefault = true;
+            return false;
+        });
+    }
+
     return {
         decodeDepths: decodeDepths,
         setupForPaired: setupForPaired,
-        BlumpTest: BlumpTest
+        BlumpEdit: BlumpEdit,
+        BlumpTest: BlumpTest,
+        start: start
     };
 }());

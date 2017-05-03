@@ -109,6 +109,8 @@ var IO = (function (TICK, BLORT) {
         this.wheelY = 0;
         this.wheelZ = 0;
         this.lastButtons = 0;
+        this.lastLocation = [0, 0];
+        this.delta = [0, 0];
 
         function buttonToButtons(button) {
             if (button === 1) {
@@ -205,6 +207,12 @@ var IO = (function (TICK, BLORT) {
         this.wheelX = 0;
         this.wheelY = 0;
         this.wheelZ = 0;
+
+        this.delta[0] = this.location[0] - this.lastLocation[0];
+        this.delta[1] = this.location[1] - this.lastLocation[1];
+
+        this.lastLocation[0] = this.location[0];
+        this.lastLocation[1] = this.location[1];
     };
 
     function Touch(element) {
