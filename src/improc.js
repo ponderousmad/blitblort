@@ -53,7 +53,6 @@ var IMPROC = (function () {
         processPixels(pixelBuffer.data, width, height, filter);
     }
 
-    
     function testSuite() {
         var testConvertions = function () {
                     TEST.equals(byteToUnitValue(0), -1);
