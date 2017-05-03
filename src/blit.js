@@ -156,6 +156,13 @@ var BLIT = (function () {
         context.restore();
     }
 
+    function toggleSmooth(context, smooth) {
+        context.mozImageSmoothingEnabled = smooth;
+        context.webkitImageSmoothingEnabled = smooth;
+        context.msImageSmoothingEnabled = smooth;
+        context.imageSmoothingEnabled = smooth;
+    }
+
     function drawTextCentered(context, text, x, y, fill, shadow, offset) {
         context.textAlign = "center";
         if (shadow) {
@@ -242,6 +249,7 @@ var BLIT = (function () {
         tinted: drawTinted,
         draw: draw,
         centeredText: drawTextCentered,
+        toggleSmooth: toggleSmooth,
         Flip: Flip,
         updatePlaybacks : updatePlaybacks
     };
