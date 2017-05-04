@@ -471,6 +471,14 @@ var BLUMP = (function () {
         this.alpha = document.getElementById("sliderAlpha");
         this.depthCanvas = null;
         this.depthContext = null;
+
+        var self = this,
+            saveImage = document.getElementById("buttonSave");
+        if (saveImage) {
+            saveImage.addEventListener("click", function () {
+                self.saveImage();
+            });
+        }
     }
 
     BlumpEdit.prototype.update = function (now, elapsed, keyboard, pointer) {
@@ -541,6 +549,30 @@ var BLUMP = (function () {
         this.depthContext = this.depthCanvas.getContext('2d');
         this.depthContext.drawImage(blump.image, 0, height, width, height, 0, 0, width, height);
         flattenDepthImage(this.depthContext, 0, 0, width, height);
+    };
+
+    BlumpEdit.prototype.saveImage = function () {
+        if (this.blump) {
+            var saveCanvas = document.createElement('canvas'),
+                saveContext = saveCanvas.getContext('2d');
+            saveCanvas.width = this.blump.image.width;
+            saveCanvas.height = this.blump.image.height;
+            saveContext.drawImage(this.blump.image, 0, 0, saveCanvas.width, saveCanvas.height);
+            saveContext.drawImage(this.depthCanvas, 0, this.depthCanvas.height,
+                                  this.depthCanvas.width, this.depthCanvas.height);
+            var self = this;
+            saveCanvas.toBlob(function (blob) {
+                var objectURL = window.URL.createObjectURL(blob),
+                    saveLink = document.createElementNS("http://www.w3.org/1999/xhtml", "a");
+                setTimeout(function() {
+                    saveLink.href = objectURL;
+                    saveLink.download = self.blump.resource;
+
+                    var event = new MouseEvent("click");
+                    saveLink.dispatchEvent(event);
+                });
+            });
+        }
     };
 
     function BlumpTest(viewport, baseName, editor) {

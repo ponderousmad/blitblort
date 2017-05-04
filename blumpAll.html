@@ -4,6 +4,7 @@
         <meta charset="utf-8"/>
         <title>BlumpTest</title>
         <link href="style.css" rel="stylesheet">
+
         <script type="text/javascript" src="src/test.js"></script>
         <script type="text/javascript" src="src/blit.js"></script>
         <script type="text/javascript" src="src/tick.js"></script>
@@ -20,10 +21,12 @@
         <script type="text/javascript" src="src/main.js"></script>
     </head>
     <body>
-        <canvas id="canvas3D" class="beside" width="700" height="800">
+        <canvas id="canvas3D" class="beside" width="500" height="600">
             Sorry, your browser doesn't support the &lt;canvas&gt; element.
         </canvas>
-        <canvas id="canvasEdit" class="beside" width="500" height="800">
+        <canvas id="canvasEdit" class="beside" width="600" height="600">
+        </canvas>
+        <canvas id="canvasPreview" class="beside" width="255" height="255">
         </canvas>
         <div id="atlas">
         </div>
@@ -57,7 +60,8 @@
                         </select>
                     </span>
                 </div>
-                <button id="reload" type="button">Reload</button>
+                <button id="buttonReload" type="button">Reload</button>
+                <button id="buttonSave" type="button">Save Image</button>
                 <div>
                     <div class="slider">
                         <div>Angle:</div>
@@ -92,10 +96,6 @@
                 <div>
                     <button id="enterVR" type="button" class="hidden">Enter VR</button>
                     <button id="exitVR" type="button" class="hidden">Exit VR</button>
-                </div>
-                <div>
-                    <canvas id="canvasPreview" width="255" height="255">
-                    </canvas>
                 </div>
             </form>
         </div>

@@ -9,8 +9,8 @@ html, body {
 
 .beside {
     display: inline-block;
+    vertical-align: top;
 }
-
 
 .angleSlider {
     width: 250px;
