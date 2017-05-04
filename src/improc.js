@@ -16,8 +16,13 @@ var IMPROC = (function () {
     function processPixels(pixels, width, height, filter) {
         for (var y = 0; y < height; ++y) {
             for (var x = 0; x < width; ++x) {
-                var i = (y * width + x) * CHANNELS;
-                filter(x, y, pixels[i + R], pixels[i + G], pixels[i + B]);
+                var i = (y * width + x) * CHANNELS,
+                result = filter(x, y, pixels[i+R], pixels[i+G], pixels[i+B], pixels[i+A]);
+                if (result) {
+                    for (var c = 0; c < result.length; ++c) {
+                        pixels[i + c] = result[c];
+                    }
+                }
             }
         }
     }
@@ -51,6 +56,7 @@ var IMPROC = (function () {
     function processImage(image, x, y, width, height, filter) {
         var pixelBuffer = getPixels(image, x, y, width, height);
         processPixels(pixelBuffer.data, width, height, filter);
+        return pixelBuffer;
     }
 
     function testSuite() {

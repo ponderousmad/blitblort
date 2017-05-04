@@ -38,7 +38,7 @@ var BLUMP = (function () {
             range = defaultRange ? defaultRange : 210,
             depths = new Float32Array(width * height);
         IMPROC.processImage(image, left, top, width, height,
-            function (x, y, r, g, b) {
+            function (x, y, r, g, b, a) {
                 var value = -1;
                 if (useCalibration && y < 2) {
                     if (y === 0) {
@@ -57,7 +57,7 @@ var BLUMP = (function () {
                         checkCalibration(x, r, g, b);
                     }
                 } else {
-                    if (r == g && r == b) {
+                    if (r == g && r == b && g == b) {
                         value = (r / 255.0) * range;
                     }
                 }
@@ -65,6 +65,21 @@ var BLUMP = (function () {
             }
         );
         return depths;
+    }
+
+    function flattenDepthImage(context, x, y, width, height) {
+        var pixels = context.getImageData(x, y, width, height),
+            pixel = [];
+        IMPROC.processPixels(pixels.data, width, height, function(x, y, r, g, b, a) {
+            if (r != g || r != b || g != b) {
+                r = 1; // So it fails the check when being read back as depth
+                g = b = 0;
+                a = 128;
+            }
+            pixel[0] = r; pixel[1] = g; pixel[2] = b; pixel[3] = a;
+            return pixel;
+        });
+        context.putImageData(pixels, x, y);
     }
 
     function smoothIndex(x, y, width) {
@@ -453,11 +468,17 @@ var BLUMP = (function () {
         this.zoom = 4;
         this.xOffset = 0;
         this.yOffset = 0;
+        this.alpha = document.getElementById("sliderAlpha");
+        this.depthCanvas = null;
+        this.depthContext = null;
     }
 
     BlumpEdit.prototype.update = function (now, elapsed, keyboard, pointer) {
         if (pointer.primary) {
             if (pointer.mouse.shift) {
+            } else if (pointer.mouse.ctrl) {
+            } else if (pointer.mouse.alt) {
+            } else {
                 this.xOffset += pointer.primary.deltaX;
                 this.yOffset += pointer.primary.deltaY;
             }
@@ -478,8 +499,13 @@ var BLUMP = (function () {
 
     BlumpEdit.prototype.draw = function (context, width, height) {
         BLIT.toggleSmooth(context, false);
+        context.save();
         context.fillStyle = "rgba(0,0,0,1)";
         context.fillRect(0, 0, width, height);
+        var alpha = 0.9;
+        if (this.alpha) {
+            alpha = parseFloat(this.alpha.value);
+        }
         if (this.blump) {
             var image = this.blump.image,
                 blumpHeight = image.height / 2,
@@ -487,17 +513,34 @@ var BLUMP = (function () {
                 scaleHeight = blumpHeight * this.zoom;
             context.drawImage(
                 image,
-                0, blumpHeight,
+                0, 0,
                 image.width, blumpHeight,
                 this.xOffset, this.yOffset,
                 scaleWidth, scaleHeight
             );
+            context.globalAlpha = alpha;
+            context.drawImage(
+                this.depthCanvas,
+                0, 0,
+                this.depthCanvas.width, this.depthCanvas.height,
+                this.xOffset, this.yOffset,
+                scaleWidth, scaleHeight
+            );
         }
+        context.restore();
     };
 
     BlumpEdit.prototype.editBlump = function (blump, previewContext) {
         this.blump = blump;
         this.preview = previewContext;
+        this.depthCanvas = document.createElement('canvas');
+        var width = blump.image.width,
+            height = blump.image.height / 2;
+        this.depthCanvas.width = width;
+        this.depthCanvas.height = height;
+        this.depthContext = this.depthCanvas.getContext('2d');
+        this.depthContext.drawImage(blump.image, 0, height, width, height, 0, 0, width, height);
+        flattenDepthImage(this.depthContext, 0, 0, width, height);
     };
 
     function BlumpTest(viewport, baseName, editor) {
@@ -550,13 +593,12 @@ var BLUMP = (function () {
         var self = this;
         this.batch = new BLIT.Batch("images/", function() {
             self.loadBlumps();
+            self.setupControls();
         });
         for (var b = 0; b < this.blumps.length; ++b) {
             this.blumps[b].load(this.batch);
         }
         this.batch.commit();
-
-        this.setupControls();
     }
 
     BlumpTest.prototype.setupControls = function () {
