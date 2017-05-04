@@ -51,6 +51,7 @@ def process_blumps(img, drw, folder, batchRoot, width, top, bottom, pixelSize, d
                         pair_crop(image, width, top, bottom)
                         images.append((int(image_number), out_name))
                         pdb.file_png_save(image, image.layers[0], outpath, outpath, 0, 9, 0, 0, 0, 0, 0)
+                        os.remove(filepath)
 
             if len(images) > 0:
                 relative_path = os.path.relpath(path, batchRoot).replace("\\", "/")
@@ -88,8 +89,8 @@ register(
     "<Image>/Filters/Blumps/Process blumps",
     "",
     [
-        (PF_STRING, "folder", "Input directory", "D:\\github\\ponderous-mad\\appengine\\blitblort\\images"),
-        (PF_STRING, "batchRoot", "Batcher root", "D:\\github\\ponderous-mad\\appengine\\blitblort\\images"),
+        (PF_STRING, "folder", "Input directory", "/Users/agnomen/Documents/workspace/git/ponderous-mad/appengine/blitblort/images/dragon"),
+        (PF_STRING, "batchRoot", "Batcher root", "/Users/agnomen/Documents/workspace/git/ponderous-mad/appengine/blitblort/images/"),
         (PF_INT, "width", "Width of region to capture", "200"),
         (PF_INT, "top", "Top of region to capture", "100"),
         (PF_INT, "bottom", "Bottom of region to capture", "300"),
