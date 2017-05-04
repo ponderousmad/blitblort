@@ -473,6 +473,23 @@ var BLUMP = (function () {
         this.mesh.updated = true;
     };
 
+    Blump.prototype.save = function () {
+        var angle = this.angle * R2.RAD_TO_DEG;
+        if (angle < 0) {
+            angle += 360;
+        }
+        return {
+            resource: this.resource,
+            angle: angle,
+            lrOffset: this.offset.x,
+            fbOffset: this.offset.z,
+            vOffset: this.offset.y,
+            scale: this.scale,
+            pixelSize: this.pixelSize,
+            depthRange: this.depthRange
+        };
+    };
+
     function unmultiplyChannel(value, alpha) {
         return Math.min(IMPROC.BYTE_MAX, Math.round(value / alpha));
     }
@@ -620,6 +637,7 @@ var BLUMP = (function () {
         this.preventDefaultIO = true;
         this.viewport = viewport ? viewport : "canvas";
         this.editor = editor;
+        this.editArea = null;
         this.thing = null;
         this.program = null;
         this.distance = 0.5;
@@ -771,6 +789,39 @@ var BLUMP = (function () {
                 initialize();
             }, false);
         }
+
+        this.editArea = document.getElementById("textBlump");
+        if (this.editArea) {
+            this.editArea.addEventListener("paste", function (event) {
+                setTimeout(function () { self.load(JSON.parse(editArea.value)); });
+            }, false);
+
+            try {
+                editArea.value = window.localStorage.getItem("blump");
+            } catch (error) {
+                console.log("Error loading blump: " + error);
+            }
+
+            var clipboardButton = document.getElementById("buttonClipboard");
+            if (clipboardButton) {
+                clipboardButton.addEventListener("click", function(e) {
+                    self.editArea.value = self.save();
+                    self.editArea.select();
+                    self.editArea.focus();
+                    document.execCommand("copy");
+                    self.checkpoint();
+                }, true);
+            }
+        }
+    };
+
+    BlumpTest.prototype.checkpoint = function () {
+        console.log(this.save());
+        try {
+            window.localStorage.setItem("blump", this.save());
+        } catch (error) {
+            console.log("Error storing blump: " + error);
+        }
     };
 
     BlumpTest.prototype.loadBlumps = function () {
@@ -786,6 +837,20 @@ var BLUMP = (function () {
         if (atlasDiv) {
             atlasDiv.appendChild(atlas.canvas);
         }
+    };
+
+    BlumpTest.prototype.save = function () {
+        var blumpData = [];
+        
+        for (var b = 0; b < this.blumps.length; ++b) {
+            blumpData.push(this.blumps[b].save());
+        }
+        
+        var data = {
+            blumps : blumpData
+        };
+
+        return JSON.stringify(data, null, 4);
     };
 
     BlumpTest.prototype.setupRoom = function (room) {
