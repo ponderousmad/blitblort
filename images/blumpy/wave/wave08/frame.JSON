@@ -1,0 +1,38 @@
+{
+    "blumps": [
+        {
+            "angle": 0, 
+            "resource": "blumpy/wave/wave08/wave57.png"
+        }, 
+        {
+            "angle": 45, 
+            "resource": "blumpy/wave/wave08/wave58.png"
+        }, 
+        {
+            "angle": 90, 
+            "resource": "blumpy/wave/wave08/wave59.png"
+        }, 
+        {
+            "angle": 135, 
+            "resource": "blumpy/wave/wave08/wave60.png"
+        }, 
+        {
+            "angle": 180, 
+            "resource": "blumpy/wave/wave08/wave61.png"
+        }, 
+        {
+            "angle": 225, 
+            "resource": "blumpy/wave/wave08/wave62.png"
+        }, 
+        {
+            "angle": 270, 
+            "resource": "blumpy/wave/wave08/wave63.png"
+        }, 
+        {
+            "angle": 315, 
+            "resource": "blumpy/wave/wave08/wave64.png"
+        }
+    ], 
+    "pixelSize": 0.001, 
+    "depthRange": 0.2
+}
