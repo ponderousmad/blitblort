@@ -1,0 +1,84 @@
+{
+    "blumps": [
+        {
+            "resource": "dragon_0.png",
+            "angle": 0,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "dragon_45.png",
+            "angle": 45,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "dragon_90.png",
+            "angle": 90,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "dragon_135.png",
+            "angle": 135,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "dragon_180.png",
+            "angle": 180,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "dragon_225.png",
+            "angle": 225,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "dragon_270.png",
+            "angle": 270,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "dragon_315.png",
+            "angle": 315,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        }
+    ]
+}

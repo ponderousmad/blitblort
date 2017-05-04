@@ -42,6 +42,15 @@
                 </div>
                 <div>
                     <span>
+                        Images:
+                        <select name="select" id="selectBlump">
+                            <option value="images/blumpDragon.JSON" selected>Dragon</option>
+                            <option value="images/blumpMe.JSON">Adrian's Head</option>
+                        </select>
+                    </span>
+                </div>
+                <div>
+                    <span>
                         Draw:
                         <select name="select" id="selectDraw">
                             <option value="all" selected>All</option>
@@ -101,7 +110,7 @@
         </div>
         <script type="text/javascript">
             window.onload = function(e) {
-                BLUMP.start("dragon_");
+                BLUMP.start();
             };
         </script>
         <script id="vertex-test" type="x-shader/x-vertex">

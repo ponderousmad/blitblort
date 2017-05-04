@@ -405,16 +405,16 @@ var BLUMP = (function () {
         return builder;
     }
 
-    function Blump(resource, angle) {
-        this.resource = resource;
-        this.angle = R2.clampAngle(angle * R2.DEG_TO_RAD);
+    function Blump(data, defaultPixelSize, defaultDepthRange) {
+        this.resource = data.resource;
+        this.angle = R2.clampAngle(data.angle * R2.DEG_TO_RAD);
         this.image = null;
-        this.pixelSize = 0.001;
-        this.depthRange = 0.21;
+        this.pixelSize = data.pixelSize || defaultPixelSize;
+        this.depthRange = data.depthRange || defaultDepthRange;
         this.mesh = null;
         this.visible = true;
-        this.offset = R3.origin();
-        this.scale = 1;
+        this.offset = new R3.V(data.lrOffset, data.vOffset, data.fbOffset);
+        this.scale = data.scale || 1;
     }
 
     Blump.prototype.constructTransform = function () {
@@ -425,7 +425,7 @@ var BLUMP = (function () {
         return transform;
     };
 
-    Blump.prototype.load = function (batch) {
+    Blump.prototype.loadImage = function (batch) {
         this.image = batch.load(this.resource);
     };
 
@@ -630,7 +630,7 @@ var BLUMP = (function () {
         postUpdate(this.preview, this.blump.resource);
     };
 
-    function BlumpTest(viewport, baseName, editor) {
+    function BlumpTest(viewport, editor) {
         this.clearColor = [0, 0, 0, 1];
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
@@ -645,49 +645,10 @@ var BLUMP = (function () {
         this.tilt = 0;
         this.TILT_MAX = Math.PI * 0.49;
 
-        var blumpValues = null;
-        if (!baseName) {
-            baseName = "dragon_";
-        }
-        if (baseName == "me_") {
-            blumpValues = [
-                [  0,   0, new R3.V( 0.000, 0.000,  0.000), 1],
-                [ 45,  45, new R3.V( 0.053, 0.005,  0.000), 1],
-                [ 90,  70, new R3.V( 0.069, 0.011, -0.016), 1],
-                [270, -65, new R3.V(-0.037, 0.005, -0.026), 1],
-                [315, -42, new R3.V(-0.021, 0.000, -0.011), 1]
-            ];
-        } else if (baseName == "dragon_") {
-            blumpValues = [
-                [  0,   0, new R3.V(0,0,0), 1],
-                [ 45,  45, new R3.V(0,0,0), 1],
-                [ 90,  90, new R3.V(0,0,0), 1],
-                [135, 135, new R3.V(0,0,0), 1],
-                [180, 180, new R3.V(0,0,0), 1],
-                [225, 225, new R3.V(0,0,0), 1],
-                [270, 270, new R3.V(0,0,0), 1],
-                [315, 315, new R3.V(0,0,0), 1]
-            ];
-        }
-
         this.blumps = [];
-        for (var v = 0; v < blumpValues.length; ++v) {
-            var values = blumpValues[v],
-                blump = new Blump(baseName + values[0] + ".png", values[1]);
-            blump.offset = values[2];
-            blump.scale = values[3];
-            this.blumps.push(blump);
-        }
+        this.activeBlump = null;
 
-        var self = this;
-        this.batch = new BLIT.Batch("images/", function() {
-            self.loadBlumps();
-            self.setupControls();
-        });
-        for (var b = 0; b < this.blumps.length; ++b) {
-            this.blumps[b].load(this.batch);
-        }
-        this.batch.commit();
+        this.setupControls();
     }
 
     BlumpTest.prototype.setupControls = function () {
@@ -722,7 +683,6 @@ var BLUMP = (function () {
             };
         }
 
-        this.activeBlump = this.blumps[0];
         var self = this,
             initAngle = setupSlider("Angle", function (value) {
                 if (self.activeBlump && !isNaN(value)) {
@@ -756,7 +716,7 @@ var BLUMP = (function () {
             }),
             reload = document.getElementById("buttonReload");
 
-        function initialize() {
+        this.connectControls = function() {
             initAngle(self.activeBlump.angle * R2.RAD_TO_DEG);
             initX(self.activeBlump.offset.x);
             initY(self.activeBlump.offset.y);
@@ -766,34 +726,45 @@ var BLUMP = (function () {
             if (self.editor) {
                 self.editor.editBlump(self.activeBlump);
             }
-        }
-        initialize();
+        };
 
         this.selectImage = document.getElementById("selectImage");
         if (this.selectImage) {
-            for (var b = 0; b < this.blumps.length; ++b) {
-                var blump = this.blumps[b],
-                    option = new Option(blump.resource, b, b === 0, b === 0);
-                this.selectImage.appendChild(option);
-            }
-
             this.selectImage.addEventListener("change", function (e) {
-                self.activeBlump = self.blumps[parseInt(self.selectImage.value)];
-                initialize();
+                self.activeBlump = self.blumps[parseInt(selectImage.value)];
+                self.connectControls();
+            }, true);
+            this.populateImages();
+        }
+
+        function onLoad(data) {
+            self.load(data);
+        }
+        var selectBlump = document.getElementById("selectBlump");
+        if (selectBlump) {
+            selectBlump.addEventListener("change", function (e) {
+                IO.downloadJSON(selectBlump.value, onLoad);
             });
+            if (selectBlump.value) {
+                IO.downloadJSON(selectBlump.value, onLoad);
+            }
         }
 
         if (reload) {
             reload.addEventListener("click", function(e) {
-                self.loadBlumps();
-                initialize();
+                self.constructBlumps();
             }, false);
         }
 
         this.editArea = document.getElementById("textBlump");
         if (this.editArea) {
             this.editArea.addEventListener("paste", function (event) {
-                setTimeout(function () { self.load(JSON.parse(editArea.value)); });
+                setTimeout(function () {
+                    var textData = editArea.value;
+                    if (textData[0] === "{") {
+                        self.load(JSON.parse(textData));
+                    }
+                });
             }, false);
 
             try {
@@ -815,6 +786,39 @@ var BLUMP = (function () {
         }
     };
 
+    BlumpTest.prototype.populateImages = function () {
+        if (this.selectImage) {
+            this.selectImage.innerHTML = "";
+            for (var b = 0; b < this.blumps.length; ++b) {
+                var blump = this.blumps[b],
+                    option = new Option(blump.resource, b);
+                selectImage.appendChild(option);
+            }
+        }
+    };
+
+    BlumpTest.prototype.load = function (blumpData) {
+        this.blumps = [];
+        this.thing = null;
+        var pixelSize = blumpData.pixelSize || 0.001;
+        var depthRange = blumpData.depthRange || 0.2;
+        for (var d = 0; d < blumpData.blumps.length; ++d) {
+            this.blumps.push(new Blump(blumpData.blumps[d], pixelSize, depthRange));
+        }
+        this.activeBlump = this.blumps[0];
+
+        var self = this,
+            batch = new BLIT.Batch("images/", function() {
+                self.constructBlumps();
+            });
+
+        for (var b = 0; b < this.blumps.length; ++b) {
+            this.blumps[b].loadImage(batch);
+        }
+        batch.commit();
+        this.populateImages();
+    };
+
     BlumpTest.prototype.checkpoint = function () {
         console.log(this.save());
         try {
@@ -824,19 +828,21 @@ var BLUMP = (function () {
         }
     };
 
-    BlumpTest.prototype.loadBlumps = function () {
+    BlumpTest.prototype.constructBlumps = function () {
         var blumps = this.blumps,
             image = blumps[0].image,
             atlas = new WGL.TextureAtlas(image.width, image.height/2, blumps.length);
         for (var b = 0; b < blumps.length; ++b) {
             blumps[b].construct(atlas);
         }
-        this.thing = new BLOB.Thing();
 
         var atlasDiv = document.getElementById("atlas");
         if (atlasDiv) {
             atlasDiv.appendChild(atlas.canvas);
         }
+
+        this.thing = new BLOB.Thing();
+        this.connectControls();
     };
 
     BlumpTest.prototype.save = function () {
@@ -924,9 +930,9 @@ var BLUMP = (function () {
         }
     };
 
-    function start(baseName) {
+    function start() {
         var editor = new BlumpEdit("canvas");
-        MAIN.start(document.getElementById("canvas3D"), new BlumpTest("canvas", baseName, editor));
+        MAIN.start(document.getElementById("canvas3D"), new BlumpTest("canvas", editor));
         MAIN.start(document.getElementById("canvasEdit"), editor);
         var failed = MAIN.runTestSuites(),
             controlsVisible = false;

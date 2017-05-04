@@ -1,0 +1,54 @@
+{
+    "blumps": [
+        {
+            "resource": "me_0.png",
+            "angle": 0,
+            "lrOffset": 0,
+            "fbOffset": 0,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "me_45.png",
+            "angle": 45,
+            "lrOffset": 0.053,
+            "fbOffset": 0,
+            "vOffset": 0.005,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "me_90.png",
+            "angle": 70,
+            "lrOffset": 0.069,
+            "fbOffset": -0.016,
+            "vOffset": 0.011,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "me_270.png",
+            "angle": 295,
+            "lrOffset": -0.037,
+            "fbOffset": -0.026,
+            "vOffset": 0.005,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        },
+        {
+            "resource": "me_315.png",
+            "angle": 318,
+            "lrOffset": -0.021,
+            "fbOffset": -0.011,
+            "vOffset": 0,
+            "scale": 1,
+            "pixelSize": 0.001,
+            "depthRange": 0.21
+        }
+    ]
+}

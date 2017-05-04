@@ -303,11 +303,24 @@ var IO = (function (TICK, BLORT) {
         return this.primary;
     };
 
+    function downloadJSON(resource, handler) {
+        var request = new XMLHttpRequest();
+        request.open("GET", resource, true);
+        request.responseType = "text";
+        request.onload = function () {
+            console.log("Loading " + resource);
+            var responseData = JSON.parse(request.response);
+            handler(responseData);
+        };
+        request.send();
+    }
+
     return {
         KEYS: KEYS,
         Keyboard: Keyboard,
         Mouse: Mouse,
         Touch: Touch,
-        Pointer: Pointer
+        Pointer: Pointer,
+        downloadJSON: downloadJSON
     };
 }(TICK, BLORT));
