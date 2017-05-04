@@ -2,7 +2,8 @@ var BLUMP = (function () {
     "use strict";
 
     var gammaMap = [],
-        MAX_VERTICIES = Math.pow(2, 16);
+        MAX_VERTICIES = Math.pow(2, 16),
+        NO_DEPTH = [5, 0, 0, 204];
 
     (function () {
         for (var v = 0; v < IMPROC.BYTE_MAX; ++v) {
@@ -34,8 +35,8 @@ var BLUMP = (function () {
         var zScale = 0,
             zOffset = 0,
             isCalibrated = false,
-            start = 450,
-            range = defaultRange ? defaultRange : 210,
+            start = 0.45,
+            range = defaultRange ? defaultRange : 0.20,
             depths = new Float32Array(width * height);
         IMPROC.processImage(image, left, top, width, height,
             function (x, y, r, g, b, a) {
@@ -48,9 +49,9 @@ var BLUMP = (function () {
                             }
                         } else if (isCalibrated) {
                             if (x == 1) {
-                                range = decodeValue(r, g, b);
+                                range = decodeValue(r, g, b) / 1000;
                             } else if (x == 2) {
-                                start = decodeValue(r, g, b);
+                                start = decodeValue(r, g, b) / 1000;
                             }
                         }
                     } else if (y === 1 && isCalibrated) {
@@ -61,23 +62,18 @@ var BLUMP = (function () {
                         value = (r / 255.0) * range;
                     }
                 }
-                depths[y * width + x] = value / 1000.0;
+                depths[y * width + x] = value;
             }
         );
         return depths;
     }
 
     function flattenDepthImage(context, x, y, width, height) {
-        var pixels = context.getImageData(x, y, width, height),
-            pixel = [];
+        var pixels = context.getImageData(x, y, width, height);
         IMPROC.processPixels(pixels.data, width, height, function(x, y, r, g, b, a) {
             if (r != g || r != b || g != b) {
-                r = 1; // So it fails the check when being read back as depth
-                g = b = 0;
-                a = 128;
+                return NO_DEPTH;
             }
-            pixel[0] = r; pixel[1] = g; pixel[2] = b; pixel[3] = a;
-            return pixel;
         });
         context.putImageData(pixels, x, y);
     }
@@ -413,6 +409,8 @@ var BLUMP = (function () {
         this.resource = resource;
         this.angle = R2.clampAngle(angle * R2.DEG_TO_RAD);
         this.image = null;
+        this.pixelSize = 0.001;
+        this.depthRange = 0.21;
         this.mesh = null;
         this.visible = true;
         this.offset = R3.origin();
@@ -432,10 +430,25 @@ var BLUMP = (function () {
     };
 
     Blump.prototype.construct = function (atlas) {
-        var builder = setupForPaired(this.image, 0.001, atlas),
-            depths = builder.depthFromPaired(this.image, false, 210);
-        builder.setAlignment(0.5, 0.5, -0.105);
-        this.mesh = builder.constructSurface(depths, atlas.texture());
+        this.constructFromImage(this.image, atlas);
+    };
+
+    Blump.prototype.constructFromImage = function (image, atlas) {
+        var width = image.width,
+            height = image.height / 2,
+            builder = new Builder(width, height, this.pixelSize),
+            depths = builder.depthFromPaired(image, false, this.depthRange);
+        builder.setAlignment(0.5, 0.5, -this.depthRange/2);
+
+        if (atlas) {
+            this.atlas = atlas;
+            this.textureCoords = atlas.add(image, 0, 0, width, height);
+        }
+        if (this.textureCoords) {
+            builder.setupTextureSurface(this.textureCoords);
+        }
+
+        this.mesh = builder.constructSurface(depths, this.atlas.texture());
         this.mesh.dynamic = true;
         this.reposition();
     };
@@ -460,29 +473,66 @@ var BLUMP = (function () {
         this.mesh.updated = true;
     };
 
+    function unmultiplyChannel(value, alpha) {
+        return Math.min(IMPROC.BYTE_MAX, Math.round(value / alpha));
+    }
+
+    function unmultiplyAlpha(color) {
+        var a = color[3],
+            alpha = a / IMPROC.BYTE_MAX;
+        return [
+            unmultiplyChannel(color[0], alpha),
+            unmultiplyChannel(color[1], alpha),
+            unmultiplyChannel(color[2], alpha),
+            a
+        ];
+    }
+
     function BlumpEdit(viewport) {
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
+        this.preventDefaultIO = true;
         this.blump = null;
         this.zoom = 4;
         this.xOffset = 0;
         this.yOffset = 0;
         this.alpha = document.getElementById("sliderAlpha");
-        this.depthCanvas = null;
-        this.depthContext = null;
         this.preview = document.getElementById("canvasPreview");
         this.previewContext = this.preview.getContext("2d");
+        this.brushColor = unmultiplyAlpha(NO_DEPTH);
+        this.dirty = false;
     }
 
     BlumpEdit.prototype.update = function (now, elapsed, keyboard, pointer) {
+        if (!this.blump) {
+            return;
+        }
         if (pointer.primary) {
+            var pixelX = Math.floor((pointer.primary.x - this.xOffset) / this.zoom),
+                pixelY = Math.floor((pointer.primary.y - this.yOffset) / this.zoom) +
+                         this.preview.height / 2;
             if (pointer.mouse.shift) {
+                this.previewContext.fillStyle = "rgba(" + this.brushColor.join(",") + ")";
+                this.previewContext.clearRect(pixelX, pixelY, 1, 1);
+                this.previewContext.save();
+                if (this.brushColor[3] != 255) {
+                    this.previewContext.globalAlpha = this.brushColor[3] / 255;
+                }
+                this.previewContext.fillRect(pixelX, pixelY, 1, 1);
+                this.previewContext.restore();
+                this.dirty = true;
             } else if (pointer.mouse.ctrl) {
+                var pixelData = this.previewContext.getImageData(pixelX, pixelY, 1, 1);
+                this.brushColor = unmultiplyAlpha(pixelData.data);
             } else if (pointer.mouse.alt) {
             } else {
                 this.xOffset += pointer.primary.deltaX;
                 this.yOffset += pointer.primary.deltaY;
             }
+        } else if (this.dirty) {
+            this.blump.constructFromImage(this.preview);
+            this.dirty = false;
+            postUpdate(this.preview, this.blump.resource);
         }
 
         var oldZoom = this.zoom;
@@ -521,9 +571,9 @@ var BLUMP = (function () {
             );
             context.globalAlpha = alpha;
             context.drawImage(
-                this.depthCanvas,
-                0, 0,
-                this.depthCanvas.width, this.depthCanvas.height,
+                this.preview,
+                0, blumpHeight,
+                this.preview.width, blumpHeight,
                 this.xOffset, this.yOffset,
                 scaleWidth, scaleHeight
             );
@@ -531,53 +581,43 @@ var BLUMP = (function () {
         context.restore();
     };
 
+    function postUpdate(canvas, resource) {
+        canvas.toBlob(function (blob) {
+            var objectURL = window.URL.createObjectURL(blob),
+                saveLink = document.createElementNS("http://www.w3.org/1999/xhtml", "a");
+            setTimeout(function() {
+                saveLink.href = objectURL;
+                saveLink.download = resource;
+                saveLink.innerHTML = "Save Image";
+
+                var div = document.getElementById("divSave");
+                div.innerHTML = "";
+                div.appendChild(saveLink);
+            });
+        });
+    }
+
     BlumpEdit.prototype.editBlump = function (blump) {
         this.blump = blump;
-        this.depthCanvas = document.createElement('canvas');
-        var width = blump.image.width,
-            height = blump.image.height / 2;
-        this.depthCanvas.width = width;
-        this.depthCanvas.height = height;
-        this.depthContext = this.depthCanvas.getContext('2d');
-        this.depthContext.drawImage(blump.image, 0, height, width, height, 0, 0, width, height);
-        flattenDepthImage(this.depthContext, 0, 0, width, height);
-        this.setupSave();
-    };
-
-    BlumpEdit.prototype.setupSave = function () {
-        if (this.blump) {
-            var canvas = this.preview,
-                context = this.previewContext,
-                w = this.blump.image.width,
-                h = this.blump.image.height,
-                style = "width: " + w / 8 + "px; height: " + h / 8 + "px;";
-                self = this;
-            canvas.width = w;
-            canvas.height = h;
-            self.previewContext.clearRect(0, 0, w, h);
-            context.drawImage(this.blump.image, 0, 0, w, h/2, 0, 0, w, h/2);
-            context.drawImage(this.depthCanvas, 0, h/2, w, h/2);
-            canvas.style = style;
-            canvas.toBlob(function (blob) {
-                var objectURL = window.URL.createObjectURL(blob),
-                    saveLink = document.createElementNS("http://www.w3.org/1999/xhtml", "a");
-                setTimeout(function() {
-                    saveLink.href = objectURL;
-                    saveLink.download = self.blump.resource;
-                    saveLink.innerHTML = "Save Image";
-
-                    var div = document.getElementById("divSave");
-                    div.innerHTML = "";
-                    div.appendChild(saveLink);
-                });
-            });
-        }
+        var canvas = this.preview,
+            context = this.previewContext,
+            w = blump.image.width,
+            h = blump.image.height,
+            style = "width: " + w / 8 + "px; height: " + h / 8 + "px;";
+        canvas.width = w;
+        canvas.height = h;
+        this.previewContext.clearRect(0, 0, w, h);
+        context.drawImage(this.blump.image, 0, 0, w, h);
+        flattenDepthImage(context, 0, h / 2, w, h / 2);
+        canvas.style = style;
+        postUpdate(this.preview, this.blump.resource);
     };
 
     function BlumpTest(viewport, baseName, editor) {
         this.clearColor = [0, 0, 0, 1];
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
+        this.preventDefaultIO = true;
         this.viewport = viewport ? viewport : "canvas";
         this.editor = editor;
         this.thing = null;
@@ -696,7 +736,7 @@ var BLUMP = (function () {
                     self.activeBlump.reposition();
                 }
             }),
-            reload = document.getElementById("reload");
+            reload = document.getElementById("buttonReload");
 
         function initialize() {
             initAngle(self.activeBlump.angle * R2.RAD_TO_DEG);

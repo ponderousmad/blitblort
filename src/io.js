@@ -91,7 +91,7 @@ var IO = (function (TICK, BLORT) {
         return this.pressed[keyCode];
     };
 
-    function Mouse(element) {
+    function Mouse(element, preventDefault) {
         this.location = [0, 0];
         this.left = false;
         this.middle = false;
@@ -133,7 +133,8 @@ var IO = (function (TICK, BLORT) {
             }
         }
 
-        var self = this;
+        var self = this,
+            capture = preventDefault;
         function mouseButtons(event, eventType) {
             if ('buttons' in event) {
                 return event.buttons;
@@ -177,6 +178,10 @@ var IO = (function (TICK, BLORT) {
             self.shift = event.shiftKey;
             self.ctrl = event.ctrlKey;
             self.altKey = event.altKey;
+
+            if (preventDefault) {
+                event.preventDefault();
+            }
         };
 
         var updateWheel = function (event) {
@@ -189,15 +194,15 @@ var IO = (function (TICK, BLORT) {
         };
 
         element.addEventListener(
-            "mousemove", function(event) { updateState(event, "move"); }
+            "mousemove", function(event) { updateState(event, "move"); }, capture
         );
         element.addEventListener(
-            "mousedown", function(event) { updateState(event, "down"); }
+            "mousedown", function(event) { updateState(event, "down"); }, capture
         );
         element.addEventListener(
-            "mouseup", function(event) { updateState(event, "up"); }
+            "mouseup", function(event) { updateState(event, "up"); }, capture
         );
-        element.addEventListener("wheel", updateWheel);
+        element.addEventListener("wheel", updateWheel, true);
     }
 
     Mouse.prototype.postUpdate = function () {
@@ -240,8 +245,8 @@ var IO = (function (TICK, BLORT) {
         return null;
     };
 
-    function Pointer(element) {
-        this.mouse = new Mouse(element);
+    function Pointer(element, preventDefault) {
+        this.mouse = new Mouse(element, preventDefault);
         this.touch = new Touch(element);
         this.firstTouch = null;
         this.primary = null;

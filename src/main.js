@@ -25,7 +25,7 @@ var MAIN = (function () {
     }
 
     function setupUpdate(game, canvas) {
-        var pointer = new IO.Pointer(canvas),
+        var pointer = new IO.Pointer(canvas, game.preventDefaultIO),
             keyboard = new IO.Keyboard(game.inputElement ? game.inputElement : window, game.consumeKeys),
             lastTime = TICK.now();
 

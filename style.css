@@ -19,6 +19,8 @@ html, body {
 
 .angleValue {
     width: 100px;
+    float: right;
+    margin-right: 30px;
 }
 
 .linearSlider {
@@ -28,6 +30,8 @@ html, body {
 
 .linearValue {
     width: 100px;
+    float: right;
+    margin-right: 30px;
 }
 
 .controls {
