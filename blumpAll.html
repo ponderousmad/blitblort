@@ -26,10 +26,6 @@
         </canvas>
         <canvas id="canvasEdit" class="beside" width="600" height="600">
         </canvas>
-        <canvas id="canvasPreview" class="beside" width="255" height="255">
-        </canvas>
-        <div id="atlas">
-        </div>
         <div class="controls" id="controls">
             <div class="menuBorder">
                 <div class="menuToggle">
@@ -61,7 +57,6 @@
                     </span>
                 </div>
                 <button id="buttonReload" type="button">Reload</button>
-                <button id="buttonSave" type="button">Save Image</button>
                 <div>
                     <div class="slider">
                         <div>Angle:</div>
@@ -97,6 +92,8 @@
                     <button id="enterVR" type="button" class="hidden">Enter VR</button>
                     <button id="exitVR" type="button" class="hidden">Exit VR</button>
                 </div>
+                <canvas id="canvasPreview" class="beside"></canvas>
+                <div id="divSave" class="beside"></div>
             </form>
         </div>
         <script type="text/javascript">

@@ -463,7 +463,6 @@ var BLUMP = (function () {
     function BlumpEdit(viewport) {
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
-        this.preview = null;
         this.blump = null;
         this.zoom = 4;
         this.xOffset = 0;
@@ -471,14 +470,8 @@ var BLUMP = (function () {
         this.alpha = document.getElementById("sliderAlpha");
         this.depthCanvas = null;
         this.depthContext = null;
-
-        var self = this,
-            saveImage = document.getElementById("buttonSave");
-        if (saveImage) {
-            saveImage.addEventListener("click", function () {
-                self.saveImage();
-            });
-        }
+        this.preview = document.getElementById("canvasPreview");
+        this.previewContext = this.preview.getContext("2d");
     }
 
     BlumpEdit.prototype.update = function (now, elapsed, keyboard, pointer) {
@@ -538,9 +531,8 @@ var BLUMP = (function () {
         context.restore();
     };
 
-    BlumpEdit.prototype.editBlump = function (blump, previewContext) {
+    BlumpEdit.prototype.editBlump = function (blump) {
         this.blump = blump;
-        this.preview = previewContext;
         this.depthCanvas = document.createElement('canvas');
         var width = blump.image.width,
             height = blump.image.height / 2;
@@ -549,27 +541,34 @@ var BLUMP = (function () {
         this.depthContext = this.depthCanvas.getContext('2d');
         this.depthContext.drawImage(blump.image, 0, height, width, height, 0, 0, width, height);
         flattenDepthImage(this.depthContext, 0, 0, width, height);
+        this.setupSave();
     };
 
-    BlumpEdit.prototype.saveImage = function () {
+    BlumpEdit.prototype.setupSave = function () {
         if (this.blump) {
-            var saveCanvas = document.createElement('canvas'),
-                saveContext = saveCanvas.getContext('2d');
-            saveCanvas.width = this.blump.image.width;
-            saveCanvas.height = this.blump.image.height;
-            saveContext.drawImage(this.blump.image, 0, 0, saveCanvas.width, saveCanvas.height);
-            saveContext.drawImage(this.depthCanvas, 0, this.depthCanvas.height,
-                                  this.depthCanvas.width, this.depthCanvas.height);
-            var self = this;
-            saveCanvas.toBlob(function (blob) {
+            var canvas = this.preview,
+                context = this.previewContext,
+                w = this.blump.image.width,
+                h = this.blump.image.height,
+                style = "width: " + w / 8 + "px; height: " + h / 8 + "px;";
+                self = this;
+            canvas.width = w;
+            canvas.height = h;
+            self.previewContext.clearRect(0, 0, w, h);
+            context.drawImage(this.blump.image, 0, 0, w, h/2, 0, 0, w, h/2);
+            context.drawImage(this.depthCanvas, 0, h/2, w, h/2);
+            canvas.style = style;
+            canvas.toBlob(function (blob) {
                 var objectURL = window.URL.createObjectURL(blob),
                     saveLink = document.createElementNS("http://www.w3.org/1999/xhtml", "a");
                 setTimeout(function() {
                     saveLink.href = objectURL;
                     saveLink.download = self.blump.resource;
+                    saveLink.innerHTML = "Save Image";
 
-                    var event = new MouseEvent("click");
-                    saveLink.dispatchEvent(event);
+                    var div = document.getElementById("divSave");
+                    div.innerHTML = "";
+                    div.appendChild(saveLink);
                 });
             });
         }
@@ -636,8 +635,6 @@ var BLUMP = (function () {
     BlumpTest.prototype.setupControls = function () {
         this.turntableCheckbox = document.getElementById("turntable");
         this.selectDraw = document.getElementById("selectDraw");
-        this.preview = document.getElementById("canvasPreview");
-        this.previewContext = this.preview.getContext("2d");
 
         function setupSlider(idBase, handleChange) {
             var slider = document.getElementById("slider" + idBase),
@@ -665,14 +662,6 @@ var BLUMP = (function () {
                 if (value) { value.value = initialValue; }
                 if (slider) { slider.value = initialValue; }
             };
-        }
-
-        function initPreview(image) {
-            var w = image.width, h = image.height;
-            self.preview.width = w;
-            self.preview.height = h;
-            self.previewContext.clearRect(0, 0, w, h);
-            self.previewContext.drawImage(image, 0, 0, w, h, 0, 0, w, h);
         }
 
         this.activeBlump = this.blumps[0];
@@ -715,10 +704,9 @@ var BLUMP = (function () {
             initY(self.activeBlump.offset.y);
             initZ(self.activeBlump.offset.z);
             initScale(self.activeBlump.scale);
-            initPreview(self.activeBlump.image);
 
             if (self.editor) {
-                self.editor.editBlump(self.activeBlump, self.previewContext);
+                self.editor.editBlump(self.activeBlump);
             }
         }
         initialize();
