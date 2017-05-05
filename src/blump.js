@@ -110,18 +110,19 @@ var BLUMP = (function () {
         return result;
     }
 
-    function Builder(width, height, pixelSize) {
+    function Builder(width, height, pixelSize, calculateNormals) {
         this.width = width;
         this.height = height;
         this.pixelSize = pixelSize;
 
         this.setAlignment(0.5, 0.5, 0);
-        this.transform = new R3.M();
-        this.inverse = this.transform;
         this.uMin = 0;
         this.uMax = 0;
-        this.uScale = 1;
-        this.vScale = 1;
+        this.uScale = null;
+        this.vScale = null;
+
+        this.calculateNormals = calculateNormals ? true : false;
+        this.wallNormal = null;
 
         this.defaultBottom = 0;
         this.color = [1, 1, 1, 1];
@@ -133,23 +134,28 @@ var BLUMP = (function () {
         this.depthOffset = depthOffset;
     };
 
-    Builder.prototype.applyTransform = function (transform) {
-        this.transform = transform;
-        this.inverse = transform.inverse();
-    };
-
     Builder.prototype.setupTextureSurface = function (coords) {
-        this.uMin = coords.uMin;
-        this.vMin = coords.vMin;
-        this.uScale = coords.uSize / this.width;
-        this.vScale = coords.vSize / this.height;
+        if (coords) {
+            this.uMin = coords.uMin;
+            this.vMin = coords.vMin;
+            this.uScale = coords.uSize / this.width;
+            this.vScale = coords.vSize / this.height;
+        } else {
+            this.uScale = null;
+            this.vScale = null;
+        }
     };
 
     Builder.prototype.setupTextureWalls = function (coords) {
-        this.uMin = coords.uMin;
-        this.vMin = coords.vMin;
-        this.uScale = coords.uSize;
-        this.vScale = coords.vSize;
+        if (coords) {
+            this.uMin = coords.uMin;
+            this.vMin = coords.vMin;
+            this.uScale = coords.uSize;
+            this.vScale = coords.vSize;
+        } else {
+            this.uScale = null;
+            this.vScale = null;
+        }
     };
 
     Builder.prototype.calculatePositionPerspective = function (x, y, depth) {
@@ -177,17 +183,16 @@ var BLUMP = (function () {
 
     Builder.prototype.addSurfaceVertex = function (mesh, x, y, depth, dLeft, dTop, dRight, dBottom) {
         var position = this.calculatePosition(x, y, depth),
-            left = new R3.V(2 * this.pixelSize, 0, dLeft - dRight),
-            up = new R3.V(0, 2 * this.pixelSize, dTop - dBottom),
-            normal = left.cross(up),
-            u = this.uMin + x * this.uScale,
-            v = this.vMin + y * this.vScale;
-        normal.normalize();
-        mesh.addVertex(
-            this.transform.transformP(position),
-            this.inverse.transformV(normal),
-            u, v, this.color
-        );
+            normal = null,
+            u = this.uScale ? this.uMin + x * this.uScale : null,
+            v = this.vScale ? this.vMin + y * this.vScale : null;
+        if (dBottom !== null) {
+            var left = new R3.V(2 * this.pixelSize, 0, dLeft - dRight),
+                up = new R3.V(0, 2 * this.pixelSize, dTop - dBottom),
+                normal = left.cross(up);
+            normal.normalize();
+        }
+        mesh.addVertex(position, normal, u, v, this.color);
     };
 
     function depthIndex(x, y, width, height) {
@@ -202,15 +207,33 @@ var BLUMP = (function () {
         return x + (y * (width + 1));
     }
 
-    Builder.prototype.constructSurface = function (depths, texture) {
+    function addTri(mesh, remap, i, j, k) {
+        mesh.addTri(i, j, k);
+        remap[i] = 1;
+        remap[j] = 1;
+        remap[k] = 1;
+    }
+
+    Builder.prototype.getVertexColor = function (texturePixels, x, y, width, height) {
+        var channels = IMPROC.CHANNELS,
+            index = depthIndex(x, y, width, height) * channels;
+        for (var c = 0; c < IMPROC.CHANNELS; ++c) {
+            this.color[c] = texturePixels[index + c] / IMPROC.BYTE_MAX;
+        }
+    }
+
+    Builder.prototype.constructSurface = function (depths, texture, texturePixels) {
         var width = this.width,
             height = this.height,
             validHeight = Math.floor(MAX_VERTICIES / (width + 1)) - 1,
-            mesh = new WGL.Mesh();
+            mesh = new WGL.Mesh(),
+            vertexRemap = new Uint16Array((width + 1) * (height + 1));
 
         if (height > validHeight) {
             throw "Image too large";
         }
+
+        vertexRemap.fill(0);
 
         for (var y = 0; y <= height; ++y) {
             var generateTris = y > 0,
@@ -220,12 +243,19 @@ var BLUMP = (function () {
             for (var x = 0; x <= width; ++x) {
                 var depth = dRight,
                     dTop = lookupDepth(depths, x, y-1, width, height),
-                    dBottom = lookupDepth(depths, x, y+1, width, height),
+                    dBottom = null,
                     generateTri = (generateTris && x > 0),
                     lowerRight = depth >= 0,
                     corners = lowerLeft + lowerRight;
                 dRight = lookupDepth(depths, x+1, y, width, height);
 
+                if (this.calculateNormals) {
+                    dBottom = lookupDepth(depths, x, y+1, width, height);
+                }
+
+                if (texturePixels) {
+                    this.getVertexColor(texturePixels, x, y, width, height)
+                }
                 this.addSurfaceVertex(mesh, x, y, depth, dLeft, dTop, dRight, dBottom);
 
                 if (generateTri && corners > 0) {
@@ -239,16 +269,16 @@ var BLUMP = (function () {
                     corners += upperLeft + upperRight;
                     if (corners > 3) {
                         if (corners == 4) {
-                            mesh.addTri(iUR, iLR, iLL);
-                            mesh.addTri(iUR, iLL, iUL);
+                            addTri(mesh, vertexRemap, iUR, iLR, iLL);
+                            addTri(mesh, vertexRemap, iUR, iLL, iUL);
                         } else if(!upperLeft) {
-                            mesh.addTri(iUR, iLR, iLL);
+                            addTri(mesh, vertexRemap, iUR, iLR, iLL);
                         } else if (!upperRight) {
-                            mesh.addTri(iUL, iLR, iLL);
+                            addTri(mesh, vertexRemap, iUL, iLR, iLL);
                         } else if (!lowerLeft) {
-                            mesh.addTri(iUL, iLR, iUR);
+                            addTri(mesh, vertexRemap, iUL, iLR, iUR);
                         } else if (!lowerRight) {
-                            mesh.addTri(iUL, iUR, iLL);
+                            addTri(mesh, vertexRemap, iUL, iUR, iLL);
                         }
                     }
                 }
@@ -258,7 +288,7 @@ var BLUMP = (function () {
         }
 
         mesh.image = texture;
-        mesh.finalize();
+        mesh.finalize(null, null, vertexRemap);
         return mesh;
     };
 
@@ -283,8 +313,8 @@ var BLUMP = (function () {
             bottom =  this.bottomDepths ? this.bottomDepths[i] :
                                           this.defaultBottom,
             position = this.calculatePosition(x, y, bottom),
-            u = this.uMin + uFraction * this.uScale,
-            v = this.vMin + this.vScale;
+            u = this.uScale ? this.uMin + uFraction * this.uScale : null,
+            v = this.vScale ? this.vMin + this.vScale : null;
         mesh.addVertex(position, this.wallNormal, u, v, this.color);
         position.z = top + this.depthOffset;
         v = this.vMin;
@@ -427,38 +457,41 @@ var BLUMP = (function () {
         var width = image.width,
             height = image.height / 2,
             builder = new Builder(width, height, this.pixelSize),
-            depths = builder.depthFromPaired(image, false, this.depthRange);
+            depths = builder.depthFromPaired(image, false, this.depthRange),
+            texturePixels = null;
         builder.setAlignment(0.5, 0.5, -this.depthRange/2);
 
         if (atlas) {
             this.atlas = atlas;
             this.textureCoords = atlas.add(image, 0, 0, width, height);
+        } else {
+            texturePixels = IMPROC.getPixels(image, 0, 0, width, height).data;
         }
-        if (this.textureCoords) {
-            builder.setupTextureSurface(this.textureCoords);
-        }
+        builder.setupTextureSurface(this.textureCoords);
 
-        this.mesh = builder.constructSurface(depths, this.atlas.texture());
+        this.mesh = builder.constructSurface(depths, atlas ? atlas.texture() : null, texturePixels);
         this.mesh.dynamic = true;
-        this.reposition();
+        this.reposition(true);
     };
 
-    Blump.prototype.reposition = function () {
+    Blump.prototype.reposition = function (inPlace) {
         var transform = this.constructTransform(),
             inverse = transform.inverse(),
-            vertsIn = this.mesh.vertices,
             vertsOut = this.mesh.glVertices,
-            normalsIn = this.mesh.normals,
-            normalsOut = this.mesh.glNormals;
+            normalsOut = this.mesh.glNormals,
+            vertsIn = inPlace ? vertsOut : this.mesh.vertices,
+            normalsIn = inPlace ? normalsOut : this.mesh.normals;
         for (var i = 0; i < vertsIn.length; i += 3) {
-            var p = new R3.V(vertsIn[i], vertsIn[i+1], vertsIn[i+2]),
-                n = new R3.V(normalsIn[i], normalsIn[i+1], normalsIn[i+2]);
+            var p = new R3.V(vertsIn[i], vertsIn[i+1], vertsIn[i+2]);
             p = transform.transformP(p);
-            n = inverse.transformV(n);
-            n.normalize();
-
             vertsOut[i] = p.x; vertsOut[i+1] = p.y; vertsOut[i+2] = p.z;
-            normalsOut[i] = n.x; normalsOut[i+1] = n.y; normalsOut[i+2] = n.z;
+
+            if (normalsOut) {
+                var n = new R3.V(normalsIn[i], normalsIn[i+1], normalsIn[i+2]);
+                n = inverse.transformV(n);
+                n.normalize();
+                normalsOut[i] = n.x; normalsOut[i+1] = n.y; normalsOut[i+2] = n.z;
+            }
         }
         this.mesh.updated = true;
     };

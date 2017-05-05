@@ -326,9 +326,9 @@ var WGL = (function () {
 
             mesh.drawData = {
                 vertexBuffer: this.setupFloatBuffer(mesh.glVertices, false, drawHint),
-                normalBuffer: this.setupFloatBuffer(mesh.glNormals),
-                uvBuffer: this.setupFloatBuffer(mesh.glUVs),
-                colorBuffer: this.setupFloatBuffer(mesh.glColors, false, drawHint),
+                normalBuffer: mesh.glNormals ? this.setupFloatBuffer(mesh.glNormals) : null,
+                uvBuffer: mesh.glUVs ? this.setupFloatBuffer(mesh.glUVs) : null,
+                colorBuffer: mesh.glColors ? this.setupFloatBuffer(mesh.glColors, false, drawHint) : null,
                 triBuffer: this.setupElementBuffer(mesh.tris)
             };
             if (mesh.image) {
@@ -367,7 +367,7 @@ var WGL = (function () {
             gl.vertexAttribPointer(program.vertexColor, 4, gl.FLOAT, false, 0, 0);
         }
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, draw.triBuffer);
-        if (draw.texture) {
+        if (program.uSampler !== null && draw.texture) {
             this.bindTexture(program.shader, program.textureVariable, draw.texture);
         }
         gl.drawElements(gl.TRIANGLES, mesh.tris.length, gl.UNSIGNED_SHORT, 0);
@@ -419,18 +419,18 @@ var WGL = (function () {
         return this.setupShaderProgram(vertexSource, fragmentSource);
     };
 
-    Room.prototype.programFromElements = function (vertexElement, fragmentElement) {
+    Room.prototype.programFromElements = function (vertexElement, fragmentElement, textures, normals, colors) {
         var shader = this.shaderFromElements(vertexElement, fragmentElement);
         return {
             shader: shader,
             mvUniform: "uMVMatrix",
             perspectiveUniform: "uPMatrix",
-            normalUniform: "uNormalMatrix",
+            normalUniform: normals ? "uNormalMatrix" : null,
             vertexPosition: this.bindVertexAttribute(shader, "aPos"),
-            vertexNormal: this.bindVertexAttribute(shader, "aNormal"),
-            vertexUV: this.bindVertexAttribute(shader, "aUV"),
-            vertexColor: this.bindVertexAttribute(shader, "aColor"),
-            textureVariable: "uSampler"
+            vertexNormal: normals ? this.bindVertexAttribute(shader, "aNormal") : null,
+            vertexUV: textures ? this.bindVertexAttribute(shader, "aUV") : null,
+            vertexColor: colors ? this.bindVertexAttribute(shader, "aColor") : null,
+            textureVariable: textures ? "uSampler" : null
         };
     };
 
@@ -532,15 +532,18 @@ var WGL = (function () {
 
     Mesh.prototype.addVertex = function (p, n, u, v, color) {
         p.pushOn(this.vertices);
-        n.pushOn(this.normals);
-        if (!color || color.length != 4) {
-            color = DEFAULT_WHITE;
+        if (n) {
+            n.pushOn(this.normals);
         }
-        for (var c = 0; c < color.length; ++c) {
-            this.colors.push(color[c]);
+        if (color) {
+            for (var c = 0; c < color.length; ++c) {
+                this.colors.push(color[c]);
+            }
         }
-        this.uvs.push(u);
-        this.uvs.push(v);
+        if (u !== null) {
+            this.uvs.push(u);
+            this.uvs.push(v);
+        }
         this.index += 1;
         this.bbox.envelope(p);
     };
@@ -558,32 +561,95 @@ var WGL = (function () {
         this.index += other.index;
     };
 
-    Mesh.prototype.finalize = function (min, max) {
+    Mesh.prototype.finalize = function (min, max, remap) {
         if (min) {
             this.bbox.envelope(min);
         }
         if (max) {
             this.bbox.envelope(max);
         }
-        this.index = this.vertices.length / 3;
-        if (this.index != this.normals.length / 3) {
-            throw "Normals missing!";
+        var coords = 3,
+            uvCoords = 2,
+            colorChannels = IMPROC.CHANNELS;
+        this.index = this.vertices.length / coords;
+        if (this.normals.length > 0 && this.index * coords != this.normals.length) {
+            throw "Some Normals missing!";
         }
-        if (this.index != this.uvs.length / 2) {
-            throw "UVs missing!";
+        if (this.uvs.length > 0 && this.index * uvCoords != this.uvs.length) {
+            throw "Some UVs missing!";
         }
-        if (this.index != this.colors.length / 4) {
-            for (var i = this.colors.length / 4; i < this.index; ++i) {
-                this.colors.push(1);
-                this.colors.push(1);
-                this.colors.push(1);
-                this.colors.push(0);
+        if (this.index * colorChannels != this.colors.length) {
+            if (this.colors.length === 0 && this.fillColor) {
+                for (var ci = 0; ci < this.index; ++ci) {
+                    for (var channel = 0; channel < colorChannels; ++channel) {
+                        this.colors.push(this.fillColor[channel]);
+                    }
+                }
+            } else {
+                throw "Some colors missing!";
             }
         }
+        if (remap) {
+            if (remap.length != this.index) {
+                throw "Incorrect remap size!";
+            }
+            var vertexCount = remap.reduce(function (a, b) {return a+b;}, 0);
+            if (vertexCount != remap.length) {
+                this.glVertices = new Float32Array(vertexCount * coords);
+                if (this.colors.length > 0) {
+                    this.glColors = new Float32Array(vertexCount * colorChannels);
+                }
+                if (this.normals.length > 0) {
+                    this.glNormals = new Float32Array(vertexCount * coords);
+                }
+                if (this.uvs.length > 0) {
+                    this.glUVs = new Float32Array(vertexCount * uvCoords);
+                }
+
+                var c = 0;
+                for (var i = 0; i < this.index; ++i) {
+                    if (remap[i] > 0) {
+                        for (var axis = 0; axis < coords; ++axis) {
+                            this.glVertices[c*coords + axis] = this.vertices[i*coords + axis];
+                            if (this.glNormals) {
+                                this.glNormals[c*coords + axis] = this.normals[i*coords + axis];
+                            }
+                        }
+                        if (this.glUVs) {
+                            for (var uvAxis = 0; uvAxis < uvCoords; ++uvAxis) {
+                                this.glUVs[c*uvCoords + uvAxis] = this.uvs[i*uvCoords + uvAxis];
+                            }
+                        }
+                        if (this.glColors) {
+                            for (var channel = 0; channel < colorChannels; ++channel) {
+                                this.glColors[c*colorChannels + channel] = this.colors[i*colorChannels + channel];
+                            }
+                        }
+                        remap[i] = c;
+                        ++c;
+                    }
+                }
+                this.index = c;
+                for (var t = 0; t < this.tris.length; ++t) {
+                    this.tris[t] = remap[this.tris[t]];
+                }
+                return;
+            }
+        }
+
         this.glVertices = new Float32Array(this.vertices);
-        this.glUVs = new Float32Array(this.uvs);
-        this.glColors = new Float32Array(this.colors);
-        this.glNormals = new Float32Array(this.normals);
+
+        if (this.normals.length > 0) {
+            this.glNormals = new Float32Array(this.normals);
+        }
+
+        if (this.uvs.length > 0) {
+            this.glUVs = new Float32Array(this.uvs);
+        }
+
+        if (this.colors.length > 0) {
+            this.glColors = new Float32Array(this.colors);
+        }
     };
 
     function makeCube() {

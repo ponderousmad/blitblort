@@ -463,7 +463,6 @@ var BLUMP_EDIT = (function () {
         this.animRate = document.getElementById("sliderAnimRate");
         this.loadingFrame = 0;
         this.loadState = null;
-        this.atlas = null;
 
         this.frameFiles = [
             "images/blumpy/wave/wave01/frame.JSON",
@@ -498,9 +497,9 @@ var BLUMP_EDIT = (function () {
     AnimTest.prototype.constructBlumps = function (blumps) {
         this.loadState = "constructing";
         var image = blumps[0].image;
-        this.atlas = new WGL.TextureAtlas(image.width, image.height/2, blumps.length);
         for (var b = 0; b < blumps.length; ++b) {
-            blumps[b].construct(this.atlas);
+            blumps[b].construct(null);
+            blumps[b].image = null;
         }
         this.loadState = null;
         this.loadingFrame += 1;
@@ -527,7 +526,7 @@ var BLUMP_EDIT = (function () {
     };
 
     AnimTest.prototype.setupRoom = function (room) {
-        this.program = room.programFromElements("vertex-test", "fragment-test");
+        this.program = room.programFromElements("vertex-test", "fragment-test", false, false, true);
 
         room.viewer.near = 0.01;
         room.viewer.far = 10;

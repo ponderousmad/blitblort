@@ -111,9 +111,11 @@ var IMPROC = (function () {
     }
 
     return {
+        CHANNELS: CHANNELS,
         BYTE_MAX: BYTE_MAX,
         byteToUnitValue: byteToUnitValue,
         byteToFraction: byteToFraction,
+        getPixels: getPixels,
         processPixels: processPixels,
         processImage: processImage,
         cropImage: cropImage,
