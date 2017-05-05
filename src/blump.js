@@ -432,7 +432,6 @@ var BLUMP = (function () {
         this.pixelSize = data.pixelSize || defaultPixelSize;
         this.depthRange = data.depthRange || defaultDepthRange;
         this.mesh = null;
-        this.visible = true;
         this.offset = new R3.V(data.lrOffset, data.vOffset, data.fbOffset);
         this.scale = data.scale || 1;
     }
@@ -513,12 +512,11 @@ var BLUMP = (function () {
         };
     };
 
-    Blump.prototype.simplified = function () {
-        this.mesh.dynamic = false;
-        return {
-            angle: this.angle,
-            mesh: this.mesh
-        };
+    Blump.prototype.simplify = function () {
+        this.mesh.simplify();
+        this.image = null;
+        this.resource = null;
+        this.atlas = null;
     };
 
     return {

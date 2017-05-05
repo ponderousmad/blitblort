@@ -467,7 +467,8 @@ var BLUMP_EDIT = (function () {
         this.frameFiles = [
             "images/blumpy/wave/wave01/frame.JSON",
             "images/blumpy/wave/wave02/frame.JSON",
-            "images/blumpy/wave/wave03/frame.JSON"
+            "images/blumpy/wave/wave03/frame.JSON",
+            "images/blumpy/wave/wave04/frame.JSON"
         ];
 
         this.frames = [];
@@ -518,7 +519,7 @@ var BLUMP_EDIT = (function () {
             var frame = this.frames[f];
             frame.next = (f+1) % this.frames.length;
             for (var b = 0; b < frame.blumps.length; ++b) {
-                frame.blumps[b] = frame.blumps[b].simplified();
+                frame.blumps[b].simplify();
             }
         }
         this.thing = new BLOB.Thing();

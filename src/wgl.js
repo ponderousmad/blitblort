@@ -652,6 +652,14 @@ var WGL = (function () {
         }
     };
 
+    Mesh.prototype.simplify = function () {
+        this.dynamic = false;
+        this.vertices = null;
+        this.colors = null;
+        this.normals = null;
+        this.uvs = null;
+    }
+
     function makeCube() {
         var mesh = new Mesh();
         mesh.verticies = [
