@@ -354,7 +354,7 @@ var BLUMP_EDIT = (function () {
             image = blumps[0].image,
             atlas = new WGL.TextureAtlas(image.width, image.height/2, blumps.length);
         for (var b = 0; b < blumps.length; ++b) {
-            blumps[b].construct(atlas);
+            blumps[b].construct(atlas, true, true);
         }
 
         var atlasDiv = document.getElementById("atlas");
@@ -381,7 +381,7 @@ var BLUMP_EDIT = (function () {
     };
 
     BlumpView.prototype.setupRoom = function (room) {
-        this.program = room.programFromElements("vertex-test", "fragment-test");
+        this.program = room.programFromElements("vertex-test", "fragment-test", true, true, true);
 
         room.viewer.near = 0.01;
         room.viewer.far = 10;
@@ -391,7 +391,7 @@ var BLUMP_EDIT = (function () {
     BlumpView.prototype.update = function (now, elapsed, keyboard, pointer) {
         if (this.thing) {
             var angleDelta = 0;
-            
+
             if (pointer.primary) {
                 angleDelta = pointer.primary.deltaX * 0.01;
             } else if (!this.turntableCheckbox || this.turntableCheckbox.checked) {

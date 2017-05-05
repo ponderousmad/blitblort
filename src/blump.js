@@ -209,9 +209,11 @@ var BLUMP = (function () {
 
     function addTri(mesh, remap, i, j, k) {
         mesh.addTri(i, j, k);
-        remap[i] = 1;
-        remap[j] = 1;
-        remap[k] = 1;
+        if (remap) {
+            remap[i] = 1;
+            remap[j] = 1;
+            remap[k] = 1;
+        }
     }
 
     Builder.prototype.getVertexColor = function (texturePixels, x, y, width, height) {
@@ -227,13 +229,16 @@ var BLUMP = (function () {
             height = this.height,
             validHeight = Math.floor(MAX_VERTICIES / (width + 1)) - 1,
             mesh = new WGL.Mesh(),
-            vertexRemap = new Uint16Array((width + 1) * (height + 1));
+            vertexRemap = null;
 
         if (height > validHeight) {
             throw "Image too large";
         }
 
-        vertexRemap.fill(0);
+        if (!this.allowEdits) {
+            vertexRemap = new Uint16Array((width + 1) * (height + 1));
+            vertexRemap.fill(0);
+        }
 
         for (var y = 0; y <= height; ++y) {
             var generateTris = y > 0,
@@ -448,17 +453,18 @@ var BLUMP = (function () {
         this.image = batch.load(this.resource);
     };
 
-    Blump.prototype.construct = function (atlas) {
-        this.constructFromImage(this.image, atlas);
+    Blump.prototype.construct = function (atlas, allowEdits, buildNormals) {
+        this.constructFromImage(this.image, atlas, allowEdits, buildNormals);
     };
 
-    Blump.prototype.constructFromImage = function (image, atlas) {
+    Blump.prototype.constructFromImage = function (image, atlas, allowEdits, buildNormals) {
         var width = image.width,
             height = image.height / 2,
-            builder = new Builder(width, height, this.pixelSize),
+            builder = new Builder(width, height, this.pixelSize, buildNormals),
             depths = builder.depthFromPaired(image, false, this.depthRange),
             texturePixels = null;
         builder.setAlignment(0.5, 0.5, -this.depthRange/2);
+        builder.allowEdits = allowEdits;
 
         if (atlas) {
             this.atlas = atlas;
