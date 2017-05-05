@@ -151,7 +151,7 @@ var BLUMP_EDIT = (function () {
         postUpdate(this.preview, this.blump.resource);
     };
 
-    function Viewer(viewport, editor) {
+    function BlumpView(viewport, editor) {
         this.clearColor = [0, 0, 0, 1];
         this.maximize = viewport === "safe";
         this.updateInDraw = true;
@@ -172,7 +172,7 @@ var BLUMP_EDIT = (function () {
         this.setupControls();
     }
 
-    Viewer.prototype.setupControls = function () {
+    BlumpView.prototype.setupControls = function () {
         this.turntableCheckbox = document.getElementById("turntable");
         this.selectDraw = document.getElementById("selectDraw");
 
@@ -307,7 +307,7 @@ var BLUMP_EDIT = (function () {
         }
     };
 
-    Viewer.prototype.populateImages = function () {
+    BlumpView.prototype.populateImages = function () {
         if (this.selectImage) {
             this.selectImage.innerHTML = "";
             for (var b = 0; b < this.blumps.length; ++b) {
@@ -318,7 +318,7 @@ var BLUMP_EDIT = (function () {
         }
     };
 
-    Viewer.prototype.load = function (blumpData) {
+    BlumpView.prototype.load = function (blumpData) {
         this.blumps = [];
         this.thing = null;
         var pixelSize = blumpData.pixelSize || 0.001;
@@ -340,7 +340,7 @@ var BLUMP_EDIT = (function () {
         this.populateImages();
     };
 
-    Viewer.prototype.checkpoint = function () {
+    BlumpView.prototype.checkpoint = function () {
         console.log(this.save());
         try {
             window.localStorage.setItem("blump", this.save());
@@ -349,7 +349,7 @@ var BLUMP_EDIT = (function () {
         }
     };
 
-    Viewer.prototype.constructBlumps = function () {
+    BlumpView.prototype.constructBlumps = function () {
         var blumps = this.blumps,
             image = blumps[0].image,
             atlas = new WGL.TextureAtlas(image.width, image.height/2, blumps.length);
@@ -366,7 +366,7 @@ var BLUMP_EDIT = (function () {
         this.connectControls();
     };
 
-    Viewer.prototype.save = function () {
+    BlumpView.prototype.save = function () {
         var blumpData = [];
         
         for (var b = 0; b < this.blumps.length; ++b) {
@@ -380,7 +380,7 @@ var BLUMP_EDIT = (function () {
         return JSON.stringify(data, null, 4);
     };
 
-    Viewer.prototype.setupRoom = function (room) {
+    BlumpView.prototype.setupRoom = function (room) {
         this.program = room.programFromElements("vertex-test", "fragment-test");
 
         room.viewer.near = 0.01;
@@ -388,7 +388,7 @@ var BLUMP_EDIT = (function () {
         room.gl.enable(room.gl.CULL_FACE);
     };
 
-    Viewer.prototype.update = function (now, elapsed, keyboard, pointer) {
+    BlumpView.prototype.update = function (now, elapsed, keyboard, pointer) {
         if (this.thing) {
             var angleDelta = 0;
             
@@ -411,14 +411,14 @@ var BLUMP_EDIT = (function () {
         }
     };
 
-    Viewer.prototype.eyePosition = function () {
+    BlumpView.prototype.eyePosition = function () {
         var d = this.distance * this.zoom,
             x = Math.cos(this.tilt),
             y = Math.sin(this.tilt);
         return new R3.V(x * d, y * d, 0);
     };
 
-    Viewer.prototype.render = function (room, width, height) {
+    BlumpView.prototype.render = function (room, width, height) {
         room.clear(this.clearColor);
         if (this.thing && room.viewer.showOnPrimary()) {
             var eye = this.eyePosition(),
@@ -445,26 +445,181 @@ var BLUMP_EDIT = (function () {
         }
     };
 
-    function start() {
-        var editor = new ImageEditor("canvas");
-        MAIN.start(document.getElementById("canvas3D"), new Viewer("canvas", editor));
-        MAIN.start(document.getElementById("canvasEdit"), editor);
-        var failed = MAIN.runTestSuites(),
-            controlsVisible = false;
-        if (failed === 0) {
-            console.log("All Tests Passed!");
+    function AnimTest(viewport, editor) {
+        this.clearColor = [0, 0, 0, 1];
+        this.maximize = viewport === "safe";
+        this.updateInDraw = true;
+        this.preventDefaultIO = true;
+        this.viewport = viewport ? viewport : "canvas";
+        this.thing = null;
+        this.program = null;
+        this.distance = 0.5;
+        this.zoom = 1;
+        this.tilt = 0;
+        this.TILT_MAX = Math.PI * 0.49;
+        this.drawAllCheckbox = document.getElementById("drawAll");
+        this.turntableCheckbox = document.getElementById("turntable");
+        this.turnRate = document.getElementById("sliderTurnRate");
+        this.animRate = document.getElementById("sliderAnimRate");
+        this.loadingFrame = 0;
+        this.loadState = null;
+        this.atlas = null;
+
+        this.frameFiles = [
+            "images/blumpy/wave/wave01/frame.JSON",
+            "images/blumpy/wave/wave02/frame.JSON",
+            "images/blumpy/wave/wave03/frame.JSON"
+        ];
+
+        this.frames = [];
+    }
+
+    AnimTest.prototype.batch = function (blumpData, frame) {
+        this.loadState = "batching";
+
+        var blumps = frame.blumps,
+            pixelSize = blumpData.pixelSize || 0.001,
+            depthRange = blumpData.depthRange || 0.2;
+        for (var d = 0; d < blumpData.blumps.length; ++d) {
+            blumps.push(new BLUMP.Blump(blumpData.blumps[d], pixelSize, depthRange));
         }
 
-        document.getElementById("menuButton").addEventListener("click", function(e) {
-            controlsVisible = !controlsVisible;
-            var slide = controlsVisible ? " slideIn" : "";
-            controls.className = "controls" + slide;
-            e.preventDefault = true;
-            return false;
-        });
+        var self = this,
+            batch = new BLIT.Batch("images/", function() {
+                self.constructBlumps(blumps);
+            });
+
+        for (var b = 0; b < blumps.length; ++b) {
+            blumps[b].loadImage(batch);
+        }
+        batch.commit();
+    };
+
+    AnimTest.prototype.constructBlumps = function (blumps) {
+        this.loadState = "constructing";
+        var image = blumps[0].image;
+        this.atlas = new WGL.TextureAtlas(image.width, image.height/2, blumps.length);
+        for (var b = 0; b < blumps.length; ++b) {
+            blumps[b].construct(this.atlas);
+        }
+        this.loadState = null;
+        this.loadingFrame += 1;
+
+        if (this.loadingFrame == this.frameFiles.length) {
+            this.connectFrames();
+        }
+    };
+
+    AnimTest.prototype.connectFrames = function () {
+        for (var extra = this.frames.length - 2; extra > 1; ++extra) {
+            this.frames.push(this.frames[extra]);
+        }
+
+        for (var f = 0; f < this.frames.length; ++f) {
+            var frame = this.frames[f];
+            frame.next = (f+1) % this.frames.length;
+            for (var b = 0; b < frame.blumps.length; ++b) {
+                frame.blumps[b] = frame.blumps[b].simplified();
+            }
+        }
+        this.thing = new BLOB.Thing();
+        this.thing.setFrames(this.frames, 0);
+    };
+
+    AnimTest.prototype.setupRoom = function (room) {
+        this.program = room.programFromElements("vertex-test", "fragment-test");
+
+        room.viewer.near = 0.01;
+        room.viewer.far = 10;
+        room.gl.enable(room.gl.CULL_FACE);
+    };
+
+    AnimTest.prototype.update = function (now, elapsed, keyboard, pointer) {
+        if (this.loadingFrame < this.frameFiles.length) {
+            if (this.loadState === null) {
+                this.loadState = "setup";
+                var self = this,
+                    frame = new BLOB.Frame([], 200);
+                this.frames.push(frame);
+                IO.downloadJSON(this.frameFiles[this.loadingFrame], function (data) {
+                    self.batch(data, frame);
+                });
+            }
+        }
+        if (this.thing) {
+            var angleDelta = 0;
+            if (pointer.primary) {
+                angleDelta = pointer.primary.deltaX * 0.01;
+            } else if (!this.turntableCheckbox || this.turntableCheckbox.checked) {
+                var turnRate = (this.turnRate ? parseFloat(this.turnRate.value) : null) || 1;
+                angleDelta = elapsed * Math.PI * 0.001 * turnRate;
+            }
+            this.thing.rotate(angleDelta, new R3.V(0, 1, 0));
+
+            var animRate = (this.animRate ? parseFloat(this.animRate.value) : null) || 1;
+            this.thing.update(elapsed * animRate);
+        }
+
+        if (pointer.primary) {
+            this.tilt += pointer.primary.deltaY * 0.5 * R2.DEG_TO_RAD;
+            this.tilt = R2.clamp(this.tilt, -this.TILT_MAX, this.TILT_MAX);
+        }
+
+        if (pointer.wheelY) {
+            var WHEEL_BASE = 20;
+            this.zoom *= (WHEEL_BASE + pointer.wheelY) / WHEEL_BASE;
+        }
+    };
+
+    AnimTest.prototype.eyePosition = function () {
+        var d = this.distance * this.zoom,
+            x = Math.cos(this.tilt),
+            y = Math.sin(this.tilt);
+        return new R3.V(x * d, y * d, 0);
+    };
+
+    AnimTest.prototype.render = function (room, width, height) {
+        room.clear(this.clearColor);
+        if (this.thing && room.viewer.showOnPrimary()) {
+            var eye = this.eyePosition();
+            room.viewer.positionView(eye, R3.origin(), new R3.V(0, 1, 0));
+            room.setupView(this.program, this.viewport);
+            if (this.drawAllCheckbox ? this.drawAllCheckbox.checked : false) {
+                var blumps = this.thing.blumps;
+                this.thing.blumps = null;
+                for (var b = 0; b < blumps.length; ++b) {
+                    this.thing.mesh = blumps[b].mesh;
+                    this.thing.render(room, this.program, eye);
+                }
+                this.thing.blumps = blumps;
+            } else {
+                this.thing.render(room, this.program, eye);
+            }
+        }
+    };
+
+    function start() {
+        var editor = new ImageEditor("canvas");
+        MAIN.start(document.getElementById("canvas3D"), new BlumpView("canvas", editor));
+        MAIN.start(document.getElementById("canvasEdit"), editor);
+
+        MAIN.setupToggleControls();
+        if (MAIN.runTestSuites() === 0) {
+            console.log("All Tests Passed!");
+        }
+    }
+
+    function startAnim() {
+        MAIN.start(document.getElementById("canvas3D"), new AnimTest("safe"));
+
+        MAIN.setupToggleControls();
+        if (MAIN.runTestSuites() === 0) {
+            console.log("All Tests Passed!");
+        }
     }
 
     return {
-        start: start
+        start: start,
+        startAnim: startAnim
     };
 }());

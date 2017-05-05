@@ -2,10 +2,9 @@ var BLOB = (function () {
     "use strict";
 
     function Frame(blumps, duration, next) {
-        this.blumps = blump;
-        this.next = next;
+        this.blumps = blumps;
+        this.next = next || null;
         this.duration = duration;
-        this.remaining = duration;
     }
 
     function Thing(mesh) {
@@ -17,17 +16,29 @@ var BLOB = (function () {
         this.transformDirty = false;
         this.blumps = null;
         this.frame = null;
+        this.frames = null;
+        this.remaining = 0;
 
         this.mesh = mesh ? mesh : null;
     }
 
+    Thing.prototype.setFrames = function (frames, index) {
+        if (frames) {
+            this.frames = frames;
+        } else {
+            frames = this.frames;
+        }
+        this.frame = frames[index];
+        this.blumps = this.frame.blumps;
+        this.remaining = this.frame.duration;
+    };
+
     Thing.prototype.update = function (elapsed) {
         if (this.frame) {
-            if (this.frame.next) {
-                this.duration -= elapsed;
-                if (this.duration < 0) {
-                    this.frame = this.frame.next;
-                    this.blumps = this.frame.blumps;
+            if (this.frame.next !== null) {
+                this.remaining -= elapsed;
+                if (this.remaining < 0) {
+                    this.setFrames(null, this.frame.next);
                 }
             }
         }
@@ -100,6 +111,7 @@ var BLOB = (function () {
     };
 
     return {
+        Frame: Frame,
         Thing: Thing
     };
 }());

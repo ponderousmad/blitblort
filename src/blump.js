@@ -480,6 +480,14 @@ var BLUMP = (function () {
         };
     };
 
+    Blump.prototype.simplified = function () {
+        this.mesh.dynamic = false;
+        return {
+            angle: this.angle,
+            mesh: this.mesh
+        };
+    };
+
     return {
         NO_DEPTH: NO_DEPTH,
         Blump: Blump

@@ -224,10 +224,22 @@ var MAIN = (function () {
         room.drawTest(this.viewport, this.angle);
     };
 
+    function setupToggleControls() {
+        var controlsVisible = false;
+        document.getElementById("menuButton").addEventListener("click", function(e) {
+            controlsVisible = !controlsVisible;
+            var slide = controlsVisible ? " slideIn" : "";
+            controls.className = "controls" + slide;
+            e.preventDefault = true;
+            return false;
+        });
+    }
+
     return {
         Test2D: Test2D,
         Test3D: Test3D,
         runTestSuites: runTestSuites,
-        start: start
+        start: start,
+        setupToggleControls: setupToggleControls
     };
 }());
