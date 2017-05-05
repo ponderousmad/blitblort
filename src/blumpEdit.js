@@ -354,7 +354,7 @@ var BLUMP_EDIT = (function () {
             image = blumps[0].image,
             atlas = new WGL.TextureAtlas(image.width, image.height/2, blumps.length);
         for (var b = 0; b < blumps.length; ++b) {
-            blumps[b].construct(atlas, true, true);
+            blumps[b].construct(atlas, true, false);
         }
 
         var atlasDiv = document.getElementById("atlas");
@@ -381,7 +381,7 @@ var BLUMP_EDIT = (function () {
     };
 
     BlumpView.prototype.setupRoom = function (room) {
-        this.program = room.programFromElements("vertex-test", "fragment-test", true, true, true);
+        this.program = room.programFromElements("vertex-test", "fragment-test", true, false, true);
 
         room.viewer.near = 0.01;
         room.viewer.far = 10;
