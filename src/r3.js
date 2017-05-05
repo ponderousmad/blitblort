@@ -154,6 +154,22 @@ var R3 = (function () {
         return subVectors(v, v.projectedOnV(normal));
     }
 
+    function closestPointOnLine(aOrigin, aDir, bOrigin, bDir) {
+        var offset = R3.subVectors(bOrigin, bOrigin),
+            dBA = bDir.dot(aDir),
+            denominator = 1 - dBA * dBA;
+
+        if (abs(denominator) < 1e-8) {
+            return R3.origin();
+        }
+
+        var dOffB = offset.dot(bDir),
+            dOffA = offset.dot(aDir),
+            numerator = dOffA - dOffB * dBA;
+
+        return R3.addVectors(a, aDir.scaled(numerator / denominator));
+    }
+
     function Q(x, y, z, w) {
         this.x = x || 0;
         this.y = y || 0;
@@ -1034,6 +1050,7 @@ var R3 = (function () {
         addVectors: addVectors,
         subVectors: subVectors,
         vectorOntoPlane: vectorOntoPlane,
+        closestPointOnLine: closestPointOnLine,
         perspective: perspective,
         perspectiveFOV: perspectiveFOV,
         testSuite: testSuite
