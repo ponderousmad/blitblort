@@ -468,7 +468,11 @@ var BLUMP_EDIT = (function () {
             "images/blumpy/wave/wave01/frame.JSON",
             "images/blumpy/wave/wave02/frame.JSON",
             "images/blumpy/wave/wave03/frame.JSON",
-            "images/blumpy/wave/wave04/frame.JSON"
+            "images/blumpy/wave/wave04/frame.JSON",
+            "images/blumpy/wave/wave05/frame.JSON",
+            "images/blumpy/wave/wave06/frame.JSON",
+            "images/blumpy/wave/wave07/frame.JSON",
+            "images/blumpy/wave/wave08/frame.JSON"
         ];
 
         this.frames = [];
@@ -511,8 +515,9 @@ var BLUMP_EDIT = (function () {
     };
 
     AnimTest.prototype.connectFrames = function () {
-        for (var extra = this.frames.length - 2; extra > 1; ++extra) {
-            this.frames.push(this.frames[extra]);
+        for (var extra = this.frames.length - 2; extra > 1; --extra) {
+            var toCopy = this.frames[extra];
+            this.frames.push(new BLOB.Frame(toCopy.blumps, toCopy.duration));
         }
 
         for (var f = 0; f < this.frames.length; ++f) {
