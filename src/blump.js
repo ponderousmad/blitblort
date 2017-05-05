@@ -906,16 +906,16 @@ var BLUMP = (function () {
             room.setupView(this.program, this.viewport);
             if (drawMode === "active" || drawMode === "both") {
                 this.thing.mesh = this.activeBlump.mesh;
-                this.thing.frame = null;
+                this.thing.blumps = null;
                 this.thing.render(room, this.program, eye);
             }
             if (drawMode === "angle" || drawMode === "both") {
                 this.thing.mesh = null;
-                this.thing.frame = this.blumps;
+                this.thing.blumps = this.blumps;
                 this.thing.render(room, this.program, eye);
             }
             if (drawMode === "all") {
-                this.thing.frame = null;
+                this.thing.blumps = null;
                 for (var b = 0; b < this.blumps.length; ++b) {
                     this.thing.mesh = this.blumps[b].mesh;
                     this.thing.render(room, this.program, eye);

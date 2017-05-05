@@ -1,5 +1,12 @@
 var BLOB = (function () {
-"use strict";
+    "use strict";
+
+    function Frame(blumps, duration, next) {
+        this.blumps = blump;
+        this.next = next;
+        this.duration = duration;
+        this.remaining = duration;
+    }
 
     function Thing(mesh) {
         this.position = R3.origin();
@@ -8,11 +15,23 @@ var BLOB = (function () {
         this.toWorld = new R3.M();
         this.toLocal = null;
         this.transformDirty = false;
-        this.frames = [];
+        this.blumps = null;
         this.frame = null;
 
         this.mesh = mesh ? mesh : null;
     }
+
+    Thing.prototype.update = function (elapsed) {
+        if (this.frame) {
+            if (this.frame.next) {
+                this.duration -= elapsed;
+                if (this.duration < 0) {
+                    this.frame = this.frame.next;
+                    this.blumps = this.frame.blumps;
+                }
+            }
+        }
+    };
 
     Thing.prototype.move = function (offset) {
         this.position.add(offset);
@@ -34,21 +53,18 @@ var BLOB = (function () {
         var m = this.getToWorld(),
             mesh = this.mesh;
 
-        if (this.frame) {
+        if (this.blumps) {
             var localEye = this.toLocalP(worldEye),
                 eyeAngle = R2.clampAngle(Math.atan2(-localEye.x, localEye.z)),
-                minAngle = 4 * Math.PI,
-                bestAngle = null;
-            for (var a = 0; a < this.frame.length; ++a) {
-                var blump = this.frame[a],
+                minAngle = 4 * Math.PI;
+            for (var a = 0; a < this.blumps.length; ++a) {
+                var blump = this.blumps[a],
                     angleDifference = Math.abs(R2.clampAngle(eyeAngle + blump.angle));
                 if (angleDifference < minAngle) {
                     mesh = blump.mesh;
                     minAngle = angleDifference;
-                    bestAngle = blump.angle;
                 }
             }
-            console.log(eyeAngle, bestAngle);
         }
         if (mesh) {
             room.drawMesh(mesh, program, m);
