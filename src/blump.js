@@ -760,7 +760,7 @@ var BLUMP = (function () {
         if (this.editArea) {
             this.editArea.addEventListener("paste", function (event) {
                 setTimeout(function () {
-                    var textData = editArea.value;
+                    var textData = self.editArea.value;
                     if (textData[0] === "{") {
                         self.load(JSON.parse(textData));
                     }
@@ -901,31 +901,25 @@ var BLUMP = (function () {
         room.clear(this.clearColor);
         if (this.thing && room.viewer.showOnPrimary()) {
             var eye = this.eyePosition(),
-                localEye = this.thing.toLocalP(eye),
-                eyeAngle = R2.clampAngle(Math.atan2(-localEye.x, localEye.z)),
-                minAngle = 4 * Math.PI,
                 drawMode = this.selectDraw ? this.selectDraw.value : "angle";
             room.viewer.positionView(eye, R3.origin(), new R3.V(0, 1, 0));
             room.setupView(this.program, this.viewport);
             if (drawMode === "active" || drawMode === "both") {
                 this.thing.mesh = this.activeBlump.mesh;
-                this.thing.render(room, this.program);
-            }
-            for (var b = 0; b < this.blumps.length; ++b) {
-                var blump = this.blumps[b],
-                    angleDifference = Math.abs(R2.clampAngle(eyeAngle + blump.angle));
-                if (drawMode === "all") {
-                    this.thing.mesh = blump.mesh;
-                    this.thing.render(room, this.program);
-                } else if (drawMode === "angle" || drawMode === "both") {
-                    if (angleDifference < minAngle) {
-                        this.thing.mesh = blump.mesh;
-                        minAngle = angleDifference;
-                    }
-                }
+                this.thing.frame = null;
+                this.thing.render(room, this.program, eye);
             }
             if (drawMode === "angle" || drawMode === "both") {
-                this.thing.render(room, this.program);
+                this.thing.mesh = null;
+                this.thing.frame = this.blumps;
+                this.thing.render(room, this.program, eye);
+            }
+            if (drawMode === "all") {
+                this.thing.frame = null;
+                for (var b = 0; b < this.blumps.length; ++b) {
+                    this.thing.mesh = this.blumps[b].mesh;
+                    this.thing.render(room, this.program, eye);
+                }
             }
         }
     };
