@@ -27,17 +27,22 @@ var IMPROC = (function () {
         }
     }
 
+    var scratchCanvas = null,
+        scratchContext = null;
+
     function getPixels(image, x, y, width, height) {
-        var canvas = document.createElement('canvas'),
-            context = canvas.getContext('2d');
+        if (scratchCanvas === null) {
+            scratchCanvas = document.createElement('canvas');
+            scratchContext = scratchCanvas.getContext('2d');
+        }
 
-        canvas.width = width;
-        canvas.height = height;
-        context.clearRect(0, 0, canvas.width, canvas.height);
+        scratchCanvas.width = width;
+        scratchCanvas.height = height;
+        scratchContext.clearRect(0, 0, width, height);
 
-        context.drawImage(image, x, y, width, height, 0, 0, width, height);
+        scratchContext.drawImage(image, x, y, width, height, 0, 0, width, height);
 
-        return context.getImageData(0, 0, width, height);
+        return scratchContext.getImageData(0, 0, width, height);
     }
 
     function cropImage(image, x, y, width, height) {
