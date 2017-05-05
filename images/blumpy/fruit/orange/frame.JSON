@@ -1,0 +1,38 @@
+{
+    "blumps": [
+        {
+            "angle": 0, 
+            "resource": "blumpy/fruit/orange/orange1.png"
+        }, 
+        {
+            "angle": 45, 
+            "resource": "blumpy/fruit/orange/orange2.png"
+        }, 
+        {
+            "angle": 90, 
+            "resource": "blumpy/fruit/orange/orange3.png"
+        }, 
+        {
+            "angle": 135, 
+            "resource": "blumpy/fruit/orange/orange4.png"
+        }, 
+        {
+            "angle": 180, 
+            "resource": "blumpy/fruit/orange/orange5.png"
+        }, 
+        {
+            "angle": 225, 
+            "resource": "blumpy/fruit/orange/orange6.png"
+        }, 
+        {
+            "angle": 270, 
+            "resource": "blumpy/fruit/orange/orange7.png"
+        }, 
+        {
+            "angle": 315, 
+            "resource": "blumpy/fruit/orange/orange8.png"
+        }
+    ], 
+    "pixelSize": 0.001, 
+    "depthRange": 0.2
+}
