@@ -367,7 +367,7 @@ var WGL = (function () {
             gl.vertexAttribPointer(program.vertexColor, 4, gl.FLOAT, false, 0, 0);
         }
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, draw.triBuffer);
-        if (program.uSampler !== null && draw.texture) {
+        if (program.textureVariable !== null && draw.texture) {
             this.bindTexture(program.shader, program.textureVariable, draw.texture);
         }
         gl.drawElements(gl.TRIANGLES, mesh.tris.length, gl.UNSIGNED_SHORT, 0);
