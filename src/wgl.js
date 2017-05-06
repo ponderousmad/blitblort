@@ -662,7 +662,7 @@ var WGL = (function () {
 
     function makeCube() {
         var mesh = new Mesh();
-        mesh.verticies = [
+        mesh.vertices = [
             -1, -1, -1, //0
             -1, -1,  1, //1
             -1,  1,  1, //2
@@ -776,6 +776,42 @@ var WGL = (function () {
         return mesh;
     }
 
+    function makeBillboard(texture, textureCoords) {
+        var mesh = new Mesh();
+        mesh.vertices = [
+             1,  1,  0,
+             1, -1,  0,
+            -1, -1,  0,
+            -1,  1,  0
+        ];
+
+        mesh.normals = [
+            0, 0,  1,
+            0, 0,  1,
+            0, 0,  1,
+            0, 0,  1
+        ];
+
+        mesh.colors = [
+            1, 1, 1, 1,
+            1, 1, 1, 1,
+            1, 1, 1, 1,
+            1, 1, 1, 1
+        ];
+
+        mesh.uvs = [
+            textureCoords.uMin, textureCoords.vMin,
+            textureCoords.uMin, textureCoords.vMin + textureCoords.vSize,
+            textureCoords.uMin + textureCoords.uSize, textureCoords.vMin + textureCoords.vSize,
+            textureCoords.uMin + textureCoords.uSize, textureCoords.vMin
+        ];
+
+        mesh.tris = [0, 1, 3, 1, 2, 3];
+        mesh.finalize(new R3.V(1,1,0), new R3.V(-1,-1,0));
+        mesh.image = texture;
+        return mesh;
+    }
+
     function nextPowerOfTwo(target) {
         var value = 1;
         while (value < target) {
@@ -858,6 +894,7 @@ var WGL = (function () {
         Mesh: Mesh,
         TextureAtlas: TextureAtlas,
         makeCube: makeCube,
-        makeCyclinder: makeCylinder
+        makeCyclinder: makeCylinder,
+        makeBillboard: makeBillboard
     };
 }());

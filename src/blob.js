@@ -18,6 +18,7 @@ var BLOB = (function () {
         this.frame = null;
         this.frames = null;
         this.remaining = 0;
+        this.billboardUp = null;
 
         this.mesh = mesh ? mesh : null;
     }
@@ -44,8 +45,17 @@ var BLOB = (function () {
         }
     };
 
+    Thing.prototype.setBillboardUp = function (up) {
+        this.billboardUp = up.normalized();
+    }
+
     Thing.prototype.move = function (offset) {
         this.position.add(offset);
+        this.markDirty();
+    };
+
+    Thing.prototype.setPosition = function (position) {
+        this.position.set(position.x, position.y, position.z);
         this.markDirty();
     };
 
@@ -55,13 +65,41 @@ var BLOB = (function () {
         this.markDirty();
     };
 
+    Thing.prototype.scaleBy = function (scaleFactor) {
+        this.scale *= scaleFactor;
+        this.markDirty();
+    };
+
     Thing.prototype.markDirty = function () {
         this.transformDirty = true;
         this.toLocal = null;
     };
 
+    Thing.prototype.alignBillboard = function (worldEye) {
+        var forward = R3.subVectors(worldEye, this.position);
+        forward.normalize();
+        var right = forward.cross(this.billboardUp);
+        right.normalize();
+        var up = right.cross(forward);
+        up.normalize();
+
+        var posX = -right.dot(this.position);
+        var posY = -up.dot(this.position);
+        var posZ = forward.dot(this.position);
+
+        var m = new R3.M([
+            right.x, up.x, -forward.x, 0,
+            right.y, up.y, -forward.y, 0,
+            right.z, up.z, -forward.z, 0,
+            posX, posY, posZ, 1
+        ]); 
+
+        R3.matmul(m.inverse(), R3.makeScale(this.scale), m);
+        return m;
+    };
+
     Thing.prototype.render = function(room, program, worldEye) {
-        var m = this.getToWorld(),
+        var m = this.billboardUp ? this.alignBillboard(worldEye) : this.getToWorld(),
             mesh = this.mesh;
 
         if (this.blumps) {

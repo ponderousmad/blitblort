@@ -416,6 +416,52 @@ var R3 = (function () {
         return new V(x, y, z, 0);
     };
 
+    // Adapted from setFromRotationMatrix in
+    // https://github.com/mrdoob/three.js/blob/dev/src/math/Quaternion.js
+    // Assumes the upper 3x3 of m is a pure rotation matrix (i.e, unscaled)
+    M.prototype.extractQuaternion = function () {
+        // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
+        var m = this.m,
+            m11 = m[0], m12 = m[4], m13 = m[8],
+            m21 = m[1], m22 = m[5], m23 = m[9],
+            m31 = m[2], m32 = m[6], m33 = m[10],
+            trace = m11 + m22 + m33,
+            s = 0;
+        if (trace > 0) {
+            s = 0.5 / Math.sqrt( trace + 1.0 );
+            return new Q(
+                ( m32 - m23 ) * s,
+                ( m13 - m31 ) * s,
+                ( m21 - m12 ) * s,
+                0.25 / s
+            );
+        } else if ( m11 > m22 && m11 > m33 ) {
+            s = 2.0 * Math.sqrt( 1.0 + m11 - m22 - m33 );
+            return new Q(
+                0.25 * s,
+                ( m12 + m21 ) / s,
+                ( m13 + m31 ) / s,
+                ( m32 - m23 ) / s
+            );
+        } else if ( m22 > m33 ) {
+            s = 2.0 * Math.sqrt( 1.0 + m22 - m11 - m33 );
+            return new Q(
+                ( m12 + m21 ) / s,
+                0.25 * s,
+                ( m23 + m32 ) / s,
+                ( m13 - m31 ) / s
+            );
+        } else {
+            s = 2.0 * Math.sqrt( 1.0 + m33 - m11 - m22 );
+            return new Q(
+                ( m13 + m31 ) / s,
+                ( m23 + m32 ) / s,
+                0.25 * s,
+                ( m21 - m12 ) / s
+            );
+        }
+    }
+
     // Based on http://paulbourke.net/miscellaneous/determinant/
     M.prototype.determinant = function (c) {
         c = c || 0; // Arbitrarily choose column c for calculating the determinant.
