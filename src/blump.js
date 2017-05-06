@@ -394,7 +394,7 @@ var BLUMP = (function () {
         );
     };
 
-    function Blump(data, defaultPixelSize, defaultDepthRange) {
+    function Blump(data, defaultPixelSize, defaultDepthRange, defaultDepthOffset) {
         this.resource = data.resource;
         this.texture = data.texture;
         this.geometry = data.geometry || "flat";
@@ -402,7 +402,7 @@ var BLUMP = (function () {
         this.image = null;
         this.pixelSize = data.pixelSize || defaultPixelSize;
         this.depthRange = data.depthRange || defaultDepthRange;
-        this.depthOffset = data.depthOffset || -this.depthRange / 2;
+        this.depthOffset = data.depthOffset || defaultDepthOffset || -this.depthRange / 2;
         this.mesh = null;
         this.offset = new R3.V(data.lrOffset, data.vOffset, data.fbOffset);
         this.scale = data.scale || 1;
