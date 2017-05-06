@@ -440,11 +440,11 @@ var BLUMP_EDIT = (function () {
 
     BlumpView.prototype.save = function () {
         var blumpData = [];
-        
+
         for (var b = 0; b < this.blumps.length; ++b) {
             blumpData.push(this.blumps[b].save());
         }
-        
+
         var data = {
             blumps : blumpData
         };

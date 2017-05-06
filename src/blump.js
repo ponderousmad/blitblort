@@ -68,7 +68,7 @@ var BLUMP = (function () {
         return depths;
     }
 
-    function Builder(width, height, pixelSize, calculateNormals) {
+    function Builder(geometry, width, height, pixelSize, calculateNormals) {
         this.width = width;
         this.height = height;
         this.pixelSize = pixelSize;
@@ -84,6 +84,14 @@ var BLUMP = (function () {
 
         this.defaultBottom = 0;
         this.color = [1, 1, 1, 1];
+
+        if (geometry === "cylinder") {
+            this.vertexFunc = this.calculatePositionCylinder;
+        } else if (geometry === "perspective") {
+            this.vertexFunc = this.calculatePositionPerspective;
+        } else {
+            this.vertexFunc = this.calculatePosition;
+        }
     }
 
     Builder.prototype.setAlignment = function (alignX, alignY, depthOffset) {
@@ -129,6 +137,15 @@ var BLUMP = (function () {
         );
     };
 
+    Builder.prototype.calculatePositionCylinder = function (x, y, depth) {
+        var yIndex = (this.height - y) - this.yOffset,
+            angle = Math.PI * 2 * (1 - x / this.width),
+            spoke = new R3.V(Math.cos(angle), 0, Math.sin(angle));
+        spoke.scale(depth + this.depthOffset);
+        spoke.y = yIndex * this.pixelSize;
+        return spoke;
+    }
+
     Builder.prototype.calculatePosition = function (x, y, depth) {
         var yIndex = (this.height - y) - this.yOffset,
             xIndex = x - this.xOffset;
@@ -140,7 +157,7 @@ var BLUMP = (function () {
     };
 
     Builder.prototype.addSurfaceVertex = function (mesh, x, y, depth, dLeft, dTop, dRight, dBottom) {
-        var position = this.calculatePosition(x, y, depth),
+        var position = this.vertexFunc(x, y, depth),
             normal = null,
             u = this.uScale ? this.uMin + x * this.uScale : null,
             v = this.vScale ? this.vMin + y * this.vScale : null;
@@ -380,10 +397,12 @@ var BLUMP = (function () {
     function Blump(data, defaultPixelSize, defaultDepthRange) {
         this.resource = data.resource;
         this.texture = data.texture;
+        this.geometry = data.geometry || "flat";
         this.angle = R2.clampAngle(data.angle * R2.DEG_TO_RAD);
         this.image = null;
         this.pixelSize = data.pixelSize || defaultPixelSize;
         this.depthRange = data.depthRange || defaultDepthRange;
+        this.depthOffset = data.depthOffset || -this.depthRange / 2;
         this.mesh = null;
         this.offset = new R3.V(data.lrOffset, data.vOffset, data.fbOffset);
         this.scale = data.scale || 1;
@@ -422,10 +441,10 @@ var BLUMP = (function () {
     Blump.prototype.constructFromImage = function (image, atlas, allowEdits, buildNormals) {
         var width = this.width(),
             height = this.height(),
-            builder = new Builder(width, height, this.pixelSize, buildNormals),
+            builder = new Builder(this.geometry, width, height, this.pixelSize, buildNormals),
             depths = builder.extractDepth(image, false, this.depthRange),
             texturePixels = null;
-        builder.setAlignment(0.5, 0.5, -this.depthRange/2);
+        builder.setAlignment(0.5, 0.5, this.depthOffset);
         builder.allowEdits = allowEdits;
 
         if (atlas) {
