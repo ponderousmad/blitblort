@@ -423,13 +423,14 @@ var BLUMP_EDIT = (function () {
     BlumpView.prototype.constructBlumps = function () {
         var blumps = this.blumps,
             image = blumps[0].image,
-            atlas = new WGL.TextureAtlas(image.width, image.height/2, blumps.length);
+            atlas = blumps[0].constructAtlas(this.blumps.length);
         for (var b = 0; b < blumps.length; ++b) {
             blumps[b].construct(atlas, true, false);
         }
 
         var atlasDiv = document.getElementById("atlas");
         if (atlasDiv) {
+            atlasDiv.innerHTML = "";
             atlasDiv.appendChild(atlas.canvas);
         }
 

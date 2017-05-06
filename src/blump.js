@@ -367,29 +367,19 @@ var BLUMP = (function () {
         mesh.updated = true;
     };
 
-    Builder.prototype.depthFromPaired = function(image, useCalibration, defaultRange) {
+    Builder.prototype.extractDepth = function(image, useCalibration, defaultRange) {
         return decodeDepths(
             image,
-            0, this.height,
+            0, image.height - this.height,
             this.width, this.height,
             useCalibration,
             defaultRange
         );
     };
 
-    function setupForPaired(image, pixelSize, textureAtlas) {
-        var width = image.width,
-            height = image.height / 2,
-            builder = new Builder(width, height, pixelSize);
-
-        if (textureAtlas) {
-            builder.setupTextureSurface(textureAtlas.add(image, 0, 0, width, height));
-        }
-        return builder;
-    }
-
     function Blump(data, defaultPixelSize, defaultDepthRange) {
         this.resource = data.resource;
+        this.texture = data.texture;
         this.angle = R2.clampAngle(data.angle * R2.DEG_TO_RAD);
         this.image = null;
         this.pixelSize = data.pixelSize || defaultPixelSize;
@@ -397,6 +387,17 @@ var BLUMP = (function () {
         this.mesh = null;
         this.offset = new R3.V(data.lrOffset, data.vOffset, data.fbOffset);
         this.scale = data.scale || 1;
+    }
+
+    Blump.prototype.width = function () {
+        return this.image.width;
+    }
+
+    Blump.prototype.height = function () {
+        if (this.textureData) {
+            return this.image.height;
+        }
+        return this.image.height / 2;
     }
 
     Blump.prototype.constructTransform = function () {
@@ -409,6 +410,9 @@ var BLUMP = (function () {
 
     Blump.prototype.loadImage = function (batch) {
         this.image = batch.load(this.resource);
+        if (this.texture) {
+            this.textureData = batch.load(this.texture);
+        }
     };
 
     Blump.prototype.construct = function (atlas, allowEdits, buildNormals) {
@@ -416,18 +420,24 @@ var BLUMP = (function () {
     };
 
     Blump.prototype.constructFromImage = function (image, atlas, allowEdits, buildNormals) {
-        var width = image.width,
-            height = image.height / 2,
+        var width = this.width(),
+            height = this.height(),
             builder = new Builder(width, height, this.pixelSize, buildNormals),
-            depths = builder.depthFromPaired(image, false, this.depthRange),
+            depths = builder.extractDepth(image, false, this.depthRange),
             texturePixels = null;
         builder.setAlignment(0.5, 0.5, -this.depthRange/2);
         builder.allowEdits = allowEdits;
 
         if (atlas) {
             this.atlas = atlas;
-            this.textureCoords = atlas.add(image, 0, 0, width, height);
-        } else {
+            if (this.textureData) {
+                this.textureCoords = atlas.add(
+                    this.textureData, 0, 0, this.textureData.width, this.textureData.height
+                );
+            } else {
+                this.textureCoords = atlas.add(image, 0, 0, width, height);
+            }
+        } else if (!this.textureData) {
             texturePixels = IMPROC.getPixels(image, 0, 0, width, height).data;
         }
         builder.setupTextureSurface(this.textureCoords);
@@ -458,6 +468,13 @@ var BLUMP = (function () {
         }
         this.mesh.updated = true;
     };
+
+    Blump.prototype.constructAtlas = function (count) {
+        if (this.textureData) {
+            return new WGL.TextureAtlas(this.textureData.width, this.textureData.height, count);
+        }
+        return new WGL.TextureAtlas(this.image.width, this.image.height / 2, count);
+    }
 
     Blump.prototype.save = function () {
         var angle = this.angle * R2.RAD_TO_DEG;
