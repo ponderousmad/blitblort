@@ -19,11 +19,58 @@ var BLUMP_EDIT = (function () {
     function flattenDepthImage(context, x, y, width, height) {
         var pixels = context.getImageData(x, y, width, height);
         IMPROC.processPixels(pixels.data, width, height, function(x, y, r, g, b, a) {
-            if (r != g || r != b || g != b) {
+            if (r != g || r != b) {
                 return BLUMP.NO_DEPTH;
             }
         });
         context.putImageData(pixels, x, y);
+    }
+
+    function pixelIndex(x, y, width) {
+        return (x + y * width) * IMPROC.CHANNELS;
+    }
+
+    function depthFromPixel(data, index) {
+        var r = data[index];
+        if (r == data[index+1] && r == data[index+2]) {
+            return r;
+        }
+        return null;
+    }
+
+    function erodeDepths(depthPixels, width, height) {
+        var result = new Uint8Array(depthPixels.length)
+        for (var y = 0; y < height; ++y) {
+            var index = pixelIndex(0, y, width),
+                right = depthFromPixel(depthPixels, index),
+                depth = null;
+            for (var x = 0; x < width; ++x) {
+                var left = depth,
+                    value = right;
+                depth = right;
+                right = depthFromPixel(depthPixels, index + IMPROC.CHANNELS);
+
+                if (depth !== null) {
+                    if (left === null || right === null) {
+                        value = null;
+                    } else if (y > 0 && depthFromPixel(depthPixels, pixelIndex(x, y-1, width)) === null) {
+                        value = null;
+                    } else if (y+1 < height && depthFromPixel(depthPixels, pixelIndex(x, y+1, width)) == null) {
+                        value = null;
+                    }
+                }
+                if (value === null) {
+                    for (var c = 0; c < BLUMP.NO_DEPTH.length; ++c) {
+                        result[index + c] = BLUMP.NO_DEPTH[c];
+                    }
+                } else {
+                    result[index] = result[index+1] = result[index+2] = value;
+                    result[index + 3] = 255;
+                }
+                index += IMPROC.CHANNELS;
+            }
+        }
+        return result;
     }
 
     function ImageEditor(viewport) {
@@ -40,6 +87,12 @@ var BLUMP_EDIT = (function () {
         this.brushColor = unmultiplyAlpha(BLUMP.NO_DEPTH);
         this.dirty = false;
     }
+
+    ImageEditor.prototype.applyChanges = function () {
+        this.blump.constructFromImage(this.preview);
+        this.dirty = false;
+        postUpdate(this.preview, this.blump.resource);
+    };
 
     ImageEditor.prototype.update = function (now, elapsed, keyboard, pointer) {
         if (!this.blump) {
@@ -68,9 +121,7 @@ var BLUMP_EDIT = (function () {
                 this.yOffset += pointer.primary.deltaY;
             }
         } else if (this.dirty) {
-            this.blump.constructFromImage(this.preview);
-            this.dirty = false;
-            postUpdate(this.preview, this.blump.resource);
+            this.applyChanges();
         }
 
         var oldZoom = this.zoom;
@@ -117,6 +168,19 @@ var BLUMP_EDIT = (function () {
             );
         }
         context.restore();
+    };
+
+    ImageEditor.prototype.erode = function () {
+        if (this.blump) {
+            var image = this.blump.image,
+                width = image.width,
+                height = image.height/2,
+                depthPixels = this.previewContext.getImageData(0, height, width, height),
+                eroded = erodeDepths(depthPixels.data, width, height);
+            depthPixels.data.set(eroded);
+            this.previewContext.putImageData(depthPixels, 0, height);
+            this.applyChanges();
+        }
     };
 
     function postUpdate(canvas, resource) {
@@ -235,7 +299,8 @@ var BLUMP_EDIT = (function () {
                     self.activeBlump.reposition();
                 }
             }),
-            reload = document.getElementById("buttonReload");
+            reload = document.getElementById("buttonReload"),
+            erode = document.getElementById("buttonErode");
 
         this.connectControls = function() {
             initAngle(self.activeBlump.angle * R2.RAD_TO_DEG);
@@ -275,6 +340,12 @@ var BLUMP_EDIT = (function () {
             reload.addEventListener("click", function(e) {
                 self.constructBlumps();
             }, false);
+        }
+
+        if (erode) {
+            erode.addEventListener("click", function (e) {
+                self.editor.erode();
+            });
         }
 
         this.editArea = document.getElementById("textBlump");

@@ -58,7 +58,7 @@ var BLUMP = (function () {
                         checkCalibration(x, r, g, b);
                     }
                 } else {
-                    if (r == g && r == b && g == b) {
+                    if (r == g && r == b) {
                         value = (r / 255.0) * range;
                     }
                 }
@@ -66,48 +66,6 @@ var BLUMP = (function () {
             }
         );
         return depths;
-    }
-
-    function smoothIndex(x, y, width) {
-        return x + y * width;
-    }
-
-    function smoothDepths(depths, width, height, smoothThreshold, smoothFactor) {
-        var result = new Float32Array(depths.length),
-            threshold = smoothThreshold ? smoothThreshold : 0.02,
-            smoothing = smoothFactor ? smoothFactor : 0.1;
-        for (var y = 0; y < height; ++y) {
-            for (var x = 0; x < width; ++x) {
-                var count = 0,
-                    sum = 0,
-                    index = smoothIndex(x, y, width),
-                    depth = depths[index],
-                    coords = [];
-                if (depth >= 0) {
-                    for (var yi = y > 0 ? y-1 : y; yi < Math.min(height, y+2); ++yi) {
-                        for (var xi = x > 0 ? x-1 : x; xi < Math.min(width, x+2); ++xi) {
-                            if (xi != x || yi != y) {
-                                coords.push([xi, yi]);
-                                var value = depths[smoothIndex(xi, yi, width)];
-                                if (value >= 0) {
-                                    var diff = value - depth;
-                                    if (Math.abs(diff) < threshold) {
-                                        ++count;
-                                        sum += value;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (count > 0) {
-                        var averageDifference = depth - (sum / count);
-                        depth += averageDifference * smoothing;
-                    }
-                }
-                result[index] = depth;
-            }
-        }
-        return result;
     }
 
     function Builder(width, height, pixelSize, calculateNormals) {
