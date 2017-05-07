@@ -660,38 +660,39 @@ var WGL = (function () {
         this.uvs = null;
     }
 
-    function makeCube() {
-        var mesh = new Mesh();
+    function makeCube(scale, generateTexture) {
+        var mesh = new Mesh(),
+            s = scale || 1;
         mesh.vertices = [
-            -1, -1, -1, //0
-            -1, -1,  1, //1
-            -1,  1,  1, //2
-            -1,  1, -1, //3
+            -s, -s, -s, //0
+            -s, -s,  s, //1
+            -s,  s,  s, //2
+            -s,  s, -s, //3
 
-             1, -1, -1,
-             1, -1,  1,
-             1,  1,  1,
-             1,  1, -1,
+             s, -s, -s,
+             s, -s,  s,
+             s,  s,  s,
+             s,  s, -s,
 
-            -1, -1, -1,
-             1, -1, -1,
-             1, -1,  1,
-            -1, -1,  1,
+            -s, -s, -s,
+             s, -s, -s,
+             s, -s,  s,
+            -s, -s,  s,
 
-            -1,  1, -1,
-             1,  1, -1,
-             1,  1,  1,
-            -1,  1,  1,
+            -s,  s, -s,
+             s,  s, -s,
+             s,  s,  s,
+            -s,  s,  s,
 
-            -1, -1, -1,
-            -1,  1, -1,
-             1,  1, -1,
-             1, -1, -1,
+            -s, -s, -s,
+            -s,  s, -s,
+             s,  s, -s,
+             s, -s, -s,
 
-            -1, -1,  1,
-            -1,  1,  1,
-             1,  1,  1,
-             1, -1,  1
+            -s, -s,  s,
+            -s,  s,  s,
+             s,  s,  s,
+             s, -s,  s
         ];
 
         mesh.normals = [
@@ -769,6 +770,30 @@ var WGL = (function () {
 
         mesh.fillColor = [1, 1, 1, 1];
         mesh.finalize(new R3.V(1,1,1), new R3.V(-1,-1,-1));
+
+        if (generateTexture) {
+            var canvas = document.createElement('canvas'),
+                context = canvas.getContext('2d'),
+                THIRD = 42;
+
+            canvas.width = canvas.height = 128;
+            context.globalAlpha = 0.5;
+
+            context.fillStyle = "rgba(255, 0, 0, 128)";
+            context.fillRect(0, 0, THIRD, THIRD);
+            context.fillStyle = "rgba(0, 255, 0, 128)";
+            context.fillRect(THIRD, 0, THIRD, THIRD);
+            context.fillStyle = "rgba(0, 0, 255, 128)";
+            context.fillRect(2*THIRD, 0, THIRD, THIRD);
+            context.fillStyle = "rgba(255, 255, 0, 128)";
+            context.fillRect(0, THIRD, THIRD, THIRD);
+            context.fillStyle = "rgba(0, 255, 255, 128)";
+            context.fillRect(THIRD, THIRD, THIRD, THIRD);
+            context.fillStyle = "rgba(255, 0, 255, 128)";
+            context.fillRect(2*THIRD, THIRD, THIRD, THIRD);
+            mesh.image = canvas;
+        }
+
         return mesh;
     }
 
