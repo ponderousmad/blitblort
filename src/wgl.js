@@ -367,6 +367,10 @@ var WGL = (function () {
             gl.vertexAttribPointer(program.vertexColor, 4, gl.FLOAT, false, 0, 0);
         }
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, draw.triBuffer);
+        if (mesh.updatedTexture && mesh.image) {
+            draw.texture = this.setupTexture(mesh.image);
+            mesh.updatedTexture = false;
+        }
         if (program.textureVariable !== null && draw.texture) {
             this.bindTexture(program.shader, program.textureVariable, draw.texture);
         }
