@@ -801,30 +801,39 @@ var WGL = (function () {
         return mesh;
     }
 
-    function makeCylinder(scale, segments, coords, insideOut) {
+    function wrappedIndex(segments, s, offset) {
+        return (s * 2 + offset) % (segments * 2);
+    }
+
+    function makeCylinder(radius, height, segments, coords, insideOut) {
         var mesh = new Mesh(),
             angleStep = 2 * Math.PI / segments,
             uStep = coords.uSize / segments,
-            color = [1, 1, 1, 1];
+            color = [1, 1, 1, 1],
+            vIndices = [0,0,0,0];
 
         for (var s = 0; s < segments; ++s) {
             var angle = s * angleStep,
                 x = Math.cos(angle),
                 z = Math.sin(angle),
                 n = new R3.V(x, 0, z),
-                p = n.scaled(scale),
+                p = n.scaled(radius),
                 u = coords.uMin + s * uStep;
 
+            for (var offset = 0; offset < vIndices.length; ++offset) {
+                vIndices[offset] = wrappedIndex(segments, s, offset);
+            }
+
             mesh.addVertex(p, n, u, coords.vMin, color);
-            p.y = s;
+            p.y = height;
             mesh.addVertex(p, n, u, coords.vMin + coords.vSize, color);
 
             if (insideOut) {
-                mesh.addTri(2 * s + 0, 2 * s + 1, 2 * s + 2);
-                mesh.addTri(2 * s + 1, 2 * s + 3, 2 * s + 2);
+                mesh.addTri(vIndices[0], vIndices[1], vIndices[2]);
+                mesh.addTri(vIndices[1], vIndices[3], vIndices[2]);
             } else {
-                mesh.addTri(2 * s + 0, 2 * s + 2, 2 * s + 1);
-                mesh.addTri(2 * s + 1, 2 * s + 2, 2 * s + 3);
+                mesh.addTri(vIndices[0], vIndices[2], vIndices[1]);
+                mesh.addTri(vIndices[1], vIndices[2], vIndices[3]);
             }
         }
 
