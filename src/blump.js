@@ -395,7 +395,12 @@ var BLUMP = (function () {
         );
     };
 
-    function Blump(data, defaultPixelSize, defaultDepthRange, defaultDepthOffset) {
+    Builder.prototype.locatePoint = function(poi, depths) {
+        var depth = lookupDepth(depths, poi.x, poi.y, this.width, this.height);
+        poi.localPoint = this.vertexFunc(poi.x, poi.y, depth);
+    };
+
+    function Blump(data, defaultPixelSize, defaultDepthRange, defaultDepthOffset, align) {
         this.resource = data.resource;
         this.texture = data.texture;
         this.geometry = data.geometry || "flat";
@@ -404,12 +409,40 @@ var BLUMP = (function () {
         this.pixelSize = data.pixelSize || defaultPixelSize;
         this.depthRange = data.depthRange || defaultDepthRange;
         this.depthOffset = data.depthOffset || defaultDepthOffset || -this.depthRange / 2;
+        this.xAlign = 0.5;
+        this.yAlign = 0.5;
+
+        if (align) {
+            if (align === BLIT.TopLeft || align === BLIT.Left) {
+                this.xAlign = 1;
+            }
+            if (align === BLIT.TopLeft || align === BLIT.Top) {
+                this.yALign = 1;
+            }
+            if (align === BLIT.Right) {
+                this.xAlign = 0;
+            }
+            if (align === BLIT.Bottom) {
+                this.yAlign = 0;
+            }
+        }
+
         this.mesh = null;
         this.offset = new R3.V(data.lrOffset, data.vOffset, data.fbOffset);
         this.scale = data.scale || 1;
         this.cylinderAngle = 2 * Math.PI;
         if (data.cylinderAngle) {
             this.cylinderAngle = R2.clampAngle(data.cylinderAngle * R2.DEG_TO_RAD)
+        }
+
+        this.pointsOfInterest = [];
+        if (data.POIs) {
+            for (var p = 0; p < data.POIs.length; ++p) {
+                var point = data.POIs[p];
+                if (point.type) {
+                    this.pointsOfInterest.push(point);
+                }
+            }
         }
     }
 
@@ -432,7 +465,7 @@ var BLUMP = (function () {
         return transform;
     };
 
-    Blump.prototype.loadImage = function (batch) {
+    Blump.prototype.batch = function (batch) {
         this.image = batch.load(this.resource);
         if (this.texture) {
             this.textureData = batch.load(this.texture);
@@ -449,7 +482,7 @@ var BLUMP = (function () {
             builder = new Builder(this.geometry, width, height, this.pixelSize, buildNormals),
             depths = builder.extractDepth(image, false, this.depthRange),
             texturePixels = null;
-        builder.setAlignment(0.5, 0.5, this.depthOffset, this.cylinderAngle);
+        builder.setAlignment(this.xAlign, this.yAlign, this.depthOffset, this.cylinderAngle);
         builder.allowEdits = allowEdits;
 
         if (atlas) {
@@ -467,6 +500,9 @@ var BLUMP = (function () {
         builder.setupTextureSurface(this.textureCoords);
 
         this.mesh = builder.constructSurface(depths, atlas ? atlas.texture() : null, texturePixels);
+        for (var p = 0; p < this.pointsOfInterest.length; ++p) {
+            builder.locatePoint(this.pointsOfInterest[p], depths);
+        }
         this.mesh.dynamic = true;
         this.reposition(true);
     };
@@ -488,6 +524,12 @@ var BLUMP = (function () {
                 n = inverse.transformV(n);
                 n.normalize();
                 normalsOut[i] = n.x; normalsOut[i+1] = n.y; normalsOut[i+2] = n.z;
+            }
+        }
+        if (inPlace) {
+            for (var p = 0; p < this.pointsOfInterest.length; ++p) {
+                var poi = this.pointsOfInterest[p];
+                poi.localPoint = transform.transformP(poi.localPoint);
             }
         }
         this.mesh.updated = true;

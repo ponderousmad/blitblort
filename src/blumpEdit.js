@@ -566,7 +566,7 @@ var BLUMP_EDIT = (function () {
             });
 
         for (var b = 0; b < blumps.length; ++b) {
-            blumps[b].loadImage(batch);
+            blumps[b].batch(batch);
         }
         batch.commit();
     };
