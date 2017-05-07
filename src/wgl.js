@@ -674,14 +674,14 @@ var WGL = (function () {
              1,  1, -1,
 
             -1, -1, -1,
-            -1, -1,  1,
-             1, -1,  1,
              1, -1, -1,
+             1, -1,  1,
+            -1, -1,  1,
 
             -1,  1, -1,
-            -1,  1, -1,
-            -1,  1, -1,
-            -1,  1, -1,
+             1,  1, -1,
+             1,  1,  1,
+            -1,  1,  1,
 
             -1, -1, -1,
             -1,  1, -1,
@@ -763,9 +763,11 @@ var WGL = (function () {
 
         for (var f = 0; f < 3; ++f) {
             for (var i = 0; i < twoFace.length; ++i) {
-                mesh.tris.push(twoFace[i] + f * twoFace.length);
+                mesh.tris.push(twoFace[i] + f * 8);
             }
         }
+
+        mesh.fillColor = [1, 1, 1, 1];
         mesh.finalize(new R3.V(1,1,1), new R3.V(-1,-1,-1));
         return mesh;
     }

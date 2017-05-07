@@ -65,6 +65,11 @@ var BLOB = (function () {
         this.markDirty();
     };
 
+    Thing.prototype.setOrientation = function (orientation) {
+        this.orientation = orientation.copy();
+        this.markDirty();
+    }
+
     Thing.prototype.scaleBy = function (scaleFactor) {
         this.scale *= scaleFactor;
         this.markDirty();
