@@ -926,6 +926,7 @@ var WGL = (function () {
         TextureAtlas: TextureAtlas,
         makeCube: makeCube,
         makeCyclinder: makeCylinder,
-        makeBillboard: makeBillboard
+        makeBillboard: makeBillboard,
+        uvFill: function () { return { uMin: 0, vMin: 0, uSize: 1, vSize: 1 }; }
     };
 }());
