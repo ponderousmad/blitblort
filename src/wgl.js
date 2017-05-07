@@ -801,9 +801,34 @@ var WGL = (function () {
         return mesh;
     }
 
-    function makeCylinder() {
-        var mesh = new Mesh();
-        mesh.finalize(new R3.V(1,1,1), new R3.V(-1,-1,-1));
+    function makeCylinder(scale, segments, coords, insideOut) {
+        var mesh = new Mesh(),
+            angleStep = 2 * Math.PI / segments,
+            uStep = coords.uSize / segments,
+            color = [1, 1, 1, 1];
+
+        for (var s = 0; s < segments; ++s) {
+            var angle = s * angleStep,
+                x = Math.cos(angle),
+                z = Math.sin(angle),
+                n = new R3.V(x, 0, z),
+                p = n.scaled(scale),
+                u = coords.uMin + s * uStep;
+
+            mesh.addVertex(p, n, u, coords.vMin, color);
+            p.y = s;
+            mesh.addVertex(p, n, u, coords.vMin + coords.vSize, color);
+
+            if (insideOut) {
+                mesh.addTri(2 * s + 0, 2 * s + 1, 2 * s + 2);
+                mesh.addTri(2 * s + 1, 2 * s + 3, 2 * s + 2);
+            } else {
+                mesh.addTri(2 * s + 0, 2 * s + 2, 2 * s + 1);
+                mesh.addTri(2 * s + 1, 2 * s + 2, 2 * s + 3);
+            }
+        }
+
+        mesh.finalize();
         return mesh;
     }
 
