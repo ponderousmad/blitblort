@@ -145,6 +145,10 @@ var MAIN = (function () {
             game.render(room, canvas.width, canvas.height);
         }
 
+        if (game.setupRoom) {
+            game.setupRoom(room);
+        }
+
         drawFrame3D();
         return room;
     }
@@ -174,9 +178,6 @@ var MAIN = (function () {
 
         if (game.render) {
             var room = setup3D(canvas, game, drawUpdate);
-            if (game.setupRoom) {
-                game.setupRoom(room);
-            }
         } else {
             return setup2D(canvas, game, drawUpdate);
         }
