@@ -103,7 +103,7 @@ var BLOB = (function () {
         return m;
     };
 
-    Thing.prototype.render = function(room, program, worldEye) {
+    Thing.prototype.render = function(room, program, worldEye, boundTexture) {
         var m = this.billboardUp ? this.alignBillboard(worldEye) : this.getToWorld(),
             mesh = this.mesh;
 
@@ -121,7 +121,7 @@ var BLOB = (function () {
             }
         }
         if (mesh) {
-            room.drawMesh(mesh, program, m);
+            room.drawMesh(mesh, program, m, boundTexture);
         }
     };
 

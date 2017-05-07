@@ -338,7 +338,16 @@ var WGL = (function () {
         return mesh.drawData;
     };
 
-    Room.prototype.drawMesh = function (mesh, program, transform) {
+    Room.prototype.rebindTexture = function (mesh, program) {
+        if (mesh.drawData) {
+            mesh.drawData.texture = this.setupTexture(mesh.image);
+            this.bindTexture(program.shader, program.textureVariable, mesh.drawData.texture);
+            return mesh.drawData.texture;
+        }
+        return null;
+    }
+
+    Room.prototype.drawMesh = function (mesh, program, transform, boundTexture) {
         var draw = this.setupMesh(mesh),
             gl = this.gl;
 
@@ -371,7 +380,7 @@ var WGL = (function () {
             draw.texture = this.setupTexture(mesh.image);
             mesh.updatedTexture = false;
         }
-        if (program.textureVariable !== null && draw.texture) {
+        if (boundTexture == null && program.textureVariable !== null && draw.texture) {
             this.bindTexture(program.shader, program.textureVariable, draw.texture);
         }
         gl.drawElements(gl.TRIANGLES, mesh.tris.length, gl.UNSIGNED_SHORT, 0);
