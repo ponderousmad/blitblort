@@ -73,7 +73,7 @@ var BLUMP = (function () {
         this.height = height;
         this.pixelSize = pixelSize;
 
-        this.setAlignment(0.5, 0.5, 0);
+        this.setAlignment(0.5, 0.5, 0, 0);
         this.uMin = 0;
         this.uMax = 0;
         this.uScale = null;
@@ -94,10 +94,11 @@ var BLUMP = (function () {
         }
     }
 
-    Builder.prototype.setAlignment = function (alignX, alignY, depthOffset) {
+    Builder.prototype.setAlignment = function (alignX, alignY, depthOffset, cylinderAngle) {
         this.xOffset = this.width * alignX;
         this.yOffset = this.height * alignY;
         this.depthOffset = depthOffset;
+        this.cyclinderAngle = cylinderAngle;
     };
 
     Builder.prototype.setupTextureSurface = function (coords) {
@@ -139,7 +140,7 @@ var BLUMP = (function () {
 
     Builder.prototype.calculatePositionCylinder = function (x, y, depth) {
         var yIndex = (this.height - y) - this.yOffset,
-            angle = Math.PI * 2 * (1 - x / this.width),
+            angle = this.cyclinderAngle * (1 - x / this.width),
             spoke = new R3.V(Math.cos(angle), 0, Math.sin(angle));
         spoke.scale(depth + this.depthOffset);
         spoke.y = yIndex * this.pixelSize;
@@ -406,6 +407,10 @@ var BLUMP = (function () {
         this.mesh = null;
         this.offset = new R3.V(data.lrOffset, data.vOffset, data.fbOffset);
         this.scale = data.scale || 1;
+        this.cylinderAngle = 2 * Math.PI;
+        if (data.cylinderAngle) {
+            this.cylinderAngle = R2.clampAngle(data.cylinderAngle * R2.DEG_TO_RAD)
+        }
     }
 
     Blump.prototype.width = function () {
@@ -444,7 +449,7 @@ var BLUMP = (function () {
             builder = new Builder(this.geometry, width, height, this.pixelSize, buildNormals),
             depths = builder.extractDepth(image, false, this.depthRange),
             texturePixels = null;
-        builder.setAlignment(0.5, 0.5, this.depthOffset);
+        builder.setAlignment(0.5, 0.5, this.depthOffset, this.cylinderAngle);
         builder.allowEdits = allowEdits;
 
         if (atlas) {
