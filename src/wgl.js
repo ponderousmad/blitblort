@@ -380,7 +380,7 @@ var WGL = (function () {
             draw.texture = this.setupTexture(mesh.image);
             mesh.updatedTexture = false;
         }
-        if (boundTexture === null && program.textureVariable !== null && draw.texture) {
+        if (!boundTexture && program.textureVariable !== null && draw.texture) {
             this.bindTexture(program.shader, program.textureVariable, draw.texture);
         }
         gl.drawElements(gl.TRIANGLES, mesh.tris.length, gl.UNSIGNED_SHORT, 0);
