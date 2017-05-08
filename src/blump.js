@@ -3,7 +3,12 @@ var BLUMP = (function () {
 
     var gammaMap = [],
         MAX_VERTICIES = Math.pow(2, 16),
-        NO_DEPTH = [5, 0, 0, 204];
+        NO_DEPTH = [5, 0, 0, 204],
+        EDGE_MODE = {
+            Clamp: 0,
+            Wrap: 1,
+            Flow: 2,
+        };
 
     (function () {
         for (var v = 0; v < IMPROC.BYTE_MAX; ++v) {
@@ -79,6 +84,8 @@ var BLUMP = (function () {
         this.uScale = null;
         this.vScale = null;
 
+        this.setEdgeModes(EDGE_MODE.Clamp, EDGE_MODE.Clamp);
+
         this.calculateNormals = calculateNormals ? true : false;
         this.wallNormal = null;
 
@@ -99,6 +106,12 @@ var BLUMP = (function () {
         this.yOffset = this.height * alignY;
         this.depthOffset = depthOffset;
         this.cyclinderAngle = cylinderAngle;
+    };
+
+    Builder.prototype.setEdgeModes = function (xMode, yMode) {
+        this.xEdgeMode = xMode;
+        this.yEdgeMode = yMode;
+        this.depthWidth = this.width + ((xMode === EDGE_MODE.Flow) ? 1 : 0);
     };
 
     Builder.prototype.setupTextureSurface = function (coords) {
@@ -171,13 +184,23 @@ var BLUMP = (function () {
         mesh.addVertex(position, normal, u, v, this.color);
     };
 
-    function depthIndex(x, y, width, height) {
-        return Math.min(height - 1, y) * width + Math.min(width - 1, x);
+    function applyEdgeMode(mode, value, size) {
+        if (mode == EDGE_MODE.Wrap) {
+            return value % size;
+        } else if (mode == EDGE_MODE.Clamp) {
+            return Math.min(value, size);
+        }
+        return value;
     }
 
-    function lookupDepth(depths, x, y, width, height) {
-        return depths[depthIndex(x, y, width, height)];
-    }
+    Builder.prototype.depthIndex = function (x, y) {
+        return applyEdgeMode(this.yEdgeMode, y, this.height) * this.depthWidth +
+            applyEdgeMode(this.xEdgeMode, x, this.width);
+    };
+
+    Builder.prototype.lookupDepth = function (depths, x, y) {
+        return depths[this.depthIndex(x, y)];
+    };
 
     function vertexIndex(x, y, width) {
         return x + (y * (width + 1));
@@ -192,9 +215,11 @@ var BLUMP = (function () {
         }
     }
 
-    Builder.prototype.getVertexColor = function (texturePixels, x, y, width, height) {
+    Builder.prototype.getVertexColor = function (texturePixels, x, y) {
         var channels = IMPROC.CHANNELS,
-            index = depthIndex(x, y, width, height) * channels;
+            xi = applyEdgeMode(EDGE_MODE.Clamp, x, this.width),
+            yi = applyEdgeMode(EDGE_MODE.Clamp, y, this.height),
+            index = (yi * this.width + xi) * channels;
         for (var c = 0; c < IMPROC.CHANNELS; ++c) {
             this.color[c] = texturePixels[index + c] / IMPROC.BYTE_MAX;
         }
@@ -219,28 +244,28 @@ var BLUMP = (function () {
         for (var y = 0; y <= height; ++y) {
             var generateTris = y > 0,
                 dLeft = -1,
-                dRight = lookupDepth(depths, 0, y, width, height),
+                dRight = this.lookupDepth(depths, 0, y),
                 lowerLeft = false;
             for (var x = 0; x <= width; ++x) {
                 var depth = dRight,
-                    dTop = lookupDepth(depths, x, y-1, width, height),
+                    dTop = this.lookupDepth(depths, x, y-1),
                     dBottom = null,
                     generateTri = (generateTris && x > 0),
                     lowerRight = depth >= 0,
                     corners = lowerLeft + lowerRight;
-                dRight = lookupDepth(depths, x+1, y, width, height);
+                dRight = this.lookupDepth(depths, x+1, y);
 
                 if (this.calculateNormals) {
-                    dBottom = lookupDepth(depths, x, y+1, width, height);
+                    dBottom = this.lookupDepth(depths, x, y+1);
                 }
 
                 if (texturePixels) {
-                    this.getVertexColor(texturePixels, x, y, width, height);
+                    this.getVertexColor(texturePixels, x, y);
                 }
                 this.addSurfaceVertex(mesh, x, y, depth, dLeft, dTop, dRight, dBottom);
 
                 if (generateTri && corners > 0) {
-                    var upperLeft = lookupDepth(depths, x-1, y-1, width, height) >= 0,
+                    var upperLeft = this.lookupDepth(depths, x-1, y-1) >= 0,
                         upperRight = dTop >= 0,
                         iUL = vertexIndex(x-1, y-1, width),
                         iUR = vertexIndex(x,   y-1, width),
@@ -280,7 +305,7 @@ var BLUMP = (function () {
 
         for (var y = 0; y <= height; ++y) {
             for (var x = 0; x <= width; ++x) {
-                var depth = lookupDepth(depths, x, y, width, height);
+                var depth = this.lookupDepth(depths, x, y);
                 mesh.glVertices[vertexIndex + 2] = depth + this.depthOffset;
                 vertexIndex += 3;
             }
@@ -289,7 +314,7 @@ var BLUMP = (function () {
     };
 
     Builder.prototype.addWallVertices = function (mesh, x, y, uFraction) {
-        var i = depthIndex(x, y, this.width, this.height),
+        var i = depthIndex(x, y),
             top = this.topDepths[i],
             bottom =  this.bottomDepths ? this.bottomDepths[i] :
                                           this.defaultBottom,
@@ -303,7 +328,7 @@ var BLUMP = (function () {
     };
 
     Builder.prototype.updateWallVertices = function (mesh, x, y, index) {
-        var i = depthIndex(x, y, this.width, this.height),
+        var i = this.depthIndex(x, y),
             top = this.topDepths[i],
             bottom = this.bottomDepths ? this.bottomDepths[i] :
                                          this.defaultBottom;
@@ -389,14 +414,14 @@ var BLUMP = (function () {
         return decodeDepths(
             image,
             0, image.height - this.height,
-            this.width, this.height,
+            this.depthWidth, this.height,
             useCalibration,
             defaultRange
         );
     };
 
     Builder.prototype.locatePoint = function(poi, depths) {
-        var depth = lookupDepth(depths, poi.x, poi.y, this.width, this.height);
+        var depth = this.lookupDepth(depths, poi.x, poi.y);
         poi.localPoint = this.vertexFunc(poi.x, poi.y, depth);
     };
 
@@ -409,6 +434,8 @@ var BLUMP = (function () {
         this.pixelSize = data.pixelSize || defaultPixelSize;
         this.depthRange = data.depthRange || defaultDepthRange;
         this.depthOffset = data.depthOffset || defaultDepthOffset || -this.depthRange / 2;
+        this.xEdgeMode = data.xEdgeMode || EDGE_MODE.Clamp;
+        this.yEdgeMode = data.yEdgeMode || EDGE_MODE.Clamp;
         this.xAlign = 0.5;
         this.yAlign = 0.5;
 
@@ -447,6 +474,9 @@ var BLUMP = (function () {
     }
 
     Blump.prototype.width = function () {
+        if (this.xEdgeMode === EDGE_MODE.Flow) {
+            return this.image.width - 1;
+        }
         return this.image.width;
     };
 
@@ -480,9 +510,9 @@ var BLUMP = (function () {
         var width = this.width(),
             height = this.height(),
             builder = new Builder(this.geometry, width, height, this.pixelSize, buildNormals),
-            depths = builder.extractDepth(image, false, this.depthRange),
             texturePixels = null;
         builder.setAlignment(this.xAlign, this.yAlign, this.depthOffset, this.cylinderAngle);
+        builder.setEdgeModes(this.xEdgeMode, this.yEdgeMode);
         builder.allowEdits = allowEdits;
 
         if (atlas) {
@@ -499,6 +529,7 @@ var BLUMP = (function () {
         }
         builder.setupTextureSurface(this.textureCoords);
 
+        var depths = builder.extractDepth(image, false, this.depthRange);
         this.mesh = builder.constructSurface(depths, atlas ? atlas.texture() : null, texturePixels);
         for (var p = 0; p < this.pointsOfInterest.length; ++p) {
             builder.locatePoint(this.pointsOfInterest[p], depths);
@@ -567,6 +598,7 @@ var BLUMP = (function () {
     };
 
     return {
+        EDGE_MODE: EDGE_MODE,
         NO_DEPTH: NO_DEPTH,
         Blump: Blump
     };
