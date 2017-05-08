@@ -345,7 +345,7 @@ var WGL = (function () {
             return mesh.drawData.texture;
         }
         return null;
-    }
+    };
 
     Room.prototype.drawMesh = function (mesh, program, transform, boundTexture) {
         var draw = this.setupMesh(mesh),
@@ -380,7 +380,7 @@ var WGL = (function () {
             draw.texture = this.setupTexture(mesh.image);
             mesh.updatedTexture = false;
         }
-        if (boundTexture == null && program.textureVariable !== null && draw.texture) {
+        if (boundTexture === null && program.textureVariable !== null && draw.texture) {
             this.bindTexture(program.shader, program.textureVariable, draw.texture);
         }
         gl.drawElements(gl.TRIANGLES, mesh.tris.length, gl.UNSIGNED_SHORT, 0);
@@ -634,8 +634,8 @@ var WGL = (function () {
                             }
                         }
                         if (this.glColors) {
-                            for (var channel = 0; channel < colorChannels; ++channel) {
-                                this.glColors[c*colorChannels + channel] = this.colors[i*colorChannels + channel];
+                            for (var cc = 0; cc < colorChannels; ++cc) {
+                                this.glColors[c*colorChannels + cc] = this.colors[i*colorChannels + cc];
                             }
                         }
                         remap[i] = c;
@@ -671,7 +671,7 @@ var WGL = (function () {
         this.colors = null;
         this.normals = null;
         this.uvs = null;
-    }
+    };
 
     function makeCube(scale, generateTexture) {
         var mesh = new Mesh(),
