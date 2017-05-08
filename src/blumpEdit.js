@@ -39,7 +39,7 @@ var BLUMP_EDIT = (function () {
     }
 
     function erodeDepths(depthPixels, width, height) {
-        var result = new Uint8Array(depthPixels.length)
+        var result = new Uint8Array(depthPixels.length);
         for (var y = 0; y < height; ++y) {
             var index = pixelIndex(0, y, width),
                 right = depthFromPixel(depthPixels, index),
@@ -55,7 +55,7 @@ var BLUMP_EDIT = (function () {
                         value = null;
                     } else if (y > 0 && depthFromPixel(depthPixels, pixelIndex(x, y-1, width)) === null) {
                         value = null;
-                    } else if (y+1 < height && depthFromPixel(depthPixels, pixelIndex(x, y+1, width)) == null) {
+                    } else if (y+1 < height && depthFromPixel(depthPixels, pixelIndex(x, y+1, width)) === null) {
                         value = null;
                     }
                 }
