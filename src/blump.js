@@ -145,7 +145,7 @@ var BLUMP = (function () {
         spoke.scale(depth + this.depthOffset);
         spoke.y = yIndex * this.pixelSize;
         return spoke;
-    }
+    };
 
     Builder.prototype.calculatePosition = function (x, y, depth) {
         var yIndex = (this.height - y) - this.yOffset,
@@ -164,8 +164,8 @@ var BLUMP = (function () {
             v = this.vScale ? this.vMin + y * this.vScale : null;
         if (dBottom !== null) {
             var left = new R3.V(2 * this.pixelSize, 0, dLeft - dRight),
-                up = new R3.V(0, 2 * this.pixelSize, dTop - dBottom),
-                normal = left.cross(up);
+                up = new R3.V(0, 2 * this.pixelSize, dTop - dBottom);
+            normal = left.cross(up);
             normal.normalize();
         }
         mesh.addVertex(position, normal, u, v, this.color);
@@ -198,7 +198,7 @@ var BLUMP = (function () {
         for (var c = 0; c < IMPROC.CHANNELS; ++c) {
             this.color[c] = texturePixels[index + c] / IMPROC.BYTE_MAX;
         }
-    }
+    };
 
     Builder.prototype.constructSurface = function (depths, texture, texturePixels) {
         var width = this.width,
@@ -235,7 +235,7 @@ var BLUMP = (function () {
                 }
 
                 if (texturePixels) {
-                    this.getVertexColor(texturePixels, x, y, width, height)
+                    this.getVertexColor(texturePixels, x, y, width, height);
                 }
                 this.addSurfaceVertex(mesh, x, y, depth, dLeft, dTop, dRight, dBottom);
 
@@ -432,7 +432,7 @@ var BLUMP = (function () {
         this.scale = data.scale || 1;
         this.cylinderAngle = 2 * Math.PI;
         if (data.cylinderAngle) {
-            this.cylinderAngle = R2.clampAngle(data.cylinderAngle * R2.DEG_TO_RAD)
+            this.cylinderAngle = R2.clampAngle(data.cylinderAngle * R2.DEG_TO_RAD);
         }
 
         this.pointsOfInterest = [];
@@ -448,14 +448,14 @@ var BLUMP = (function () {
 
     Blump.prototype.width = function () {
         return this.image.width;
-    }
+    };
 
     Blump.prototype.height = function () {
         if (this.textureData) {
             return this.image.height;
         }
         return this.image.height / 2;
-    }
+    };
 
     Blump.prototype.constructTransform = function () {
         var transform = new R3.M();
@@ -515,9 +515,9 @@ var BLUMP = (function () {
             vertsIn = inPlace ? vertsOut : this.mesh.vertices,
             normalsIn = inPlace ? normalsOut : this.mesh.normals;
         for (var i = 0; i < vertsIn.length; i += 3) {
-            var p = new R3.V(vertsIn[i], vertsIn[i+1], vertsIn[i+2]);
-            p = transform.transformP(p);
-            vertsOut[i] = p.x; vertsOut[i+1] = p.y; vertsOut[i+2] = p.z;
+            var pos = new R3.V(vertsIn[i], vertsIn[i+1], vertsIn[i+2]);
+            pos = transform.transformP(pos);
+            vertsOut[i] = pos.x; vertsOut[i+1] = pos.y; vertsOut[i+2] = pos.z;
 
             if (normalsOut) {
                 var n = new R3.V(normalsIn[i], normalsIn[i+1], normalsIn[i+2]);
@@ -540,7 +540,7 @@ var BLUMP = (function () {
             return new WGL.TextureAtlas(this.textureData.width, this.textureData.height, count);
         }
         return new WGL.TextureAtlas(this.image.width, this.image.height / 2, count);
-    }
+    };
 
     Blump.prototype.save = function () {
         var angle = this.angle * R2.RAD_TO_DEG;
