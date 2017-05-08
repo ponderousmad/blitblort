@@ -34,7 +34,7 @@ var MAIN = (function () {
                 elapsed = now - lastTime;
             pointer.update(elapsed);
 
-            game.update(now, elapsed, keyboard, pointer);
+            game.update(now, elapsed, keyboard, pointer, canvas.width, canvas.height);
 
             keyboard.postUpdate();
             lastTime = now;
