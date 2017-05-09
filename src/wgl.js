@@ -507,7 +507,7 @@ var WGL = (function () {
 
     Room.prototype.drawTest = function (viewport, angle) {
         if (!this.testProgram) {
-            this.testProgram = this.programFromElements("vertex-test", "fragment-test");
+            this.testProgram = this.programFromElements("vertex-test", "fragment-test", true, true, true);
             this.setupDrawTest(this.testProgram);
         }
         if (!this.testProgram.batch.loaded) {
