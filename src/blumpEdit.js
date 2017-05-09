@@ -405,7 +405,7 @@ var BLUMP_EDIT = (function () {
             });
 
         for (var b = 0; b < this.blumps.length; ++b) {
-            this.blumps[b].loadImage(batch);
+            this.blumps[b].batch(batch);
         }
         batch.commit();
         this.populateImages();
