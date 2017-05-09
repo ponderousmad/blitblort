@@ -573,21 +573,46 @@ var BLUMP = (function () {
         return new WGL.TextureAtlas(this.image.width, this.image.height / 2, count);
     };
 
-    Blump.prototype.save = function () {
-        var angle = this.angle * R2.RAD_TO_DEG;
-        if (angle < 0) {
-            angle += 360;
-        }
-        return {
+    function saveAngle(angle) {
+        angle *= R2.RAD_TO_DEG;
+        return angle < 0 ? angle : angle + 360;
+    }
+
+    Blump.prototype.save = function (includePOIs) {
+        var data = {
             resource: this.resource,
-            angle: angle,
+            angle: saveAngle(this.angle),
             lrOffset: this.offset.x,
             fbOffset: this.offset.z,
             vOffset: this.offset.y,
             scale: this.scale,
             pixelSize: this.pixelSize,
-            depthRange: this.depthRange
+            depthRange: this.depthRange,
+            depthOffset: this.depthOffset,
+            xEdgeMode: this.xEdgeMode,
+            yEdgeMode: this.yEdgeMode,
+            geometry: this.geometry,
+            cylinderAngle: this.cylinderAngle * R2.RAD_TO_DEG
         };
+
+        if (this.texture) {
+            data.texture = this.texture;
+        }
+
+        if (includePOIs && this.pointsOfInterest) {
+            var poiData = [];
+            for (var p = 0; p < this.pointsOfInterest.length; ++p) {
+                var point = this.pointsOfInterest[p];
+                poiData.push({
+                    type: point.type,
+                    x: point.x,
+                    y: point.y
+                });
+            }
+            data.POIs = poiData;
+        }
+
+        return data;
     };
 
     Blump.prototype.simplify = function () {
