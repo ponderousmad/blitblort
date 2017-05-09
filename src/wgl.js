@@ -949,7 +949,7 @@ var WGL = (function () {
 
         ++this.placed;
         this.xOffset += this.width;
-        if (this.xOffset >= this.size) {
+        if (this.xOffset + this.width > this.size) {
             this.xOffset = 0;
             this.yOffset += this.height;
         }
