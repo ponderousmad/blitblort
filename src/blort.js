@@ -100,8 +100,7 @@ var BLORT = (function () {
         if (gAudioContext === null) {
             return function() {};
         }
-        var bufferSize = bufferSize,
-            scriptNode = gAudioContext.createScriptProcessor(bufferSize, 1, 1),
+        var scriptNode = gAudioContext.createScriptProcessor(bufferSize, 1, 1),
             source = gAudioContext.createBufferSource();
         scriptNode.onaudioprocess = processAudio;
         source.buffer = gAudioContext.createBuffer(1, bufferSize, gAudioContext.sampleRate);
