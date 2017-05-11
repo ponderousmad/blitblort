@@ -426,6 +426,7 @@ var BLUMP_EDIT = (function () {
             atlas = blumps[0].constructAtlas(this.blumps.length);
         for (var b = 0; b < blumps.length; ++b) {
             blumps[b].construct(atlas, true, false);
+            blumps[b].reposition();
         }
 
         var atlasDiv = document.getElementById("atlas");
