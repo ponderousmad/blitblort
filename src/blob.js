@@ -1,11 +1,48 @@
 var BLOB = (function () {
     "use strict";
 
+    function TextureCache(batch, setupTexture) {
+        this.batch = batch;
+        this.setupTexture = setupTexture;
+        this.textures = {
+        };
+    }
+
+    TextureCache.prototype.cache = function (resource) {
+        var cached = this.textures[resource],
+            self = this;
+        if (cached) {
+            return cached;
+        }
+
+        cached = {
+            resource: resource
+        };
+        this.textures[resource] = cached;
+        cached.image = batch.load(resource, function (image) {
+            cached.texture = self.setupTexture(image);
+        });
+    };
+
     function Frame(blumps, duration, next) {
         this.blumps = blumps;
         this.next = next || null;
         this.duration = duration;
     }
+
+    function Flipbook(data, textureCache) {
+        this.frames = [];
+        for (var f = 0; f < data.frames.length; ++f) {
+            var frameData = data.frames[f];
+            this.frames.push({
+                mesh: WGL.makeBillboard(null)
+            });
+        }
+    }
+
+    Flipbook.prototype.constructMeshes = function () {
+
+    };
 
     function Thing(mesh) {
         this.position = R3.origin();
