@@ -421,9 +421,8 @@ var BLUMP = (function () {
         );
     };
 
-    Builder.prototype.locatePoint = function(poi, depths) {
-        var depth = this.lookupDepth(depths, poi.x, poi.y);
-        poi.localPoint = this.vertexFunc(poi.x, poi.y, depth);
+    Builder.prototype.locatePoint = function(poi) {
+        poi.localPoint = this.vertexFunc(poi.x, poi.y, 0);
     };
 
     function Blump(data, defaultPixelSize, defaultDepthRange, defaultDepthOffset, align) {
@@ -503,11 +502,20 @@ var BLUMP = (function () {
         }
     };
 
+    var meshCache = {
+    };
+
     Blump.prototype.construct = function (atlas, allowEdits, buildNormals) {
         this.constructFromImage(this.image, atlas, allowEdits, buildNormals);
     };
 
     Blump.prototype.constructFromImage = function (image, atlas, allowEdits, buildNormals) {
+        var meshData = this.meshParameters();
+        meshData.buildNormals = buildNormals;
+        meshData.allowEdits = allowEdits;
+        var lookup = JSON.stringify(meshData),
+            cached = meshCache[lookup];
+
         var width = this.width(),
             height = this.height(),
             builder = new Builder(this.geometry, width, height, this.pixelSize, buildNormals),
@@ -516,24 +524,29 @@ var BLUMP = (function () {
         builder.setEdgeModes(this.xEdgeMode, this.yEdgeMode);
         builder.allowEdits = allowEdits;
 
-        if (atlas) {
-            this.atlas = atlas;
-            if (this.textureData) {
-                this.textureCoords = atlas.add(
-                    this.textureData, 0, 0, this.textureData.width, this.textureData.height
-                );
-            } else {
-                this.textureCoords = atlas.add(image, 0, 0, width, height);
+        if (cached) {
+            this.mesh = cached;
+        } else {
+            if (atlas) {
+                this.atlas = atlas;
+                if (this.textureData) {
+                    this.textureCoords = atlas.add(
+                        this.textureData, 0, 0, this.textureData.width, this.textureData.height
+                    );
+                } else {
+                    this.textureCoords = atlas.add(image, 0, 0, width, height);
+                }
+            } else if (!this.textureData) {
+                texturePixels = IMPROC.getPixels(image, 0, 0, width, height).data;
             }
-        } else if (!this.textureData) {
-            texturePixels = IMPROC.getPixels(image, 0, 0, width, height).data;
-        }
-        builder.setupTextureSurface(this.textureCoords);
+            builder.setupTextureSurface(this.textureCoords);
 
-        var depths = builder.extractDepth(image, false, this.depthRange);
-        this.mesh = builder.constructSurface(depths, atlas ? atlas.texture() : null, texturePixels);
+            var depths = builder.extractDepth(image, false, this.depthRange);
+            this.mesh = builder.constructSurface(depths, atlas ? atlas.texture() : null, texturePixels);
+            meshCache[lookup] = this.mesh;
+        }
         for (var p = 0; p < this.pointsOfInterest.length; ++p) {
-            builder.locatePoint(this.pointsOfInterest[p], depths);
+            builder.locatePoint(this.pointsOfInterest[p]);
         }
     };
 
@@ -591,14 +604,9 @@ var BLUMP = (function () {
         return angle < 0 ? angle : angle + 360;
     }
 
-    Blump.prototype.save = function (includePOIs) {
+    Blump.prototype.meshParameters = function () {
         var data = {
             resource: this.resource,
-            angle: saveAngle(this.angle),
-            lrOffset: this.offset.x,
-            fbOffset: this.offset.z,
-            vOffset: this.offset.y,
-            scale: this.scale,
             pixelSize: this.pixelSize,
             depthRange: this.depthRange,
             depthOffset: this.depthOffset,
@@ -607,6 +615,17 @@ var BLUMP = (function () {
             geometry: this.geometry,
             cylinderAngle: this.cylinderAngle * R2.RAD_TO_DEG
         };
+        return data;
+    };
+
+    Blump.prototype.save = function (includePOIs) {
+        var data = this.meshParameters();
+        
+        data.angle = saveAngle(this.angle);
+        data.lrOffset = this.offset.x;
+        data.fbOffset = this.offset.z;
+        data.vOffset = this.offset.y;
+        data.scale = this.scale;
 
         if (this.texture) {
             data.texture = this.texture;
