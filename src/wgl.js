@@ -946,20 +946,84 @@ var WGL = (function () {
             vSize: height / this.size
         };
         this.context.drawImage(image, srcX, srcY, width, height, x, y, width, height);
+        this.advance();
+        return texCoords;
+    };
 
+    TextureAtlas.prototype.isFull = function () {
+        return this.placed == this.capacity;
+    };
+
+    TextureAtlas.prototype.advance = function () {
         ++this.placed;
         this.xOffset += this.width;
         if (this.xOffset + this.width > this.size) {
             this.xOffset = 0;
             this.yOffset += this.height;
         }
+    };
 
-        return texCoords;
+    TextureAtlas.prototype.offset = function(offsetCount) {
+        for (var c = 0; c < offsetCount; ++c) {
+            this.advance();
+        }
     };
 
     TextureAtlas.prototype.texture = function () {
         return this.canvas;
     };
+
+    function setupAtlas(resource, frameCount, digits, resolution, scale, offset, atlasDiv, coordOutput) {
+        var frames = [],
+            ATLAS_RES = 1024,
+            fitCount = ATLAS_RES / resolution,
+            atlasCount = fitCount * fitCount,
+            batch = new BLIT.Batch("../images/", function () {
+                var atlas = new TextureAtlas(resolution, resolution, atlasCount),
+                    coords = [],
+                    atlasCoords = [],
+                    imageCount = 0;
+                atlas.offset(offset);
+                coords.push({image:"0.png", frames:atlasCoords});
+
+                for (var f = 0; f < frames.length; ++f) {
+                    var frame = frames[f];
+                    if (atlas.isFull()) {
+                        ++imageCount;
+                        atlasDiv.appendChild(atlas.texture());
+                        atlas = new TextureAtlas(resolution, resolution, atlasCount);
+                        atlasCoords = [];
+                        coords.push({image: imageCount + ".png", frames:atlasCoords});
+                    }
+
+                    if (scale) {
+                        var canvas = document.createElement('canvas'),
+                            context = canvas.getContext('2d');
+                        canvas.width = resolution;
+                        canvas.height = resolution;
+                        context.clearRect(0, 0, resolution, resolution);
+                        BLIT.draw(context, frame,
+                            resolution / 2, resolution / 2,
+                            BLIT.ALIGN.Center,
+                            Math.round(frame.width * scale),
+                            Math.round(frame.height * scale)
+                        );
+                        frame = canvas;
+                    }
+                    atlasCoords.push(atlas.add(frame));
+                }
+                atlasDiv.appendChild(atlas.texture());
+                coordOutput(JSON.stringify(coords, null, 4));
+            });
+        for (var i = 0; i < frameCount; ++i) {
+            var number = i.toString();
+            while (number.length < digits) {
+                number = "0" + number;
+            }
+            frames.push(batch.load(resource + number + ".png"));
+        }
+        batch.commit();
+    }
 
     return {
         Room: Room,
@@ -968,6 +1032,7 @@ var WGL = (function () {
         makeCube: makeCube,
         makeCyclinder: makeCylinder,
         makeBillboard: makeBillboard,
-        uvFill: function () { return { uMin: 0, vMin: 0, uSize: 1, vSize: 1 }; }
+        uvFill: function () { return { uMin: 0, vMin: 0, uSize: 1, vSize: 1 }; },
+        setupAtlas: setupAtlas
     };
 }());
