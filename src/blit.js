@@ -189,7 +189,7 @@ var BLIT = (function () {
         }
     }
 
-    Flip.prototype.setupPlayback = function(frameTime, loop, offset) {
+    Flip.prototype.setupPlayback = function (frameTime, loop, offset) {
         var time = offset ? offset : 0,
             flip = this;
         return {
@@ -206,7 +206,7 @@ var BLIT = (function () {
         };
     };
 
-    Flip.prototype.updatePlayback = function(elapsed, playback) {
+    Flip.prototype.updatePlayback = function (elapsed, playback) {
         var totalLength = playback.timePerFrame * this.frames.length;
         playback.elapsed += elapsed;
         if(playback.loop) {
@@ -221,7 +221,7 @@ var BLIT = (function () {
         }
     };
 
-    Flip.prototype.draw = function(context, playback, x, y, alignment, width, height, mirror, tint) {
+    Flip.prototype.draw = function (context, playback, x, y, alignment, width, height, mirror, tint) {
         var index = Math.min(this.frames.length - 1, Math.floor(playback.elapsed / playback.timePerFrame));
 
         draw(context, this.frames[index], x, y, alignment, width, height, mirror, tint, true);
