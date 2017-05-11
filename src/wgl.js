@@ -331,11 +331,19 @@ var WGL = (function () {
                 colorBuffer: mesh.glColors ? this.setupFloatBuffer(mesh.glColors, false, drawHint) : null,
                 triBuffer: this.setupElementBuffer(mesh.tris)
             };
-            if (mesh.image) {
-                mesh.drawData.texture = this.setupTexture(mesh.image);
-            }
         }
         return mesh.drawData;
+    };
+
+    Room.prototype.setupMeshTexture = function (mesh) {
+        if (mesh.updatedTexture && mesh.image) {
+            mesh.texture = this.setupTexture(mesh.image);
+            mesh.updatedTexture = false;
+        }
+        if (!mesh.texture && mesh.image) {
+            mesh.texture = this.setupTexture(mesh.image);
+        }
+        return mesh.texture;
     };
 
     Room.prototype.rebindTexture = function (mesh, program) {
@@ -347,14 +355,9 @@ var WGL = (function () {
         return null;
     };
 
-    Room.prototype.drawMesh = function (mesh, program, transform, boundTexture) {
+    Room.prototype.bindMeshGeometry = function (mesh, program) {
         var draw = this.setupMesh(mesh),
             gl = this.gl;
-
-        if (transform) {
-            this.setTransform(program, transform);
-        }
-
         gl.bindBuffer(gl.ARRAY_BUFFER, draw.vertexBuffer);
         if (mesh.updated) {
             this.updateBuffer(draw.vertexBuffer, mesh.glVertices);
@@ -376,15 +379,27 @@ var WGL = (function () {
             gl.vertexAttribPointer(program.vertexColor, 4, gl.FLOAT, false, 0, 0);
         }
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, draw.triBuffer);
-        if (mesh.updatedTexture && mesh.image) {
-            draw.texture = this.setupTexture(mesh.image);
-            mesh.updatedTexture = false;
-        }
-        if (!boundTexture && program.textureVariable !== null && draw.texture) {
-            this.bindTexture(program.shader, program.textureVariable, draw.texture);
-        }
-        gl.drawElements(gl.TRIANGLES, mesh.tris.length, gl.UNSIGNED_SHORT, 0);
         mesh.updated = false;
+    };
+
+    Room.prototype.bindMeshTexture = function (mesh, program) {
+        var texture = this.setupMeshTexture(mesh);
+        if (program.textureVariable !== null && texture) {
+            this.bindTexture(program.shader, program.textureVariable, texture);
+        }
+    };
+
+    Room.prototype.drawMeshElements = function (mesh, program, transform) {
+        if (transform) {
+            this.setTransform(program, transform);
+        }
+        this.gl.drawElements(this.gl.TRIANGLES, mesh.tris.length, this.gl.UNSIGNED_SHORT, 0);
+    };
+
+    Room.prototype.drawMesh = function (mesh, program, transform) {
+        this.bindMeshGeometry(mesh, program);
+        this.bindMeshTexture(mesh, program);
+        this.drawMeshElements(mesh, program, transform);
     };
 
     Room.prototype.setupView = function (program, viewportRegion, transform, vrFrame) {
@@ -520,6 +535,30 @@ var WGL = (function () {
         this.viewer.positionView(new R3.V(x, 0, z), R3.origin(), new R3.V(0, 1, 0));
         this.setupView(this.testProgram, viewport);
         this.drawTestSquare(this.testProgram);
+    };
+
+    Room.prototype.textureCache = function (batch) {
+        var room = this;
+        return {
+            batch: batch,
+            textures: {},
+            cache: function (resource) {
+                var cached = this.textures[resource],
+                    self = this;
+                if (cached) {
+                    return cached;
+                }
+
+                cached = {
+                    resource: resource
+                };
+                this.textures[resource] = cached;
+                cached.image = batch.load(resource, function (image) {
+                    cached.texture = room.setupTexture(image);
+                });
+                return cached;
+            }
+        };
     };
 
     function Mesh() {
@@ -848,7 +887,7 @@ var WGL = (function () {
         return mesh;
     }
 
-    function makeBillboard(texture, textureCoords) {
+    function makeBillboard(textureCoords) {
         var mesh = new Mesh();
         mesh.vertices = [
              1,  1,  0,
@@ -880,7 +919,6 @@ var WGL = (function () {
 
         mesh.tris = [0, 1, 3, 1, 2, 3];
         mesh.finalize(new R3.V(1,1,0), new R3.V(-1,-1,0));
-        mesh.image = texture;
         return mesh;
     }
 

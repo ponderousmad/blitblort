@@ -1,47 +1,66 @@
 var BLOB = (function () {
     "use strict";
 
-    function TextureCache(batch, setupTexture) {
-        this.batch = batch;
-        this.setupTexture = setupTexture;
-        this.textures = {
-        };
-    }
-
-    TextureCache.prototype.cache = function (resource) {
-        var cached = this.textures[resource],
-            self = this;
-        if (cached) {
-            return cached;
-        }
-
-        cached = {
-            resource: resource
-        };
-        this.textures[resource] = cached;
-        cached.image = batch.load(resource, function (image) {
-            cached.texture = self.setupTexture(image);
-        });
-    };
-
     function Frame(blumps, duration, next) {
         this.blumps = blumps;
         this.next = next || null;
         this.duration = duration;
     }
 
-    function Flipbook(data, textureCache) {
+    function Flip(data, textureCache) {
         this.frames = [];
-        for (var f = 0; f < data.frames.length; ++f) {
-            var frameData = data.frames[f];
-            this.frames.push({
-                mesh: WGL.makeBillboard(null)
-            });
+        for (var a = 0; a < data.length; ++a) {
+            var entry = data[a],
+                cachedTexture = textureCache.cache(entry.image);
+            for (var f = 0; f < entry.frames.length; ++f) {
+                this.frames.push({
+                    cachedTexture: cachedTexture,
+                    coords: entry.frames[f]
+                });
+            }
         }
     }
 
-    Flipbook.prototype.constructMeshes = function () {
+    Flip.prototype.constructMeshes = function () {
+        for (var f = 0; f < this.frames.length; ++f) {
+            var frame = this.frames[f];
+            frame.mesh = WGL.makeBillboard(frame.coords);
+            frame.mesh.texture = frame.cachedTexture.texture;
+        }
+    };
 
+    Flip.prototype.setupPlayback = function (frameTime, loop, offset) {
+        var time = offset ? offset : 0,
+            flip = this;
+        return {
+            elapsed: time,
+            timePerFrame: frameTime,
+            fractionComplete: time / (frameTime * this.frames.length),
+            loop: loop === true,
+            update: function (elapsed) { return flip.updatePlayback(elapsed, this); },
+            mesh: function () { return flip.mesh(this); },
+            setup: function () { flip.constructMeshes(); }
+        };
+    };
+
+    Flip.prototype.updatePlayback = function (elapsed, playback) {
+        var totalLength = playback.timePerFrame * this.frames.length;
+        playback.elapsed += elapsed;
+        if(playback.loop) {
+            playback.elapsed = playback.elapsed % totalLength;
+        }
+        if (playback.elapsed > totalLength) {
+            playback.fractionComplete = 1;
+            return true;
+        } else {
+            playback.fractionComplete = playback.elapsed / totalLength;
+            return false;
+        }
+    };
+
+    Flip.prototype.mesh = function (playback) {
+        var index = Math.min(this.frames.length - 1, Math.floor(playback.elapsed / playback.timePerFrame));
+        return this.frames[index].mesh;
     };
 
     function Thing(mesh) {
@@ -140,8 +159,12 @@ var BLOB = (function () {
         return m;
     };
 
-    Thing.prototype.render = function(room, program, worldEye, boundTexture) {
-        var m = this.billboardUp ? this.alignBillboard(worldEye) : this.getToWorld(),
+    Thing.prototype.renderTransform = function (worldEye) {
+        return this.billboardUp ? this.alignBillboard(worldEye) : this.getToWorld();
+    };
+
+    Thing.prototype.render = function(room, program, worldEye) {
+        var m = this.renderTransform(worldEye),
             mesh = this.mesh;
 
         if (this.blumps) {
@@ -158,7 +181,7 @@ var BLOB = (function () {
             }
         }
         if (mesh) {
-            room.drawMesh(mesh, program, m, boundTexture);
+            room.drawMesh(mesh, program, m);
         }
     };
 
@@ -192,6 +215,7 @@ var BLOB = (function () {
 
     return {
         Frame: Frame,
+        Flip: Flip,
         Thing: Thing
     };
 }());
