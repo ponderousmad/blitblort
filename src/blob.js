@@ -47,7 +47,7 @@ var BLOB = (function () {
 
     Thing.prototype.setBillboardUp = function (up) {
         this.billboardUp = up.normalized();
-    }
+    };
 
     Thing.prototype.move = function (offset) {
         this.position.add(offset);
@@ -68,7 +68,7 @@ var BLOB = (function () {
     Thing.prototype.setOrientation = function (orientation) {
         this.orientation = orientation.copy();
         this.markDirty();
-    }
+    };
 
     Thing.prototype.scaleBy = function (scaleFactor) {
         this.scale *= scaleFactor;
