@@ -294,6 +294,7 @@ var BLUMP = (function () {
         }
 
         mesh.image = texture;
+        mesh.dynamic = this.allowEdits;
         mesh.finalize(null, null, vertexRemap);
         return mesh;
     };
@@ -534,8 +535,20 @@ var BLUMP = (function () {
         for (var p = 0; p < this.pointsOfInterest.length; ++p) {
             builder.locatePoint(this.pointsOfInterest[p], depths);
         }
-        this.mesh.dynamic = true;
-        this.reposition(true);
+    };
+
+    Blump.prototype.transformThing = function (thing) {
+        thing.rotate(this.angle, new R3.V(0, 1, 0));
+        thing.scaleBy(this.scale);
+        thing.move(this.offset);
+    };
+
+    Blump.prototype.placePOIs = function (thing) {
+        var toWorld = thing.getToWorld();
+        for (var p = 0; p < this.pointsOfInterest.length; ++p) {
+            var poi = this.pointsOfInterest[p];
+            poi.worldPoint = toWorld.transformP(poi.localPoint);
+        }
     };
 
     Blump.prototype.reposition = function (inPlace) {
