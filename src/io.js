@@ -222,27 +222,58 @@ var IO = (function (TICK, BLORT) {
 
     function Touch(element) {
         this.touches = [];
+        this.started = [];
+        this.prevStarted = [];
 
-        var self = this;
-        var handleTouch = function(e) {
-            BLORT.noteOn();
-            self.touches = e.touches;
-            e.preventDefault();
-        };
+        var self = this,
+            handleTouch = function(e) {
+                BLORT.noteOn();
+                self.touches = e.touches;
+                e.preventDefault();
+            },
+            markTouchStarted = function (touch) {
+                if (!self.findTouch(touch.identifier)) {
+                    self.started.push(touch);
+                }
+            },
+            markStarted = function(touches) {
+                for (var t = 0; t < touches.length; ++t) {
+                    markTouchStarted(touches[t]);
+                }
+            };
 
-        element.addEventListener("touchstart", handleTouch);
+        element.addEventListener("touchstart", function (e) {
+            handleTouch(e);
+            markStarted(e.targetTouches);
+        });
         element.addEventListener("touchend", handleTouch);
         element.addEventListener("touchmove", handleTouch);
         element.addEventListener("touchcancel", handleTouch);
     }
 
     Touch.prototype.getTouch = function (id) {
-        for (var t = 0; t < this.touches.length; ++t) {
-            if (this.touches[t].identifier == id) {
-                return this.touches[t];
+        return this.findTouch(this.touches, id);
+    };
+
+    Touch.prototype.findTouch = function (touches, touchID) {
+        for (var t = 0; t < touches.length; ++t) {
+            if (touches[t].identifier === touchID) {
+                return touches[t];
             }
         }
         return null;
+    };
+
+    Touch.prototype.filterTouches = function (filter) {
+        for (var t = 0; t < this.touches.length; ++t) {
+            var touch = this.touches[t];
+            filter(touch.identifier, touch.clientX, touch.clientY, this.findTouch(this.prevStarted, touch.identifier));
+        }
+    };
+
+    Touch.prototype.postUpdate = function () {
+        this.prevStarted = this.started;
+        this.started = [];
     };
 
     function Pointer(element, preventDefault) {
@@ -293,6 +324,7 @@ var IO = (function (TICK, BLORT) {
         }
         this.primary = spot;
         this.mouse.postUpdate();
+        this.touch.postUpdate();
     };
 
     Pointer.prototype.activated = function() {
