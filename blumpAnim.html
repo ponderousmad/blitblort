@@ -61,14 +61,13 @@
             attribute vec3 aPos;
             attribute vec4 aColor;
 
-            uniform mat4 uMVMatrix;
-            uniform mat4 uPMatrix;
+            uniform mat4 uMVPMatrix;
 
             varying lowp vec4 vColor;
             varying lowp vec3 vLight;
 
             void main(void) {
-                gl_Position = uPMatrix * uMVMatrix * vec4(aPos, 1.0);
+                gl_Position = uMVPMatrix * vec4(aPos, 1.0);
                 vColor = aColor;
             }
         </script>

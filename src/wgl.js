@@ -407,31 +407,33 @@ var WGL = (function () {
             aspect = this.viewer.viewport(this.gl, this.canvas, viewportRegion),
             perspective = vrFrame ? this.viewer.perspectiveVR(viewportRegion, vrFrame) : this.viewer.perspective(aspect),
             view = this.viewer.view(),
-            pLocation = this.gl.getUniformLocation(shader, program.perspectiveUniform),
-            vLocation = this.gl.getUniformLocation(shader, program.mvUniform),
+            matrixUniform = this.gl.getUniformLocation(shader, program.mvpUniform),
             nLocation = program.normalUniform ? this.gl.getUniformLocation(shader, program.normalUniform) : null;
         if (transform) {
             view = R3.matmul(transform, view);
         }
-        this.gl.uniformMatrix4fv(pLocation, false, perspective.m);
-        this.gl.uniformMatrix4fv(vLocation, false, view.m);
+        var mvp = R3.matmul(perspective, view);
+        this.gl.uniformMatrix4fv(matrixUniform, false, mvp.m);
         if (nLocation) {
             var normal = R3.identity();
             this.gl.uniformMatrix4fv(nLocation, false, normal.m);
         }
         program.view = view;
+        program.perspective = perspective;
     };
 
     Room.prototype.setTransform = function (program, transform) {
         var shader = program.shader,
-            modelView = new R3.M(),
-            vLocation = this.gl.getUniformLocation(shader, program.mvUniform),
-            nLocation = this.gl.getUniformLocation(shader, program.normalUniform);
-        R3.matmul(program.view, transform, modelView);
-        this.gl.uniformMatrix4fv(vLocation, false, modelView.m);
-        var normal = transform.inverse();
-        normal.transpose();
-        this.gl.uniformMatrix4fv(nLocation, false, normal.m);
+            mvp = R3.matmul(program.view, transform),
+            matrixUniform = this.gl.getUniformLocation(shader, program.mvpUniform),
+            nLocation = program.normalUniform ? this.gl.getUniformLocation(shader, program.normalUniform) : null;
+        R3.matmul(program.perspective, mvp, mvp);
+        this.gl.uniformMatrix4fv(matrixUniform, false, mvp.m);
+        if (nLocation) {
+            var normal = transform.inverse();
+            normal.transpose();
+            this.gl.uniformMatrix4fv(nLocation, false, normal.m);
+        }
     };
 
     Room.prototype.bindTexture = function (program, variable, texture) {
@@ -451,8 +453,7 @@ var WGL = (function () {
         var shader = this.shaderFromElements(vertexElement, fragmentElement);
         return {
             shader: shader,
-            mvUniform: "uMVMatrix",
-            perspectiveUniform: "uPMatrix",
+            mvpUniform: "uMVPMatrix",
             normalUniform: normals ? "uNormalMatrix" : null,
             vertexPosition: this.bindVertexAttribute(shader, "aPos"),
             vertexNormal: normals ? this.bindVertexAttribute(shader, "aNormal") : null,
