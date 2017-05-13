@@ -578,6 +578,7 @@ var BLUMP_EDIT = (function () {
         for (var b = 0; b < blumps.length; ++b) {
             blumps[b].construct(null);
             blumps[b].image = null;
+            blumps[b].reposition(true);
         }
         this.loadState = null;
         this.loadingFrame += 1;
