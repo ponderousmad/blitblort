@@ -22,21 +22,21 @@ var IO = (function (TICK, BLORT) {
         var self = this;
 
         if (element) {
-            element.onkeydown = function (e) {
+            element.addEventListener("keydown", function (e) {
                 e = e || window.event;
                 self.pressed[e.keyCode] = TICK.now();
                 if (capture) {
                     e.preventDefault();
                 }
-            };
+            }, capture);
 
-            element.onkeyup = function (e) {
+            element.addEventListener("keyup", function (e) {
                 e = e || window.event;
                 delete self.pressed[e.keyCode];
                 if (capture) {
                     e.preventDefault();
                 }
-            };
+            }, capture);
         }
     }
 
