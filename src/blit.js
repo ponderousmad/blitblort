@@ -77,7 +77,7 @@ var BLIT = (function () {
         return tintCache[image.src + tint];
     }
 
-    function drawTinted(context, image, x, y, width, height, tint, noCache) {
+    function drawTinted(context, image, x, y, width, height, tint, noCache, srcX, srcY, srcWidth, srcHeight) {
         var tintCanvas = noCache ? null : checkTintCache(image, tint);
 
         if (!tintCanvas) {
@@ -102,7 +102,12 @@ var BLIT = (function () {
             cacheTint(image, tint, tintCanvas);
         }
 
-        context.drawImage(tintCanvas, 0, 0, image.width, image.height, x, y, width, height);
+        srcX = srcX || 0;
+        srcY = srcY || 0;
+        srcWidth = srcWidth || image.width;
+        srcHeight = srcHeight || image.height;
+
+        context.drawImage(tintCanvas, srcX, srcY, srcWidth, srcHeight, x, y, width, height);
     }
 
     function draw(context, image, x, y, alignment, width, height, mirror, tint, noCache) {
