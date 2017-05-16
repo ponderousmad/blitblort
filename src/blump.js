@@ -315,7 +315,7 @@ var BLUMP = (function () {
     };
 
     Builder.prototype.addWallVertices = function (mesh, x, y, uFraction) {
-        var i = depthIndex(x, y),
+        var i = this.depthIndex(x, y),
             top = this.topDepths[i],
             bottom =  this.bottomDepths ? this.bottomDepths[i] :
                                           this.defaultBottom,
@@ -548,6 +548,7 @@ var BLUMP = (function () {
         for (var p = 0; p < this.pointsOfInterest.length; ++p) {
             builder.locatePoint(this.pointsOfInterest[p]);
         }
+        return builder;
     };
 
     Blump.prototype.transformThing = function (thing) {
@@ -657,6 +658,7 @@ var BLUMP = (function () {
     return {
         EDGE_MODE: EDGE_MODE,
         NO_DEPTH: NO_DEPTH,
-        Blump: Blump
+        Blump: Blump,
+        Builder: Builder
     };
 }());
