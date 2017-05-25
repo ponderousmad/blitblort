@@ -1,7 +1,7 @@
 # blitblort
 Want to make a simple HTML5 game?
 
-This library covers the basics of working with canvas, web audio, input and some mathmatical bits to make it easy to create simple games.
+This library covers the basics of working with canvas, web audio, WebGL, input and some mathmatical bits to make it easy to create simple games.
 
 The name is derived from [bit blitting](https://en.wikipedia.org/wiki/Bit_blit) and [blort](https://en.wiktionary.org/wiki/blort) is just about making silly sounds.
 
