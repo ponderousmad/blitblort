@@ -163,8 +163,8 @@ var BLOB = (function () {
         return this.billboardUp ? this.alignBillboard(worldEye) : this.getToWorld();
     };
 
-    Thing.prototype.render = function(room, program, worldEye) {
-        var m = this.renderTransform(worldEye),
+    Thing.prototype.render = function(room, program) {
+        var m = this.renderTransform(room.viewer.position),
             mesh = this.mesh;
 
         if (this.blumps) {

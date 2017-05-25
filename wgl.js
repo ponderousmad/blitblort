@@ -467,77 +467,6 @@ var WGL = (function () {
         return this.viewer.stabDirection(this.canvas, canvasX, canvasY, viewportRegion);
     };
 
-    Room.prototype.setupDrawTest = function (program) {
-        var vertices = new Float32Array([
-                -1.0, -1.0, 0.0,
-                 1.0, -1.0, 0.0,
-                -1.0,  1.0, 0.0,
-                 1.0,  1.0, 0.0
-            ]),
-            normals = new Float32Array([
-                0.0, 0.0, 1.0,
-                0.0, 0.0, 1.0,
-                0.0, 0.0, 1.0,
-                0.0, 0.0, 1.0
-            ]),
-            uvs = new Float32Array([
-                0.0,  1.0,
-                1.0,  1.0,
-                0.0,  0.0,
-                1.0,  0.0
-            ]),
-            colors = new Float32Array([
-                1.0, 0.0, 1.0, 1.0,
-                1.0, 1.0, 0.0, 1.0,
-                0.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0
-            ]);
-
-        program.square = this.setupFloatBuffer(vertices);
-        program.squareNormals = this.setupFloatBuffer(normals);
-        program.squareUVs = this.setupFloatBuffer(uvs);
-        program.squareColors = this.setupFloatBuffer(colors);
-        program.batch = new BLIT.Batch("images/");
-        program.squareTexture = this.loadTexture(program.batch, "uv.png");
-        program.batch.commit();
-    };
-
-    Room.prototype.drawTestSquare = function (setup) {
-        this.bindTexture(setup.shader, setup.textureVariable, setup.squareTexture);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.square);
-        this.gl.vertexAttribPointer(setup.vertexPosition, 3, this.gl.FLOAT, false, 0, 0);
-        if (setup.vertexNormal !== null) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareNormals);
-            this.gl.vertexAttribPointer(setup.vertexNormal, 3, this.gl.FLOAT, false, 0, 0);
-        }
-        if (setup.vertexUV !== null) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareUVs);
-            this.gl.vertexAttribPointer(setup.vertexUV, 2, this.gl.FLOAT, false, 0, 0);
-        }
-        if (setup.vertexColor !== null) {
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, setup.squareColors);
-            this.gl.vertexAttribPointer(setup.vertexColor, 4, this.gl.FLOAT, false, 0, 0);
-        }
-        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-    };
-
-    Room.prototype.drawTest = function (viewport, angle) {
-        if (!this.testProgram) {
-            this.testProgram = this.programFromElements("vertex-test", "fragment-test", true, true, true);
-            this.setupDrawTest(this.testProgram);
-        }
-        if (!this.testProgram.batch.loaded) {
-            return;
-        }
-        var d = 2,
-            a = angle ? angle : Math.PI / 2,
-            x = Math.cos(a) * d,
-            z = Math.sin(a) * d;
-        this.viewer.positionView(new R3.V(x, 0, z), R3.origin(), new R3.V(0, 1, 0));
-        this.setupView(this.testProgram, viewport);
-        this.drawTestSquare(this.testProgram);
-    };
-
     Room.prototype.textureCache = function (batch) {
         var room = this;
         return {
@@ -888,7 +817,7 @@ var WGL = (function () {
         return mesh;
     }
 
-    function makeBillboard(textureCoords) {
+    function makePlane(textureCoords) {
         var mesh = new Mesh();
         mesh.vertices = [
              1,  1,  0,
@@ -1070,7 +999,7 @@ var WGL = (function () {
         TextureAtlas: TextureAtlas,
         makeCube: makeCube,
         makeCyclinder: makeCylinder,
-        makeBillboard: makeBillboard,
+        makePlane: makePlane,
         uvFill: function () { return { uMin: 0, vMin: 0, uSize: 1, vSize: 1 }; },
         setupAtlas: setupAtlas
     };

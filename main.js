@@ -183,48 +183,6 @@ var MAIN = (function () {
         }
     }
 
-    function Test2D() {
-        this.batch = new BLIT.Batch("images/");
-        this.image = this.batch.load("test.png");
-        this.flip = new BLIT.Flip(this.batch, "test", 6, 2).setupPlayback(80, true);
-        this.batch.commit();
-
-        this.maximize = false;
-        this.updateInDraw = true;
-    }
-
-    Test2D.prototype.update = function (now, elapsed, keyboard, pointer) {
-        if (this.batch.loaded) {
-            this.flip.update(elapsed);
-        }
-    };
-
-    Test2D.prototype.draw = function (context, width, height) {
-        context.clearRect(0, 0, width, height);
-        if (this.batch.loaded) {
-            BLIT.draw(context, this.image, 100, 100, BLIT.ALIGN.Center, 0, 0, BLIT.MIRROR.Horizontal, [1,0,0]);
-            this.flip.draw(context, 200, 50, BLIT.ALIGN.Left, 0, 0, BLIT.MIRROR.Vertical);
-        }
-    };
-
-    function Test3D(viewport) {
-        this.clearColor = [0, 0, 0, 1];
-        this.maximize = viewport === "safe";
-        this.updateInDraw = false;
-        this.updateInterval = 16;
-        this.angle = 0;
-        this.viewport = viewport ? viewport : "canvas";
-    }
-
-    Test3D.prototype.update = function (now, elapsed, keyboard, pointer) {
-        this.angle += elapsed * Math.PI * 0.0001;
-    };
-
-    Test3D.prototype.render = function (room, width, height) {
-        room.clear(this.clearColor);
-        room.drawTest(this.viewport, this.angle);
-    };
-
     function setupToggleControls() {
         var controlsVisible = false;
         document.getElementById("menuButton").addEventListener("click", function(e) {
@@ -237,8 +195,6 @@ var MAIN = (function () {
     }
 
     return {
-        Test2D: Test2D,
-        Test3D: Test3D,
         runTestSuites: runTestSuites,
         start: start,
         setupToggleControls: setupToggleControls
