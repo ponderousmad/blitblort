@@ -168,7 +168,7 @@ var BLOB = (function () {
             mesh = this.mesh;
 
         if (this.blumps) {
-            var localEye = this.toLocalP(worldEye),
+            var localEye = this.toLocalP(room.viewer.position),
                 eyeAngle = R2.clampAngle(Math.atan2(-localEye.x, localEye.z)),
                 minAngle = 4 * Math.PI;
             for (var a = 0; a < this.blumps.length; ++a) {
