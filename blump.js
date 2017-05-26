@@ -236,10 +236,8 @@ var BLUMP = (function () {
             throw "Image too large";
         }
 
-        if (!this.allowEdits) {
-            vertexRemap = new Uint16Array((width + 1) * (height + 1));
-            vertexRemap.fill(0);
-        }
+        vertexRemap = new Uint16Array((width + 1) * (height + 1));
+        vertexRemap.fill(0);
 
         for (var y = 0; y <= height; ++y) {
             var generateTris = y > 0,
@@ -294,7 +292,6 @@ var BLUMP = (function () {
         }
 
         mesh.image = texture;
-        mesh.dynamic = this.allowEdits;
         mesh.finalize(null, null, vertexRemap);
         return mesh;
     };
@@ -487,12 +484,10 @@ var BLUMP = (function () {
         return this.image.height / 2;
     };
 
-    Blump.prototype.constructTransform = function () {
-        var transform = new R3.M();
-        transform.translate(this.offset);
-        R3.matmul(transform, R3.makeRotateY(this.angle), transform);
-        R3.matmul(transform, R3.makeScale(this.scale), transform);
-        return transform;
+    Blump.prototype.placeThing = function (thing) {
+        thing.setPosition(this.offset);
+        thing.rotate(new R3.V(0, 1, 0), this.angle);
+        thing.scaleBy(this.scale);
     };
 
     Blump.prototype.batch = function (batch) {
@@ -505,24 +500,21 @@ var BLUMP = (function () {
     var meshCache = {
     };
 
-    Blump.prototype.construct = function (atlas, allowEdits, buildNormals) {
-        this.constructFromImage(this.image, atlas, allowEdits, buildNormals);
+    Blump.prototype.construct = function (atlas, buildNormals) {
+        this.constructFromImage(this.image, atlas, buildNormals, true);
     };
 
-    Blump.prototype.constructFromImage = function (image, atlas, allowEdits, buildNormals) {
+    Blump.prototype.constructFromImage = function (image, atlas, buildNormals, useCache) {
         var meshData = this.meshParameters();
         meshData.buildNormals = buildNormals;
-        meshData.allowEdits = allowEdits;
         var lookup = JSON.stringify(meshData),
-            cached = meshCache[lookup];
-
-        var width = this.width(),
+            cached = useCache ? meshCache[lookup] : null,
+            width = this.width(),
             height = this.height(),
             builder = new Builder(this.geometry, width, height, this.pixelSize, buildNormals),
             texturePixels = null;
         builder.setAlignment(this.xAlign, this.yAlign, this.depthOffset, this.cylinderAngle);
         builder.setEdgeModes(this.xEdgeMode, this.yEdgeMode);
-        builder.allowEdits = allowEdits;
 
         if (cached) {
             this.mesh = cached;
@@ -543,7 +535,10 @@ var BLUMP = (function () {
 
             var depths = builder.extractDepth(image, false, this.depthRange);
             this.mesh = builder.constructSurface(depths, atlas ? atlas.texture() : null, texturePixels);
-            meshCache[lookup] = this.mesh;
+
+            if (useCache) {
+                meshCache[lookup] = this.mesh;
+            }
         }
         for (var p = 0; p < this.pointsOfInterest.length; ++p) {
             builder.locatePoint(this.pointsOfInterest[p]);
@@ -563,34 +558,6 @@ var BLUMP = (function () {
             var poi = this.pointsOfInterest[p];
             poi.worldPoint = toWorld.transformP(poi.localPoint);
         }
-    };
-
-    Blump.prototype.reposition = function (inPlace) {
-        var transform = this.constructTransform(),
-            inverse = transform.inverse(),
-            vertsOut = this.mesh.glVertices,
-            normalsOut = this.mesh.glNormals,
-            vertsIn = inPlace ? vertsOut : this.mesh.vertices,
-            normalsIn = inPlace ? normalsOut : this.mesh.normals;
-        for (var i = 0; i < vertsIn.length; i += 3) {
-            var pos = new R3.V(vertsIn[i], vertsIn[i+1], vertsIn[i+2]);
-            pos = transform.transformP(pos);
-            vertsOut[i] = pos.x; vertsOut[i+1] = pos.y; vertsOut[i+2] = pos.z;
-
-            if (normalsOut) {
-                var n = new R3.V(normalsIn[i], normalsIn[i+1], normalsIn[i+2]);
-                n = inverse.transformV(n);
-                n.normalize();
-                normalsOut[i] = n.x; normalsOut[i+1] = n.y; normalsOut[i+2] = n.z;
-            }
-        }
-        if (inPlace) {
-            for (var p = 0; p < this.pointsOfInterest.length; ++p) {
-                var poi = this.pointsOfInterest[p];
-                poi.localPoint = transform.transformP(poi.localPoint);
-            }
-        }
-        this.mesh.updated = true;
     };
 
     Blump.prototype.constructAtlas = function (count) {

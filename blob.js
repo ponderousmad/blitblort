@@ -1,12 +1,6 @@
 var BLOB = (function () {
     "use strict";
 
-    function Frame(blumps, duration, next) {
-        this.blumps = blumps;
-        this.next = next || null;
-        this.duration = duration;
-    }
-
     function Flip(data, textureCache) {
         this.frames = [];
         for (var a = 0; a < data.length; ++a) {
@@ -63,42 +57,22 @@ var BLOB = (function () {
         return this.frames[index].mesh;
     };
 
-    function Thing(mesh) {
+    function Thing(mesh, parent) {
         this.position = R3.origin();
         this.orientation = R3.zeroQ();
         this.scale = 1;
         this.toWorld = new R3.M();
         this.toLocal = null;
         this.transformDirty = false;
-        this.blumps = null;
-        this.frame = null;
-        this.frames = null;
-        this.remaining = 0;
         this.billboardUp = null;
+        this.parent = parent || null;
 
         this.mesh = mesh ? mesh : null;
     }
 
-    Thing.prototype.setFrames = function (frames, index) {
-        if (frames) {
-            this.frames = frames;
-        } else {
-            frames = this.frames;
-        }
-        this.frame = frames[index];
-        this.blumps = this.frame.blumps;
-        this.remaining = this.frame.duration;
-    };
-
-    Thing.prototype.update = function (elapsed) {
-        if (this.frame) {
-            if (this.frame.next !== null) {
-                this.remaining -= elapsed;
-                if (this.remaining < 0) {
-                    this.setFrames(null, this.frame.next);
-                }
-            }
-        }
+    Thing.prototype.setParent = function (thing) {
+        this.parent = thing;
+        this.markDirty();
     };
 
     Thing.prototype.setBillboardUp = function (up) {
@@ -193,6 +167,9 @@ var BLOB = (function () {
             m.translate(this.position);
             m.scale(this.scale);
             R3.matmul(m, rotate, m);
+            if (this.parent) {
+                R3.matmul(m, parent.getToWorld(), m);
+            }
             this.transformDirty = false;
         }
         return m;
@@ -205,6 +182,14 @@ var BLOB = (function () {
         return this.toLocal;
     };
 
+    Thing.prototype.toWorldP = function (point) {
+        return this.getToWorld().transformP(point);
+    };
+
+    Thing.prototype.toWorldV = function (vector) {
+        return this.getToWorld().transformV(vector);
+    };
+
     Thing.prototype.toLocalP = function (point) {
         return this.getToLocal().transformP(point);
     };
@@ -213,9 +198,72 @@ var BLOB = (function () {
         return this.getToLocal().transformV(vector);
     };
 
+    function findThingFacing(things, eye) {
+        var minAngle = 2 * Math.PI,
+            minThing = null,
+            forward = new R3.V(1, 0, 0);
+        for (var t = 0; t < things.length; ++t) {
+            var thing = things[t],
+                thingDir = thing.toWorldV(forward),
+                toEye = R3.subVectors(eye, thing.position);
+            thingDir.normalize();
+            toEye.normalize();
+            var angle = Math.acos(thingDir.dot(toEye));
+            if (angle < minAngle) {
+                minThing = thing;
+            }
+        }
+        return minThing;
+    }
+
+    function Anim(frameTime, loop) {
+        this.things = null;
+        this.frame = 0;
+        this.frames = [];
+        this.frameTime = frameTime || 100;
+        this.loop = loop || false;
+        this.remaining = this.frameTime;
+    }
+
+    Anim.prototype.addFrame = function (things, duration) {
+        this.frames.push({
+            things: things,
+            duration: duration || this.frameTime
+        });
+        if (!this.things) {
+            this.things = things;
+        }
+    };
+
+    Anim.prototype.update = function (elapsed) {
+        this.remaining -= elapsed;
+        if (this.remaining < 0) {
+            if (this.frames < (this.frames.length - 1) || this.loop) {
+                this.frame = (this.frame + 1) % this.frames.length;
+                var next = this.frames[this.frame];
+                this.things = next.things;
+                this.remaining = next.duration;
+            }
+        }
+    };
+
+    Anim.prototype.renderFacing = function (room, program) {
+        var facingThing = findThingFacing(this.things, room.viewer.position);
+        if (facingThing) {
+            facingThing.render(room, program);
+        }
+        return facingThing;
+    };
+
+    Anim.prototype.renderAll = function (room, program) {
+        for (var t = 0; t < this.things.length; ++t) {
+            this.things[t].render(room, program);
+        }
+    };
+
     return {
-        Frame: Frame,
         Flip: Flip,
-        Thing: Thing
+        Thing: Thing,
+        Anim: Anim
     };
 }());
