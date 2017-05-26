@@ -18,7 +18,7 @@ var BLOB = (function () {
     Flip.prototype.constructMeshes = function () {
         for (var f = 0; f < this.frames.length; ++f) {
             var frame = this.frames[f];
-            frame.mesh = WGL.makeBillboard(frame.coords);
+            frame.mesh = WGL.makePlane(frame.coords);
             frame.mesh.texture = frame.cachedTexture.texture;
         }
     };
