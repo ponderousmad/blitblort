@@ -66,7 +66,7 @@ var IMPROC = (function () {
 
     function testSuite() {
         var testConvertions = function () {
-                    TEST.equals(byteToUnitValue(0), -1);
+                TEST.equals(byteToUnitValue(0), -1);
                 TEST.equals(byteToUnitValue(255), 1);
                 TEST.tolEquals(byteToUnitValue(127), -0.004, 0.0005);
 
