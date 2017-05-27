@@ -47,6 +47,10 @@ var R2 = (function () {
         this.y *= s;
     };
 
+    V.prototype.scaled = function (s) {
+        return new R2.V(this.x * s, this.y * s);
+    };
+
     V.prototype.lengthSq = function () {
         return this.x * this.x + this.y * this.y;
     };
