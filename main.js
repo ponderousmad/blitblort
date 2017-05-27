@@ -160,9 +160,15 @@ var MAIN = (function () {
             ENTROPY.testSuite();
         }
 
-        R2.testSuite();
-        R3.testSuite();
-        IMPROC.testSuite();
+        if (window.hasOwnProperty("R2")) {
+            R2.testSuite();
+        }
+        if (window.hasOwnProperty("R3")) {
+            R3.testSuite();
+        }
+        if (window.hasOwnProperty("IMPROC")) {
+            IMPROC.testSuite();
+        }
         return TEST.failCount();
     }
 
