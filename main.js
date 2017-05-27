@@ -47,11 +47,11 @@ var MAIN = (function () {
         function drawFrame() {
             requestAnimationFrame(drawFrame);
 
+            resizeCanvas(canvas, game);
+
             if (update) {
                 update();
             }
-
-            resizeCanvas(canvas, game);
 
             game.draw(context, canvas.width, canvas.height);
         }
@@ -137,11 +137,12 @@ var MAIN = (function () {
                 requestAnimationFrame(drawFrame3D);
             }
 
+            room.viewer.resizeCanvas(canvas, game.maximize, safeWidth(), safeHeight());
+
             if (update) {
                 update();
             }
 
-            room.viewer.resizeCanvas(canvas, game.maximize, safeWidth(), safeHeight());
             game.render(room, canvas.width, canvas.height);
         }
 
