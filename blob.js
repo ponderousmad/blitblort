@@ -159,16 +159,23 @@ var BLOB = (function () {
         }
     };
 
+    Thing.prototype.checkDirty = function () {
+        if (this.transformDirty) {
+            return true;
+        }
+        return this.parent && this.parent.checkDirty();
+    }
+
     Thing.prototype.getToWorld = function () {
         var m = this.toWorld;
-        if (this.transformDirty) {
+        if (this.checkDirty()) {
             var rotate = R3.makeRotateQ(this.orientation);
             m.setIdentity();
             m.translate(this.position);
             m.scale(this.scale);
             R3.matmul(m, rotate, m);
             if (this.parent) {
-                R3.matmul(m, parent.getToWorld(), m);
+                R3.matmul(m, this.parent.getToWorld(), m);
             }
             this.transformDirty = false;
         }
@@ -176,7 +183,7 @@ var BLOB = (function () {
     };
 
     Thing.prototype.getToLocal = function () {
-        if (this.toLocal === null) {
+        if (this.toLocal === null || this.checkDirty()) {
             this.toLocal = this.getToWorld().inverse();
         }
         return this.toLocal;
@@ -201,7 +208,7 @@ var BLOB = (function () {
     function findThingFacing(things, eye) {
         var minAngle = 2 * Math.PI,
             minThing = null,
-            forward = new R3.V(1, 0, 0);
+            forward = new R3.V(0, 0, 1);
         for (var t = 0; t < things.length; ++t) {
             var thing = things[t],
                 thingDir = thing.toWorldV(forward),
@@ -232,6 +239,13 @@ var BLOB = (function () {
         });
         if (!this.things) {
             this.things = things;
+        }
+    };
+
+    Anim.prototype.makePingPong = function () {
+        for (var extra = this.frames.length - 2; extra > 1; --extra) {
+            var toCopy = this.frames[extra];
+            this.addFrame(toCopy.things, toCopy.duration);
         }
     };
 
