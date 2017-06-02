@@ -486,7 +486,7 @@ var BLUMP = (function () {
 
     Blump.prototype.placeThing = function (thing) {
         thing.setPosition(this.offset);
-        thing.rotate(new R3.V(0, 1, 0), this.angle);
+        thing.rotate(this.angle, new R3.V(0, 1, 0));
         thing.scaleBy(this.scale);
     };
 
