@@ -528,7 +528,7 @@ var BLUMP = (function () {
                 } else {
                     this.textureCoords = atlas.add(image, 0, 0, width, height);
                 }
-            } else if (!this.textureData) {
+            } else if (!this.textureCoords) {
                 texturePixels = IMPROC.getPixels(image, 0, 0, width, height).data;
             }
             builder.setupTextureSurface(this.textureCoords);

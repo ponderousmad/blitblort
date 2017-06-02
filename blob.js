@@ -58,19 +58,24 @@ var BLOB = (function () {
     };
 
     function Thing(mesh, parent) {
-        this.position = R3.origin();
-        this.orientation = R3.zeroQ();
-        this.scale = 1;
+        this.resetTransform();
+        this.transformID = 0;
+        this.transformTargetID = 0;
+        this.transformParentID = 1;
         this.toWorld = new R3.M();
         this.toLocal = null;
-        this.transformID = 0;
-        this.transformTargetID = 1;
-        this.transformParentID = 1;
         this.billboardUp = null;
         this.parent = parent || null;
 
         this.mesh = mesh ? mesh : null;
     }
+
+    Thing.prototype.resetTransform = function () {
+        this.position = R3.origin();
+        this.orientation = R3.zeroQ();
+        this.scale = 1;
+        this.markDirty();
+    };
 
     Thing.prototype.setParent = function (thing) {
         this.parent = thing;
