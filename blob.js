@@ -63,7 +63,9 @@ var BLOB = (function () {
         this.scale = 1;
         this.toWorld = new R3.M();
         this.toLocal = null;
-        this.transformDirty = false;
+        this.transformID = 0;
+        this.transformTargetID = 1;
+        this.transformParentID = 1;
         this.billboardUp = null;
         this.parent = parent || null;
 
@@ -106,7 +108,7 @@ var BLOB = (function () {
     };
 
     Thing.prototype.markDirty = function () {
-        this.transformDirty = true;
+        this.transformTargetID = (this.transformTargetID + 1) % 10000;
         this.toLocal = null;
     };
 
@@ -159,12 +161,13 @@ var BLOB = (function () {
         }
     };
 
-    Thing.prototype.checkDirty = function () {
-        if (this.transformDirty) {
+    Thing.prototype.checkDirty = function (currentID) {
+        currentID = currentID || this.transformID;
+        if (currentID != this.transformTargetID) {
             return true;
         }
-        return this.parent && this.parent.checkDirty();
-    }
+        return this.parent && this.parent.checkDirty(this.transformParentID);
+    };
 
     Thing.prototype.getToWorld = function () {
         var m = this.toWorld;
@@ -175,9 +178,10 @@ var BLOB = (function () {
             m.scale(this.scale);
             R3.matmul(m, rotate, m);
             if (this.parent) {
-                R3.matmul(m, this.parent.getToWorld(), m);
+                R3.matmul(this.parent.getToWorld(), m, m);
+                this.transformParentID = this.parent.transformID;
             }
-            this.transformDirty = false;
+            this.transformID = this.transformTargetID;
         }
         return m;
     };
@@ -215,9 +219,10 @@ var BLOB = (function () {
                 toEye = R3.subVectors(eye, thing.position);
             thingDir.normalize();
             toEye.normalize();
-            var angle = Math.acos(thingDir.dot(toEye));
+            var angle = Math.abs(R2.clampAngle(Math.acos(thingDir.dot(toEye))));
             if (angle < minAngle) {
                 minThing = thing;
+                minAngle = angle;
             }
         }
         return minThing;
