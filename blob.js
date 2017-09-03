@@ -166,12 +166,15 @@ var BLOB = (function () {
         }
     };
 
-    Thing.prototype.checkDirty = function (currentID) {
-        currentID = currentID || this.transformID;
-        if (currentID != this.transformTargetID) {
+    Thing.prototype.checkDirty = function () {
+        return this.checkDirtyById(this.transformID);
+    }
+
+    Thing.prototype.checkDirtyById = function (checkID) {
+        if (checkID != this.transformTargetID) {
             return true;
         }
-        return this.parent && this.parent.checkDirty(this.transformParentID);
+        return this.parent && this.parent.checkDirtyById(this.transformParentID);
     };
 
     Thing.prototype.getToWorld = function () {
