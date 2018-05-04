@@ -2,123 +2,145 @@ var GEO = (function () {
     "use strict";
 
 
-    function makeCube(scale, uvCoords, gutterSize, generateTexture) {
+    function makeCube(scale, uvCoords, gutterSize, generateTexture, insideOut) {
         var mesh = new WGL.Mesh(),
             s = scale || 1,
             coords = uvCoords || WGL.uvFill(),
             gutter = gutterSize || 1.0 / 512;
         mesh.vertices = [
-            //   V   U
-            -s, -s, -s, //0 A
+            //   V   U  A
+            -s, -s, -s, //0
             -s, -s,  s, //1
             -s,  s,  s, //2
             -s,  s, -s, //3
-            //   V   U
-             s, -s, -s, // C
-             s, -s,  s,
-             s,  s,  s,
-             s,  s, -s,
-            //V      U
-            -s, -s, -s, // Bottom
-             s, -s, -s,
-             s, -s,  s,
-            -s, -s,  s,
-            //V      U
-            -s,  s, -s, // Top
-             s,  s, -s,
-             s,  s,  s,
+            //U  V      B
             -s,  s,  s,
-            //U  V
-            -s, -s, -s, // D
+            -s, -s,  s,
+             s, -s,  s,
+             s,  s,  s,
+            //   V   U  C
+             s, -s,  s,
+             s, -s, -s,
+             s,  s, -s,
+             s,  s,  s,
+            //V      U  Top
+             s,  s, -s,
+            -s,  s, -s,
+            -s,  s,  s,
+             s,  s,  s,
+            //U  V      D
+            -s, -s, -s,
             -s,  s, -s,
              s,  s, -s,
              s, -s, -s,
-            //U  V
-            -s, -s,  s, // B
-            -s,  s,  s,
-             s,  s,  s,
-             s, -s,  s
+            //V      U  Bottom
+            -s, -s, -s,
+             s, -s, -s,
+             s, -s,  s,
+            -s, -s,  s
         ];
 
+        var out = 1;
+        if(insideOut)
+        {
+            out = -1;
+        }
+
         mesh.normals = [
-            -1, 0, 0,
-            -1, 0, 0,
-            -1, 0, 0,
-            -1, 0, 0,
+            -out, 0, 0,
+            -out, 0, 0,
+            -out, 0, 0,
+            -out, 0, 0,
 
-             1, 0, 0,
-             1, 0, 0,
-             1, 0, 0,
-             1, 0, 0,
+            0, 0, out,
+            0, 0, out,
+            0, 0, out,
+            0, 0, out,
 
-            0, -1, 0,
-            0, -1, 0,
-            0, -1, 0,
-            0, -1, 0,
+            out, 0, 0,
+            out, 0, 0,
+            out, 0, 0,
+            out, 0, 0,
 
-            0,  1, 0,
-            0,  1, 0,
-            0,  1, 0,
-            0,  1, 0,
+            0, out, 0,
+            0, out, 0,
+            0, out, 0,
+            0, out, 0,
 
-            0, 0, -1,
-            0, 0, -1,
-            0, 0, -1,
-            0, 0, -1,
+            0, 0, -out,
+            0, 0, -out,
+            0, 0, -out,
+            0, 0, -out,
 
-            0, 0,  1,
-            0, 0,  1,
-            0, 0,  1,
-            0, 0,  1
+            0, -out, 0,
+            0, -out, 0,
+            0, -out, 0,
+            0, -out, 0,
         ];
 
         var uvSize = (1 - (2 * gutter)) / 3,
-            u0 = WGL.mapU(coords, gutter),
-            u1 = WGL.mapU(coords, gutter + uvSize),
-            u2 = WGL.mapU(coords, gutter + 2 * uvSize),
-            u3 = WGL.mapU(coords, 1 - gutter),
-            v0 = WGL.mapV(coords, gutter),
-            v1 = WGL.mapV(coords, gutter + uvSize),
-            v2 = WGL.mapV(coords, 3 * gutter + uvSize),
-            v3 = WGL.mapV(coords, 3 * gutter + 2 * uvSize);
+            uA = [
+                WGL.mapU(coords, gutter),
+                WGL.mapU(coords, gutter + uvSize),
+                WGL.mapU(coords, gutter + 2 * uvSize),
+                WGL.mapU(coords, 1 - gutter)
+            ],
+            uB = uA,
+            vA = [
+                WGL.mapV(coords, gutter),
+                WGL.mapV(coords, gutter + uvSize)
+            ],
+            vB = [
+                WGL.mapV(coords, 3 * gutter + uvSize),
+                WGL.mapV(coords, 3 * gutter + 2 * uvSize)
+            ];
+        if (insideOut)
+        {
+            uA = uA.slice().reverse();
+            vB.reverse();
+        }
         mesh.uvs = [
-            u0, v1, // A
-            u1, v1,
-            u1, v0,
-            u0, v0,
-
-            u3, v1, // C
-            u2, v1,
-            u2, v0,
-            u3, v0,
-
-            u2, v2, // Bottom
-            u2, v3,
-            u3, v3,
-            u3, v2,
-
-            u1, v2, // Top
-            u1, v3,
-            u0, v3,
-            u0, v2,
-
-            u2, v2, // D
-            u1, v2,
-            u1, v3,
-            u2, v3,
-
-            u1, v1, // B
-            u1, v0,
-            u2, v0,
-            u2, v1,
+            // A
+            uA[0], vA[1],
+            uA[1], vA[1],
+            uA[1], vA[0],
+            uA[0], vA[0],
+            // B
+            uA[1], vA[0],
+            uA[1], vA[1],
+            uA[2], vA[1],
+            uA[2], vA[0],
+            // C
+            uA[2], vA[1],
+            uA[3], vA[1],
+            uA[3], vA[0],
+            uA[2], vA[0],
+            // Top
+            uB[1], vB[1],
+            uB[1], vB[0],
+            uB[0], vB[0],
+            uB[0], vB[1],
+            // D
+            uB[2], vB[0],
+            uB[1], vB[0],
+            uB[1], vB[1],
+            uB[2], vB[1],
+            // Bottom
+            uB[2], vB[0],
+            uB[2], vB[1],
+            uB[3], vB[1],
+            uB[3], vB[0],
         ];
 
-        var twoFace = [0, 1, 3, 1, 2, 3, 4, 7, 5, 5, 7, 6];
+        var face = [0, 1, 3, 1, 2, 3];
+        if (insideOut) {
+            face = [0, 3, 1, 1, 3, 2];
+        }
         mesh.tris = [];
 
-        for (var f = 0; f < 3; ++f) {
-            for (var i = 0; i < twoFace.length; ++i) {
-                mesh.tris.push(twoFace[i] + f * 8);
+        for (var f = 0; f < 6; ++f) {
+            for (var i = 0; i < face.length; ++i) {
+                mesh.tris.push(face[i] + f * 4);
             }
         }
 
