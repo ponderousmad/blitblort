@@ -783,11 +783,23 @@ var WGL = (function () {
         batch.commit();
     }
 
+    function mapU(coords, u)
+    {
+        return coords.uMin + (u * coords.uSize);
+    }
+
+    function mapV(coords, v)
+    {
+        return coords.vMin + (v * coords.vSize);
+    }
+
     return {
         Room: Room,
         Mesh: Mesh,
         TextureAtlas: TextureAtlas,
         uvFill: function () { return { uMin: 0, vMin: 0, uSize: 1, vSize: 1 }; },
+        mapU: mapU,
+        mapV: mapV,
         setupAtlas: setupAtlas
     };
 }());

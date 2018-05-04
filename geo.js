@@ -2,9 +2,11 @@ var GEO = (function () {
     "use strict";
 
 
-    function makeCube(scale, generateTexture) {
+    function makeCube(scale, uvCoords, gutterSize, generateTexture) {
         var mesh = new WGL.Mesh(),
-            s = scale || 1;
+            s = scale || 1,
+            coords = uvCoords || WGL.uvFill(),
+            gutter = gutterSize || 1.0 / 512;
         mesh.vertices = [
             -s, -s, -s, //0
             -s, -s,  s, //1
@@ -69,11 +71,20 @@ var GEO = (function () {
             0, 0,  1
         ];
 
+        var uvSize = (1 - (2 * gutter)) / 3,
+            u0 = WGL.mapU(coords, gutter),
+            u1 = WGL.mapU(coords, gutter + uvSize),
+            u2 = WGL.mapU(coords, gutter + 2 * uvSize),
+            u3 = WGL.mapU(coords, 1 - gutterSize),
+            v0 = WGL.mapV(coords, gutter),
+            v1 = WGL.mapV(coords, gutter + uvSize),
+            v2 = WGL.mapV(coords, 3 * gutter + uvSize),
+            v3 = WGL.mapV(coords, 3 * gutter + 2 * uvSize);
         mesh.uvs = [
-            0.02, 0.02,
-            0.02, 0.32,
-            0.32, 0.32,
-            0.32, 0.02,
+            u0, v1,
+            u1, v1,
+            u1, v0,
+            u0, v0,
 
             0.02, 0.35,
             0.02, 0.65,
