@@ -5,6 +5,9 @@ var R2 = (function () {
         COLINEAR_TOLERANCE = 1e-5;
     r2.DEG_TO_RAD = Math.PI / 180;
     r2.RAD_TO_DEG = 1 / r2.DEG_TO_RAD;
+    r2.QUARTER_TURN = Math.PI / 2;
+    r2.HALF_TURN = Math.PI / 2;
+    r2.FULL_CIRCLE = 2 * Math.PI;
 
     function V(x, y) {
         this.x = x || 0;
