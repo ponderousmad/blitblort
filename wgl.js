@@ -407,16 +407,24 @@ var WGL = (function () {
             aspect = this.viewer.viewport(this.gl, this.canvas, viewportRegion),
             perspective = vrFrame ? this.viewer.perspectiveVR(viewportRegion, vrFrame) : this.viewer.perspective(aspect),
             view = this.viewer.view(),
-            matrixUniform = this.gl.getUniformLocation(shader, program.mvpUniform),
+            modelMatrixUniform = this.gl.getUniformLocation(shader, program.modelUniform),
+            vpMatrixUniform = this.gl.getUniformLocation(shader, program.vpUniform),
             nLocation = program.normalUniform ? this.gl.getUniformLocation(shader, program.normalUniform) : null;
-        if (transform) {
-            view = R3.matmul(transform, view);
+        if (!transform) {
+            transform = new R3.M();
         }
-        var mvp = R3.matmul(perspective, view);
-        this.gl.uniformMatrix4fv(matrixUniform, false, mvp.m);
+        this.gl.uniformMatrix4fv(modelMatrixUniform, false, transform.m);
+        var vp = R3.matmul(perspective, view);
+        this.gl.uniformMatrix4fv(vpMatrixUniform, false, vp.m);
         if (nLocation) {
             var normal = R3.identity();
             this.gl.uniformMatrix4fv(nLocation, false, normal.m);
+            if(this.light)
+            {
+                var lpu = program.lightPosUniform ? this.gl.getUniformLocation(shader, program.lightPosUniform) : null;
+                var lightPos = this.light.position;
+                this.gl.uniform3f(lpu, lightPos.x, lightPos.y, lightPos.z);
+            }
         }
         program.view = view;
         program.perspective = perspective;
@@ -424,11 +432,14 @@ var WGL = (function () {
 
     Room.prototype.setTransform = function (program, transform) {
         var shader = program.shader,
-            mvp = R3.matmul(program.view, transform),
-            matrixUniform = this.gl.getUniformLocation(shader, program.mvpUniform),
+            vp = R3.matmul(program.perspective, program.view),
+            modelMatrixUniform = this.gl.getUniformLocation(shader, program.modelUniform), 
+            vpMatrixUniform = this.gl.getUniformLocation(shader, program.vpUniform),
             nLocation = program.normalUniform ? this.gl.getUniformLocation(shader, program.normalUniform) : null;
-        R3.matmul(program.perspective, mvp, mvp);
-        this.gl.uniformMatrix4fv(matrixUniform, false, mvp.m);
+        
+        this.gl.uniformMatrix4fv(modelMatrixUniform, false, transform.m);
+        this.gl.uniformMatrix4fv(vpMatrixUniform, false, vp.m);
+
         if (nLocation) {
             var normal = transform.inverse();
             normal.transpose();
@@ -449,12 +460,14 @@ var WGL = (function () {
         return this.setupShaderProgram(vertexSource, fragmentSource);
     };
 
-    Room.prototype.programFromElements = function (vertexElement, fragmentElement, textures, normals, colors) {
+    Room.prototype.programFromElements = function (vertexElement, fragmentElement, textures, normals, colors, light) {
         var shader = this.shaderFromElements(vertexElement, fragmentElement);
         return {
             shader: shader,
-            mvpUniform: "uMVPMatrix",
+            modelUniform: "uModelMatrix",
+            vpUniform: "uVPMatrix",
             normalUniform: normals ? "uNormalMatrix" : null,
+            lightPosUniform: light ? "uLightPos" : null,
             vertexPosition: this.bindVertexAttribute(shader, "aPos"),
             vertexNormal: normals ? this.bindVertexAttribute(shader, "aNormal") : null,
             vertexUV: textures ? this.bindVertexAttribute(shader, "aUV") : null,
