@@ -73,10 +73,13 @@ var R2 = (function () {
         return new V(this.x / length, this.y / length);
     };
 
-
     V.prototype.dot = function (v) {
         return this.x * v.x + this.y * v.y;
     };
+
+    V.prototype.cross = function (v) {
+        return this.x * v.y - this.y * v.x;
+    }
 
     V.prototype.interpolate = function (v, p) {
         return new V(
