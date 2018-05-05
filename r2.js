@@ -314,9 +314,18 @@ var R2 = (function () {
         return normal;
     };
 
+    Segment.prototype.angle = function () {
+        var dir = this.direction();
+        return Math.atan2(dir.y, dir.x);
+    }
+
     Segment.prototype.length = function () {
         return r2.pointDistance(this.end, this.start);
     };
+
+    Segment.prototype.interpolate = function (t) {
+        return r2.addVectors(this.start.scaled(t), this.end.scaled(1-t));
+    }
 
     Segment.prototype.intersects = function (other) {
         return r2.segmentsIntersectPP(this.start, this.end, other.start, other.end);
@@ -402,6 +411,10 @@ var R2 = (function () {
     AABox.prototype.inflated = function (w, h) {
         return new AABox(this.left - w, this.top - h, this.width + 2 * w, this.height + 2 * h);
     };
+
+    AABox.prototype.interpolate = function (p) {
+        return new r2.V(this.left + this.width * p.x, this.top + this.height * p.y);
+    }
 
     r2.AABox = AABox;
 
