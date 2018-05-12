@@ -145,9 +145,11 @@ var BLORT = (function () {
     };
 
     Tune.prototype.setVolume = function (volume) {
-        this.volume = volume;
-        if (this.playing) {
-            this.gain.gain.value = volume;
+        if (volume != this.volume) {
+            this.volume = volume;
+            if (this.playing) {
+                this.gain.gain.value = volume;
+            }
         }
     };
 
