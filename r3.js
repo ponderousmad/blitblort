@@ -460,7 +460,7 @@ var R3 = (function () {
                 ( m21 - m12 ) / s
             );
         }
-    }
+    };
 
     // Based on http://paulbourke.net/miscellaneous/determinant/
     M.prototype.determinant = function (c) {

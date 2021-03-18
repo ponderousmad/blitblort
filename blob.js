@@ -168,7 +168,7 @@ var BLOB = (function () {
 
     Thing.prototype.checkDirty = function () {
         return this.checkDirtyById(this.transformID);
-    }
+    };
 
     Thing.prototype.checkDirtyById = function (checkID) {
         if (checkID != this.transformTargetID) {
