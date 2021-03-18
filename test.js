@@ -46,7 +46,7 @@ var TEST = (function () {
     };
 
     function fail(message, flag, comment) {
-        if(flag === TEST.DISABLE)
+        if (flag === TEST.DISABLE)
         {
             return;
         }
@@ -98,8 +98,8 @@ var TEST = (function () {
         }
     };
     TEST.equals = function (a, b, flag, comment) {
-        if(Array.isArray(a) && Array.isArray(b) && a.length == b.length) {
-            if(a.every((element, index)=> element === b[index]))
+        if (Array.isArray(a) && Array.isArray(b) && a.length == b.length) {
+            if (a.every((element, index)=> element === b[index]))
             {
                 return;
             }
@@ -109,8 +109,8 @@ var TEST = (function () {
         }
     };
     TEST.notEquals = function (a, b, flag, comment) {
-        if(Array.isArray(a) && Array.isArray(b) && a.length == b.length) {
-            if(a.every((element, index)=> element === b[index]))
+        if (Array.isArray(a) && Array.isArray(b) && a.length == b.length) {
+            if (a.every((element, index)=> element === b[index]))
             {
                 fail("Expected " + String(a) + " !== " + String(b) + ", but they match!", flag, comment);
                 return;
@@ -367,10 +367,10 @@ var TEST = (function () {
         ];
 
         TEST.run("Self Test - Pass", passTests);
-        if(flag === TEST.WARNING || flag === TEST.ASSERT) {
+        if (flag === TEST.WARNING || flag === TEST.ASSERT) {
             TEST.run("Self Test - Warn", warnTests);
         }
-        if(flag === TEST.ASSERT) {
+        if (flag === TEST.ASSERT) {
             for (var f = 0; f < failTests.length; ++f) {
                 var passed = TEST.run("Self Test - Fail " + (f + 1), failTests[f], true);
                 if (passed)

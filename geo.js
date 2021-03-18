@@ -41,7 +41,7 @@ var GEO = (function () {
         ];
 
         var out = 1;
-        if(insideOut)
+        if (insideOut)
         {
             out = -1;
         }

@@ -419,7 +419,7 @@ var WGL = (function () {
         if (nLocation) {
             var normal = R3.identity();
             this.gl.uniformMatrix4fv(nLocation, false, normal.m);
-            if(this.light)
+            if (this.light)
             {
                 var lpu = program.lightPosUniform ? this.gl.getUniformLocation(shader, program.lightPosUniform) : null;
                 var lightPos = this.light.position;
@@ -671,7 +671,7 @@ var WGL = (function () {
 
     function sizeAtlas(width, height, count) {
         var size = nextPowerOfTwo(Math.max(width, height));
-        while(atlasCount(width, height, size) < count) {
+        while (atlasCount(width, height, size) < count) {
             size *= 2;
         }
         return size;

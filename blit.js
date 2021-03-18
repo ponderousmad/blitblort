@@ -214,7 +214,7 @@ var BLIT = (function () {
     Flip.prototype.updatePlayback = function (elapsed, playback) {
         var totalLength = playback.timePerFrame * this.frames.length;
         playback.elapsed += elapsed;
-        if(playback.loop) {
+        if (playback.loop) {
             playback.elapsed = playback.elapsed % totalLength;
         }
         if (playback.elapsed > totalLength) {

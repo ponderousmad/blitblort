@@ -275,7 +275,7 @@ var BLUMP = (function () {
                         if (corners == 4) {
                             addTri(mesh, vertexRemap, iUR, iLR, iLL);
                             addTri(mesh, vertexRemap, iUR, iLL, iUL);
-                        } else if(!upperLeft) {
+                        } else if (!upperLeft) {
                             addTri(mesh, vertexRemap, iUR, iLR, iLL);
                         } else if (!upperRight) {
                             addTri(mesh, vertexRemap, iUL, iLR, iLL);

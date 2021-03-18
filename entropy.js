@@ -1,7 +1,7 @@
 var ENTROPY = (function () {
     "use strict";
 
-        // Port of this: https://en.wikipedia.org/wiki/Mersenne_Twister#Python_implementation
+    // Port of this: https://en.wikipedia.org/wiki/Mersenne_Twister#Python_implementation
     function MersenneTwister(seed) {
         // Initialize the index to 0
         this.INDEX_COUNT = 624;

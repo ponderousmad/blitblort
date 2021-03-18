@@ -115,9 +115,9 @@ var IO = (function (TICK, BLORT) {
         function buttonToButtons(button) {
             if (button === 1) {
                 return 4;
-            } else if(button === 2) {
+            } else if (button === 2) {
                 return 2;
-            } else if(button >= 0) {
+            } else if (button >= 0) {
                 return 1 << b;
             }
             return 0;

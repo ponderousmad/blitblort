@@ -717,7 +717,7 @@ var R3 = (function () {
     };
 
     AABox.prototype.envelope = function (p) {
-        if(p instanceof AABox) {
+        if (p instanceof AABox) {
             if (p.min) {
                 this.envelope(p.min);
                 this.envelope(p.max);
