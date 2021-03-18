@@ -154,22 +154,28 @@ var MAIN = (function () {
         return room;
     }
 
-    function runTestSuites() {
+    function runTestSuites(selfTestVerifyFail, includeSlow) {
         TEST.resetCounts();
-        // These tests are slow, don't want to run them all the time.
-        if (TEST.INCLUDE_SLOW) {
-            ENTROPY.testSuite();
-        }
+
+        TEST.selfTestSuite(selfTestVerifyFail);
 
         if (window.hasOwnProperty("R2")) {
             R2.testSuite();
         }
+
         if (window.hasOwnProperty("R3")) {
             R3.testSuite();
         }
+
         if (window.hasOwnProperty("IMPROC")) {
             IMPROC.testSuite();
         }
+
+        // These tests are slow, don't want to run them all the time.
+        if (includeSlow) {
+            ENTROPY.testSuite();
+        }
+
         return TEST.failCount();
     }
 
