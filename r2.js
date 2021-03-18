@@ -5,6 +5,9 @@ var R2 = (function () {
         COLINEAR_TOLERANCE = 1e-5;
     r2.DEG_TO_RAD = Math.PI / 180;
     r2.RAD_TO_DEG = 1 / r2.DEG_TO_RAD;
+    r2.QUARTER_TURN = Math.PI / 2;
+    r2.HALF_TURN = Math.PI / 2;
+    r2.FULL_CIRCLE = 2 * Math.PI;
 
     function V(x, y) {
         this.x = x || 0;
@@ -70,10 +73,13 @@ var R2 = (function () {
         return new V(this.x / length, this.y / length);
     };
 
-
     V.prototype.dot = function (v) {
         return this.x * v.x + this.y * v.y;
     };
+
+    V.prototype.cross = function (v) {
+        return this.x * v.y - this.y * v.x;
+    }
 
     V.prototype.interpolate = function (v, p) {
         return new V(
@@ -311,9 +317,18 @@ var R2 = (function () {
         return normal;
     };
 
+    Segment.prototype.angle = function () {
+        var dir = this.direction();
+        return Math.atan2(dir.y, dir.x);
+    }
+
     Segment.prototype.length = function () {
         return r2.pointDistance(this.end, this.start);
     };
+
+    Segment.prototype.interpolate = function (t) {
+        return r2.addVectors(this.start.scaled(t), this.end.scaled(1-t));
+    }
 
     Segment.prototype.intersects = function (other) {
         return r2.segmentsIntersectPP(this.start, this.end, other.start, other.end);
@@ -399,6 +414,10 @@ var R2 = (function () {
     AABox.prototype.inflated = function (w, h) {
         return new AABox(this.left - w, this.top - h, this.width + 2 * w, this.height + 2 * h);
     };
+
+    AABox.prototype.interpolate = function (p) {
+        return new r2.V(this.left + this.width * p.x, this.top + this.height * p.y);
+    }
 
     r2.AABox = AABox;
 
