@@ -4,24 +4,31 @@ var BLORT = (function () {
     var gAudioContext = null,
         gVorbisSupport = false,
         gNoteOn = false;
-    try {
-        var Constructor = window.AudioContext || window.webkitAudioContext;
-        gAudioContext = new Constructor();
 
-        // http://diveintohtml5.info/everything.html#audio-vorbis
-        var a = document.createElement('audio');
-        if (!!(a.canPlayType && a.canPlayType('audio/ogg; codecs="vorbis"').replace(/no/, ''))) {
-            gVorbisSupport = true;
-            console.log("Using ogg/vorbis");
-        } else {
-            console.log("Using mp3/wav fallback");
+    function init() {
+        try {
+            var Constructor = window.AudioContext || window.webkitAudioContext;
+            gAudioContext = new Constructor();
+
+            // http://diveintohtml5.info/everything.html#audio-vorbis
+            var a = document.createElement('audio');
+            if (!!(a.canPlayType && a.canPlayType('audio/ogg; codecs="vorbis"').replace(/no/, ''))) {
+                gVorbisSupport = true;
+                console.log("Using ogg/vorbis");
+            } else {
+                console.log("Using mp3/wav fallback");
+            }
+        } catch (error) {
+            console.log("Error initializing audio:");
+            console.log(error);
         }
-    } catch (error) {
-        console.log("Error initializing audio:");
-        console.log(error);
     }
 
     function audioNoteOn() {
+        if(gAudioContext === null)
+        {
+            init();
+        }
         if (!gNoteOn) {
             gNoteOn = true;
             if (gAudioContext !== null) {
@@ -167,6 +174,7 @@ var BLORT = (function () {
     return {
         Noise: Noise,
         Tune: Tune,
+        init: init,
         playDynamic: playDynamic,
         noteOn: audioNoteOn
     };
