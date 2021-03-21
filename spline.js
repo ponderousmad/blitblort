@@ -40,12 +40,33 @@ var SPLINE = (function () {
     };
 
     BezierCurve.prototype.build = function (count, out, prior, post) {
-        var points = out === undefined ? [] : out,
-            stepSize = 1 / count;
-        for (var c = 0; c <= count; ++c) {
-            points.push(this.evaluate(c * stepSize, undefined, prior, post)[0]);
+        var result = out === undefined ? [] : out;
+        if (this.points.length === 0) {
+            if (prior && post) {
+                result.push(prior);
+                result.push(post);
+            } else {
+                throw new Error("Expected both prior and post (assuming this is last linear closed segment)");
+            }
+
+        } else if (this.points.length == 1) {
+            if (prior) {
+                result.push(prior);
+            }
+            result.push(this.points[0]);
+            if (post) {
+                result.push(post);
+            }
+
+        } else if (result.length == 2 && !(prior || post)) {
+            result.push(...this.points);
         }
-        return points;
+
+        var stepSize = 1 / count;
+        for (var c = 0; c <= count; ++c) {
+            result.push(this.evaluate(c * stepSize, undefined, prior, post)[0]);
+        }
+        return result;
     };
 
     function Spline(closed) {
@@ -57,12 +78,12 @@ var SPLINE = (function () {
         this.segments.push(segment);
     };
 
-    Spline.prototype.build = function (segmentCount, out) {
+    Spline.prototype.build = function (tesselation, out) {
         var points = out === undefined ? [] : out;
         for (var s = 0; s < this.segments.length; ++s) {
             var prior = s > 0 ? this.segments[s-1].end() : null;
             var post = this.closed && s === this.segments.length - 1 ? this.segments[0].start() : null;
-            this.segments[s].build(segmentCount, points, prior, post);
+            this.segments[s].build(tesselation, points, prior, post);
         }
         return points;
     };
