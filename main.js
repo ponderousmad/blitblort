@@ -4,7 +4,7 @@ var MAIN = (function () {
     function safeWidth() {
         var inner = window.innerWidth,
             client = document.documentElement.clientWidth || inner,
-            body = document.getElementsByTagName('body")[0].clientWidth || inner;
+            body = document.getElementsByTagName("body")[0].clientWidth || inner;
 
         return Math.min(inner, client, body);
     }
