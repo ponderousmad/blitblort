@@ -25,8 +25,7 @@ var BLORT = (function () {
     }
 
     function audioNoteOn() {
-        if (gAudioContext === null)
-        {
+        if (gAudioContext === null) {
             init();
         }
         if (!gNoteOn) {
