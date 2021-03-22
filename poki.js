@@ -1,3 +1,4 @@
+// Pointer Or Keyboard Input
 var POKI = (function (TICK, BLORT) {
     "use strict";
 
@@ -42,7 +43,7 @@ var POKI = (function (TICK, BLORT) {
         var self = this;
 
         // When regaining focus, basically assume all bets are off.
-        document.addEventListener('visibilitychange', () => {
+        document.addEventListener("visibilitychange", () => {
             if (!document.hidden) {
                 if (self.log) {
                     console.log("Resetting keyboard state on shown.");
@@ -54,7 +55,7 @@ var POKI = (function (TICK, BLORT) {
             }
         });
 
-        document.addEventListener('focus', () => {
+        document.addEventListener("focus", () => {
             if (self.log) {
                 console.log("Resetting keyboard state on focus.");
             }
@@ -281,13 +282,13 @@ var POKI = (function (TICK, BLORT) {
         var self = this,
             capture = preventDefault;
         function mouseButtons(event, eventType) {
-            if ('buttons' in event) {
+            if ("buttons" in event) {
                 return event.buttons;
             }
             var buttons = 0;
-            if ('which' in event) {
+            if ("which" in event) {
                 buttons = whichToButtons(event.which);
-            } else if ('button' in ev) {
+            } else if ("button" in ev) {
                 buttons = buttonToButtons(ev.button);
             }
 

@@ -685,10 +685,10 @@ var WGL = (function () {
         this.placed = 0;
         this.size = sizeAtlas(width, height, count);
         this.capacity = atlasCount(width, height, this.size);
-        this.canvas = document.createElement('canvas');
+        this.canvas = document.createElement("canvas");
         this.canvas.width = this.size;
         this.canvas.height = this.size;
-        this.context = this.canvas.getContext('2d');
+        this.context = this.canvas.getContext("2d");
         this.context.clearRect(0, 0, this.size, this.size);
     }
 
@@ -768,8 +768,8 @@ var WGL = (function () {
                     }
 
                     if (scale) {
-                        var canvas = document.createElement('canvas'),
-                            context = canvas.getContext('2d');
+                        var canvas = document.createElement("canvas"),
+                            context = canvas.getContext("2d");
                         canvas.width = resolution;
                         canvas.height = resolution;
                         context.clearRect(0, 0, resolution, resolution);

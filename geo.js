@@ -148,8 +148,8 @@ var GEO = (function () {
         mesh.finalize(new R3.V(1,1,1), new R3.V(-1,-1,-1));
 
         if (generateTexture) {
-            var canvas = document.createElement('canvas'),
-                context = canvas.getContext('2d'),
+            var canvas = document.createElement("canvas"),
+                context = canvas.getContext("2d"),
                 SIZE = 128,
                 THIRD = 126/3,
                 G = 1,

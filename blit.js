@@ -81,8 +81,8 @@ var BLIT = (function () {
         var tintCanvas = noCache ? null : checkTintCache(image, tint);
 
         if (!tintCanvas) {
-            tintCanvas = document.createElement('canvas');
-            var tintContext = tintCanvas.getContext('2d');
+            tintCanvas = document.createElement("canvas");
+            var tintContext = tintCanvas.getContext("2d");
             tintCanvas.width = image.width;
             tintCanvas.height = image.height;
             tintContext.clearRect(0, 0, image.width + 2, image.height + 2);

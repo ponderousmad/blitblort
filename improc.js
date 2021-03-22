@@ -32,8 +32,8 @@ var IMPROC = (function () {
 
     function getPixels(image, x, y, width, height) {
         if (scratchCanvas === null) {
-            scratchCanvas = document.createElement('canvas');
-            scratchContext = scratchCanvas.getContext('2d');
+            scratchCanvas = document.createElement("canvas");
+            scratchContext = scratchCanvas.getContext("2d");
         }
 
         scratchCanvas.width = width;
@@ -46,8 +46,8 @@ var IMPROC = (function () {
     }
 
     function cropImage(image, x, y, width, height) {
-        var canvas = document.createElement('canvas'),
-            context = canvas.getContext('2d');
+        var canvas = document.createElement("canvas"),
+            context = canvas.getContext("2d");
 
         canvas.width = width;
         canvas.height = height;
@@ -75,8 +75,8 @@ var IMPROC = (function () {
                 TEST.tolEquals(byteToFraction(127), 0.498, 0.0005);
             },
             testCrop = function () {
-                var canvas = document.createElement('canvas'),
-                    context = canvas.getContext('2d');
+                var canvas = document.createElement("canvas"),
+                    context = canvas.getContext("2d");
 
                 canvas.width = 20;
                 canvas.height = 40;
@@ -90,8 +90,8 @@ var IMPROC = (function () {
                 TEST.equals(cropped.height, 10);
             },
             testProcess = function () {
-                var canvas = document.createElement('canvas'),
-                    context = canvas.getContext('2d');
+                var canvas = document.createElement("canvas"),
+                    context = canvas.getContext("2d");
 
                 canvas.width = 20;
                 canvas.height = 40;

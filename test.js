@@ -230,11 +230,11 @@ var TEST = (function () {
                 TEST.notDefined(undefined);
             },
             function testEquality() {
-                TEST.equals('a', 'a');
+                TEST.equals("a", "a");
                 TEST.equals(1, 1);
-                TEST.equals(['a'], ['a']);
+                TEST.equals(["a"], ["a"]);
 
-                TEST.notEquals('a', 'b');
+                TEST.notEquals("a", "b");
                 TEST.notEquals(1, 1.1);
                 TEST.notEquals({}, []);
 
@@ -297,11 +297,11 @@ var TEST = (function () {
                 TEST.notDefined(a=>a, TEST.WARNING, "Identity crisis!");
             },
             function testEquality() {
-                TEST.notEquals('a', 'a', TEST.WARNING);
+                TEST.notEquals("a", "a", TEST.WARNING);
                 TEST.notEquals(1, 1, TEST.WARNING);
-                TEST.notEquals(['a'], ['a'], TEST.WARNING);
+                TEST.notEquals(["a"], ["a"], TEST.WARNING);
 
-                TEST.equals('a', 'b', TEST.WARNING, "One of these things is not like the other");
+                TEST.equals("a", "b", TEST.WARNING, "One of these things is not like the other");
                 TEST.equals(1, 1.1, TEST.WARNING, "One of these things just doesn't belong");
                 TEST.equals({}, [], TEST.WARNING);
 

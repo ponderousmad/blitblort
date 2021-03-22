@@ -11,8 +11,8 @@ var BLORT = (function () {
             gAudioContext = new Constructor();
 
             // http://diveintohtml5.info/everything.html#audio-vorbis
-            var a = document.createElement('audio');
-            if (!!(a.canPlayType && a.canPlayType('audio/ogg; codecs="vorbis"').replace(/no/, ''))) {
+            var a = document.createElement("audio");
+            if (!!(a.canPlayType && a.canPlayType('audio/ogg; codecs="vorbis"').replace(/no/, ""))) {
                 gVorbisSupport = true;
                 console.log("Using ogg/vorbis");
             } else {

@@ -4,7 +4,7 @@ var MAIN = (function () {
     function safeWidth() {
         var inner = window.innerWidth,
             client = document.documentElement.clientWidth || inner,
-            body = document.getElementsByTagName('body')[0].clientWidth || inner;
+            body = document.getElementsByTagName('body")[0].clientWidth || inner;
 
         return Math.min(inner, client, body);
     }
@@ -12,7 +12,7 @@ var MAIN = (function () {
     function safeHeight() {
         var inner = window.innerHeight,
             client = document.documentElement.clientHeight || inner,
-            body = document.getElementsByTagName('body')[0].clientHeight || inner;
+            body = document.getElementsByTagName("body")[0].clientHeight || inner;
 
         return Math.min(inner, client, body) - 5;
     }
@@ -116,7 +116,7 @@ var MAIN = (function () {
 
                     window.addEventListener("vrdisplayactivate", requestPresentVR, false);
                     window.addEventListener("vrdisplaydeactivate", requestExitVR, false);
-                    window.addEventListener('vrdisplaypresentchange', onPresentChange, false);
+                    window.addEventListener("vrdisplaypresentchange", onPresentChange, false);
                 }
             });
         } else if (navigator.getVRDevices) {
