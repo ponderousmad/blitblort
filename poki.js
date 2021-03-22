@@ -39,7 +39,7 @@ var POKI = (function (TICK, BLORT) {
         this.shiftCount = 0;
         this.ctrlCount = 0;
         this.altCount = 0;
-        this.log = true;
+        this.log = false;
         var self = this;
 
         // When regaining focus, basically assume all bets are off.
