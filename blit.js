@@ -1,3 +1,10 @@
+// Sprite drawing module
+// BLIT name comes from bit blitting functions that were an efficient way
+// to implement these on early computers. The term comes from instruction set
+// of the Xerox Alto computer which had BitBLT routine for binary block transfer.
+// Despite the name, this module just uses standard canvas compositing operations
+// and allows for rotations and mirroring of the image.
+// There's also the Flip object, which makes it easy to work with sprite animations.
 var BLIT = (function () {
     "use strict";
 
