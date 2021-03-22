@@ -288,8 +288,8 @@ var POKI = (function (TICK, BLORT) {
             var buttons = 0;
             if ("which" in event) {
                 buttons = whichToButtons(event.which);
-            } else if ("button" in ev) {
-                buttons = buttonToButtons(ev.button);
+            } else if ("button" in event) {
+                buttons = buttonToButtons(event.button);
             }
 
             if (eventType === "down") {
