@@ -1,4 +1,4 @@
-var IO = (function (TICK, BLORT) {
+var POKI = (function (TICK, BLORT) {
     "use strict";
 
     const KEYS = {
@@ -505,3 +505,6 @@ var IO = (function (TICK, BLORT) {
         downloadJSON: downloadJSON
     };
 }(TICK, BLORT));
+
+// Temporary, for porting
+var IO = POKI;
