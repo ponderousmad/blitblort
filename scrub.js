@@ -39,11 +39,20 @@ var SCRUB = (function (TICK) {
     };
 
     Sequence.prototype.setStart = function (startValue, startTags) {
-        this.start = makeEntry(startValue, undefined, startTags);
+        this.start = this.makeEntry(startValue, undefined, startTags);
     };
 
     Sequence.prototype.setEnd = function (endValue, endTags) {
-        this.end = makeEntry(endValue, undefined, endTags);
+        this.end = this.makeEntry(endValue, undefined, endTags);
+    };
+
+    Sequence.prototype.clear = function () {
+        // Leaves start and end intact.
+        this.entries.length = 0;
+    };
+
+    Sequence.prototype.append = function(data) {
+        this.entries.push(...data.entries);
     };
 
     return {
