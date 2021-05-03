@@ -1,6 +1,48 @@
 var SPLINE = (function () {
     "use strict";
 
+    // Given a set of points, and an interpolation parameter, compute
+    // the curve point assuming that the points are the bezier control hull
+    // of the corresponding degree.
+    function evaluateBezier(parameter, points) {
+        // Compute the values of the current 'depth' and write
+        // results in place to the points argument.
+        for (var i = 1; i < points.length; ++i) {
+            points[i-1] = points[i-1].interpolate(points[i], parameter);
+        }
+        // Each recurse into evaluate computes one less result point.
+        points.length = points.length - 1;
+        if (points.length === 1) {
+            return points;
+        }
+        return evaluateBezier(parameter, points);
+    }
+
+    // Get all the control points for this section as a single array
+    function makeHull(points, prior, post) {
+        var hull = [];
+        if (prior) {
+            hull.push(prior);
+        }
+        hull.push(...points);
+        if (post) {
+            hull.push(post);
+        }
+        return hull;
+    }
+
+    function tesselateBezier(hull, count, result) {
+        if(hull.length < 3) {
+            // Linear segment
+            result.push(...hull);
+        }
+        var stepSize = 1 / count;
+        for (var c = 0; c <= count; ++c) {
+            result.push(evaluateBezier(c * stepSize, hull.slice())[0]);
+        }
+        return result;
+    }
+
     function BezierCurve() {
         this.points =  [];
     }
@@ -17,83 +59,39 @@ var SPLINE = (function () {
         return this.points[this.points.length - 1];
     };
 
-    function interpolate(a, b, parameter, results) {
-        results.push(a.interpolate(b, parameter));
-    }
-
-    BezierCurve.prototype.evaluate = function (parameter, points, prior, post) {
-        var results = [];
-        points = points || this.points;
-        if (prior) {
-            interpolate(prior, this.start(), parameter, results);
-        }
-        for (var i = 1; i < points.length; ++i) {
-            interpolate(points[i-1], points[i], parameter, results);
-        }
-        if (post) {
-            interpolate(this.end(), post, parameter, results);
-        }
-        if (results.length === 1) {
-            return results;
-        }
-        return this.evaluate(parameter, results);
+    BezierCurve.prototype.evaluate = function (parameter, prior, post) {
+        return evaluateBezier(parameter, makeHull(this.points, prior, post));
     };
 
-    BezierCurve.prototype.build = function (count, out, prior, post) {
-        var result = out === undefined ? [] : out;
-        if (this.points.length === 0) {
-            if (prior && post) {
-                result.push(prior);
-                result.push(post);
-            } else {
-                throw new Error("Expected both prior and post (assuming this is last linear closed segment)");
-            }
-
-        } else if (this.points.length == 1) {
-            if (prior) {
-                result.push(prior);
-            }
-            result.push(this.points[0]);
-            if (post) {
-                result.push(post);
-            }
-
-        } else if (result.length == 2 && !(prior || post)) {
-            result.push(...this.points);
-        }
-
-        var stepSize = 1 / count;
-        for (var c = 0; c <= count; ++c) {
-            result.push(this.evaluate(c * stepSize, undefined, prior, post)[0]);
-        }
-        return result;
+    BezierCurve.prototype.tesselate = function (tesselation, result, prior, post) {
+        return tesselateBezier(makeHull(this.points, prior, post), tesselation, result);
     };
 
-    function Spline(closed) {
+    function Path(closed) {
         this.segments = [];
         this.closed = closed;
     }
 
-    Spline.prototype.addSegment = function (segment) {
+    Path.prototype.addSegment = function (segment) {
         this.segments.push(segment);
     };
 
-    Spline.prototype.build = function (tesselation, out) {
+    Path.prototype.build = function (tesselation, out) {
         var points = out === undefined ? [] : out;
         for (var s = 0; s < this.segments.length; ++s) {
             var prior = s > 0 ? this.segments[s-1].end() : null;
             var post = this.closed && s === this.segments.length - 1 ? this.segments[0].start() : null;
-            this.segments[s].build(tesselation, points, prior, post);
+            this.segments[s].tesselate(tesselation, points, prior, post);
         }
         return points;
     };
 
-    Spline.prototype.isClosed = function () {
+    Path.prototype.isClosed = function () {
         return this.closed;
     };
 
     return {
         BezierCurve: BezierCurve,
-        Spline: Spline
+        Path: Path
     };
 }());
