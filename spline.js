@@ -67,9 +67,20 @@ var SPLINE = (function () {
         return tesselateBezier(makeHull(this.points, prior, post), tesselation, result);
     };
 
+    BezierCurve.prototype.getData = function () {
+        let pointData = [];
+        for (let p = 0; p < this.points.length; ++p) {
+            pointData.push({x:this.points[p].x, y:this.points[p].y});
+        }
+        return {
+            type:"BezierCurve",
+            points:pointData
+        };
+    }
+
     function Path(closed) {
         this.segments = [];
-        this.closed = closed;
+        this.closed = closed === true;
     }
 
     Path.prototype.addSegment = function (segment) {
@@ -89,6 +100,17 @@ var SPLINE = (function () {
     Path.prototype.isClosed = function () {
         return this.closed;
     };
+
+    Path.prototype.getData = function () {
+        let segmentData = [];
+        for (let s = 0; s < this.segments.length; ++s) {
+            segmentData.push(this.segments[s].getData());
+        }
+        return {
+            closed: this.closed,
+            segments: segmentData
+        };
+    }
 
     return {
         BezierCurve: BezierCurve,
