@@ -348,7 +348,7 @@ var POKI = (function (TICK, BLORT) {
         element.addEventListener(
             "mouseup", function(event) { updateState(event, "up"); }, capture
         );
-        element.addEventListener("wheel", updateWheel, true);
+        element.addEventListener("wheel", updateWheel, {capture:true, passive:false});
     }
 
     Mouse.prototype.postUpdate = function () {
@@ -391,9 +391,9 @@ var POKI = (function (TICK, BLORT) {
         element.addEventListener("touchstart", function (e) {
             handleTouch(e);
             markStarted(e.targetTouches);
-        });
+        }, {passive:false});
         element.addEventListener("touchend", handleTouch);
-        element.addEventListener("touchmove", handleTouch);
+        element.addEventListener("touchmove", handleTouch, {passive:false});
         element.addEventListener("touchcancel", handleTouch);
     }
 
