@@ -1,7 +1,7 @@
 var R2 = (function () {
     "use strict";
 
-    var r2 = {},
+    let r2 = {},
         COLINEAR_TOLERANCE = 1e-5;
     r2.DEG_TO_RAD = Math.PI / 180;
     r2.RAD_TO_DEG = 1 / r2.DEG_TO_RAD;
@@ -9,88 +9,90 @@ var R2 = (function () {
     r2.HALF_TURN = Math.PI / 2;
     r2.FULL_CIRCLE = 2 * Math.PI;
 
-    function V(x, y) {
-        this.x = x || 0;
-        this.y = y || 0;
+    class V extends Object {
+        constructor(x, y) {
+            super();
+            this.x = x || 0;
+            this.y = y || 0;
+        }
+        clone() {
+            return new V(this.x, this.y);
+        }
+
+        set(x, y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        copy(v) {
+            this.x = v.x;
+            this.y = v.y;
+        }
+
+        add(v) {
+            this.x += v.x;
+            this.y += v.y;
+        }
+
+        addScaled(v, s) {
+            this.x += v.x * s;
+            this.y += v.y * s;
+        }
+
+        sub(v) {
+            this.x -= v.x;
+            this.y -= v.y;
+        }
+
+        scale(s) {
+            this.x *= s;
+            this.y *= s;
+        }
+
+        scaled(s) {
+            return new R2.V(this.x * s, this.y * s);
+        }
+
+        lengthSq() {
+            return this.x * this.x + this.y * this.y;
+        }
+
+        length() {
+            return Math.sqrt(this.x * this.x + this.y * this.y);
+        }
+
+        normalize() {
+            const length = this.length();
+            this.x /= length;
+            this.y /= length;
+        }
+
+        normalized() {
+            const length = this.length();
+            return new V(this.x / length, this.y / length);
+        }
+
+        dot(v) {
+            return this.x * v.x + this.y * v.y;
+        }
+
+        cross(v) {
+            return this.x * v.y - this.y * v.x;
+        }
+
+        interpolate(v, p) {
+            return new V(
+                this.x * (1 - p) + v.x * p,
+                this.y * (1 - p) + v.y * p
+            );
+        }
+
+        toString() {
+            return "(" + this.x + ", " + this.y + ")";
+        }
     }
 
     r2.V = V;
-
-    V.prototype.clone = function () {
-        return new V(this.x, this.y);
-    };
-
-    V.prototype.set = function (x, y) {
-        this.x = x;
-        this.y = y;
-    };
-
-    V.prototype.copy = function (v) {
-        this.x = v.x;
-        this.y = v.y;
-    };
-
-    V.prototype.add = function (v) {
-        this.x += v.x;
-        this.y += v.y;
-    };
-
-    V.prototype.addScaled = function (v, s) {
-        this.x += v.x * s;
-        this.y += v.y * s;
-    };
-
-    V.prototype.sub = function (v) {
-        this.x -= v.x;
-        this.y -= v.y;
-    };
-
-    V.prototype.scale = function (s) {
-        this.x *= s;
-        this.y *= s;
-    };
-
-    V.prototype.scaled = function (s) {
-        return new R2.V(this.x * s, this.y * s);
-    };
-
-    V.prototype.lengthSq = function () {
-        return this.x * this.x + this.y * this.y;
-    };
-
-    V.prototype.length = function () {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-    };
-
-    V.prototype.normalize = function () {
-        var length = this.length();
-        this.x /= length;
-        this.y /= length;
-    };
-
-    V.prototype.normalized = function () {
-        var length = this.length();
-        return new V(this.x / length, this.y / length);
-    };
-
-    V.prototype.dot = function (v) {
-        return this.x * v.x + this.y * v.y;
-    };
-
-    V.prototype.cross = function (v) {
-        return this.x * v.y - this.y * v.x;
-    };
-
-    V.prototype.interpolate = function (v, p) {
-        return new V(
-            this.x * (1 - p) + v.x * p,
-            this.y * (1 - p) + v.y * p
-        );
-    };
-
-    V.prototype.toString = function () {
-        return "(" + this.x + ", " + this.y + ")";
-    };
 
     r2.scaleVector = function (p, s) {
         return new V(p.x * s, p.y * s);
@@ -106,7 +108,7 @@ var R2 = (function () {
     r2.subVectors = subVectors;
 
     r2.pointDistanceSq = function (a, b) {
-        var xDiff = a.x - b.x,
+        let xDiff = a.x - b.x,
             yDiff = a.y - b.y;
         return xDiff * xDiff + yDiff * yDiff;
     };
@@ -180,7 +182,7 @@ var R2 = (function () {
     };
 
     r2.intersectLinesPD = function (start1, d1, start2, d2, intersection) {
-        var between = subVectors(start1, start2),
+        let between = subVectors(start1, start2),
             denom = determinant(d1, d2);
 
         intersection.copy(start1);
@@ -201,7 +203,7 @@ var R2 = (function () {
     }
 
     r2.inSegmentPD = function (start, direction, point) {
-        var diffX = point.x - start.x,
+        let diffX = point.x - start.x,
             diffY = point.y - start.y;
         if (diffX !== 0) {
             return inSegment(diffX / direction.x);
@@ -212,7 +214,7 @@ var R2 = (function () {
     };
 
     r2.segmentsIntersectPDT = function (start1, d1, start2, d2, tolerance) {
-        var between = subVectors(start1, start2),
+        let between = subVectors(start1, start2),
             denom = determinant(d1, d2);
 
         if (tolEqual(denom, 0, tolerance)) {
@@ -242,7 +244,7 @@ var R2 = (function () {
     };
 
     r2.intersectSegmentsPDT = function (start1, d1, start2, d2, intersection, tolerance) {
-        var between = subVectors(start1, start2),
+        let between = subVectors(start1, start2),
             denom = determinant(d1, d2);
 
         intersection.copy(start1);
@@ -269,7 +271,7 @@ var R2 = (function () {
             return false;
         }
 
-        var t1 = determinant(d2, between) / denom,
+        let t1 = determinant(d2, between) / denom,
             t2 = determinant(d1, between) / denom;
         intersection.addScaled(d1, t1);
         return inSegment(t1) && inSegment(t2);
@@ -287,171 +289,176 @@ var R2 = (function () {
         return r2.intersectSegmentsPD(start1, subVectors(end1, start1), start2, subVectors(end2, start2), intersection, COLINEAR_TOLERANCE);
     };
 
-    function Segment(a, b, c, d) {
-        if (isNaN(a)) {
-            this.start = a;
-            this.end = b;
-        } else {
-            this.start = new V(a, b);
-            this.end = new V(c, d);
+    class Segment extends Object {
+        constructor(a, b, c, d) {
+            if (isNaN(a)) {
+                this.start = a;
+                this.end = b;
+            } else {
+                this.start = new V(a, b);
+                this.end = new V(c, d);
+            }
+        }
+
+        direction() {
+            let dir = subVectors(this.end, this.start);
+            dir.normalize();
+            return dir;
+        }
+
+        normal() {
+            let dir = this.direction();
+            dir.set(-dir.y, dir.x);
+            return dir;
+        }
+
+        directedNormal() {
+            let normal = this.normal();
+            if (determinant(this.direction(), normal) >= 0) {
+                normal.scale(-1);
+            }
+            return normal;
+        }
+
+        angle() {
+            let dir = this.direction();
+            return Math.atan2(dir.y, dir.x);
+        }
+
+        length() {
+            return r2.pointDistance(this.end, this.start);
+        }
+
+        interpolate(t) {
+            return r2.addVectors(this.start.scaled(t), this.end.scaled(1-t));
+        }
+
+        intersects(other) {
+            return r2.segmentsIntersectPP(this.start, this.end, other.start, other.end);
+        }
+
+        intersectsT(other, tolerance) {
+            return r2.segmentsIntersectPPT(this.start, this.end, other.start, other.end, tolerance);
+        }
+
+        findIntersection(other, intersection) {
+            return r2.intersectSegmentsPP(this.start, this.end, other.start, other.end, intersection);
+        }
+
+        findIntersectionT(other, tolerance, intersection) {
+            return r2.intersectSegmentsPPT(this.start, this.end, other.start, other.end, tolerance, intersection);
+        }
+
+        extendAtStart(length) {
+            let s = this.start.clone();
+            s.addScaled(this.direction(), -length);
+            return new Segment(s, this.end);
+        }
+
+        extendAtEnd(length) {
+            let e = this.end.clone();
+            e.addScaled(this.direction(), length);
+            return new Segment(this.start, e);
+        }
+
+        extendBoth(length) {
+            let s = this.start.clone(),
+                e = this.end.clone(),
+                dir = this.direction();
+            s.addScaled(dir, -length);
+            e.addScaled(dir, length);
+            return new Segment(s, e);
+        }
+
+        shift(offset) {
+            let s = this.start.clone(),
+                e = this.end.clone();
+            s.add(offset);
+            e.add(offset);
+            return new Segment(s, e);
+        }
+
+        closestPoint(center) {
+            let closest = new V(0, 0),
+                normal = this.normal(),
+                dir = this.direction();
+            if (!r2.intersectLinesPD(this.start, dir, center, normal, closest)) {
+                // Degenerate line segment.
+                return { point: this.start, atEnd: true };
+            }
+            // Is the closest point inside the line segment?
+            let fromStart = r2.subVectors(closest, this.start),
+                fromEnd = r2.subVectors(closest, this.end);
+            if (fromStart.dot(dir) >= 0 && fromEnd.dot(dir) < 0) {
+                return { point: closest, atEnd: false };
+            }
+            if (r2.pointDistanceSq(center, this.start) < r2.pointDistanceSq(center, this.end)) {
+                return { point: this.start, atEnd: true };
+            } else {
+                return { point: this.end, atEnd: true };
+            }
         }
     }
 
-    Segment.prototype.direction = function () {
-        var dir = subVectors(this.end, this.start);
-        dir.normalize();
-        return dir;
-    };
-
-    Segment.prototype.normal = function () {
-        var dir = this.direction();
-        dir.set(-dir.y, dir.x);
-        return dir;
-    };
-
-    Segment.prototype.directedNormal = function () {
-        var normal = this.normal();
-        if (determinant(this.direction(), normal) >= 0) {
-            normal.scale(-1);
-        }
-        return normal;
-    };
-
-    Segment.prototype.angle = function () {
-        var dir = this.direction();
-        return Math.atan2(dir.y, dir.x);
-    };
-
-    Segment.prototype.length = function () {
-        return r2.pointDistance(this.end, this.start);
-    };
-
-    Segment.prototype.interpolate = function (t) {
-        return r2.addVectors(this.start.scaled(t), this.end.scaled(1-t));
-    };
-
-    Segment.prototype.intersects = function (other) {
-        return r2.segmentsIntersectPP(this.start, this.end, other.start, other.end);
-    };
-
-    Segment.prototype.intersectsT = function (other, tolerance) {
-        return r2.segmentsIntersectPPT(this.start, this.end, other.start, other.end, tolerance);
-    };
-
-    Segment.prototype.findIntersection = function (other, intersection) {
-        return r2.intersectSegmentsPP(this.start, this.end, other.start, other.end, intersection);
-    };
-
-    Segment.prototype.findIntersectionT = function (other, tolerance, intersection) {
-        return r2.intersectSegmentsPPT(this.start, this.end, other.start, other.end, tolerance, intersection);
-    };
-
-    Segment.prototype.extendAtStart = function (length) {
-        var s = this.start.clone();
-        s.addScaled(this.direction(), -length);
-        return new Segment(s, this.end);
-    };
-
-    Segment.prototype.extendAtEnd = function (length) {
-        var e = this.end.clone();
-        e.addScaled(this.direction(), length);
-        return new Segment(this.start, e);
-    };
-
-    Segment.prototype.extendBoth = function (length) {
-        var s = this.start.clone(),
-            e = this.end.clone(),
-            dir = this.direction();
-        s.addScaled(dir, -length);
-        e.addScaled(dir, length);
-        return new Segment(s, e);
-    };
-
-    Segment.prototype.shift = function (offset) {
-        var s = this.start.clone(),
-            e = this.end.clone();
-        s.add(offset);
-        e.add(offset);
-        return new Segment(s, e);
-    };
-
-    Segment.prototype.closestPoint = function (center) {
-        var closest = new V(0, 0),
-            normal = this.normal(),
-            dir = this.direction();
-        if (!r2.intersectLinesPD(this.start, dir, center, normal, closest)) {
-            // Degenerate line segment.
-            return { point: this.start, atEnd: true };
-        }
-        // Is the closest point inside the line segment?
-        var fromStart = r2.subVectors(closest, this.start),
-            fromEnd = r2.subVectors(closest, this.end);
-        if (fromStart.dot(dir) >= 0 && fromEnd.dot(dir) < 0) {
-            return { point: closest, atEnd: false };
-        }
-        if (r2.pointDistanceSq(center, this.start) < r2.pointDistanceSq(center, this.end)) {
-            return { point: this.start, atEnd: true };
-        } else {
-            return { point: this.end, atEnd: true };
-        }
-    };
-
     r2.Segment = Segment;
 
-    var AABox = function (left, top, width, height) {
-        this.left = left;
-        this.top = top;
-        this.width = width;
-        this.height = height;
-        this.right = left + width;
-        this.bottom = top + height;
-    };
+    class AABox extends Object {
+        constructor(left, top, width, height) {
+            super();
+            this.left = left;
+            this.top = top;
+            this.width = width;
+            this.height = height;
+            this.right = left + width;
+            this.bottom = top + height;
+        };
 
-    AABox.prototype.contains = function (p) {
-        return this.left <= p.x && p.x <= this.right && this.top <= p.y && p.y <= this.bottom;
-    };
+        contains(p) {
+            return this.left <= p.x && p.x <= this.right && this.top <= p.y && p.y <= this.bottom;
+        };
 
-    AABox.prototype.inflated = function (w, h) {
-        return new AABox(this.left - w, this.top - h, this.width + 2 * w, this.height + 2 * h);
-    };
+        inflated(w, h) {
+            return new AABox(this.left - w, this.top - h, this.width + 2 * w, this.height + 2 * h);
+        };
 
-    AABox.prototype.interpolate = function (p) {
-        return new r2.V(this.left + this.width * p.x, this.top + this.height * p.y);
-    };
+        interpolate(p) {
+            return new r2.V(this.left + this.width * p.x, this.top + this.height * p.y);
+        };
+    }
 
     r2.AABox = AABox;
 
     r2.ZERO = new V(0, 0);
 
     function testSuite() {
-        var vectorTests = [
+        let vectorTests = [
             function testConstruct() {
-                var v = new V();
+                let v = new V();
 
                 TEST.equals(v.x, 0);
                 TEST.equals(v.y, 0);
 
-                var ones = new V(1, 1);
+                let ones = new V(1, 1);
 
                 TEST.equals(ones.x, 1);
                 TEST.equals(ones.y, 1);
             },
 
             function testLength() {
-                var v = new V(3, 4);
+                let v = new V(3, 4);
                 TEST.tolEquals(v.lengthSq(), 25);
                 TEST.tolEquals(v.length(), 5);
             },
 
             function testNormalize() {
-                var v = new V(1, 0);
+                let v = new V(1, 0);
 
                 v.normalize();
 
                 TEST.equals(v.x, 1);
                 TEST.equals(v.y, 0);
 
-                var a = new V(1, 1),
+                let a = new V(1, 1),
                     n = a.normalized();
 
                 TEST.equals(a.x, 1);
@@ -462,14 +469,14 @@ var R2 = (function () {
             },
 
             function testScale() {
-                var v = new V(1, -2);
+                let v = new V(1, -2);
                 v.scale(-2);
                 TEST.equals(v.x, -2);
                 TEST.equals(v.y, 4);
             },
 
             function testCopy() {
-                var v = new V(1, -2),
+                let v = new V(1, -2),
                     w = v.clone();
 
                 TEST.equals(v.x, w.x);
@@ -487,13 +494,13 @@ var R2 = (function () {
             }
         ];
 
-        var intersectTests = [
+        let intersectTests = [
         ];
 
-        var segmentTests = [
+        let segmentTests = [
         ];
 
-        var aaboxTests = [
+        let aaboxTests = [
         ];
 
         TEST.run("R2 Vector", vectorTests);
