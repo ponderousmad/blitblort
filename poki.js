@@ -487,6 +487,13 @@ var POKI = (function (TICK, BLORT) {
         return this.primary;
     };
 
+    Pointer.prototype.hoverLocation = function() {
+        return {
+            x: this.mouse.location[0],
+            y: this.mouse.location[1]
+        };
+    };
+
     function downloadJSON(resource, handler) {
         var request = new XMLHttpRequest();
         request.open("GET", resource, true);
