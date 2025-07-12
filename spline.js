@@ -43,73 +43,73 @@ var SPLINE = (function () {
         return result;
     }
 
-    function BezierCurve() {
-        this.points =  [];
-    }
-
-    BezierCurve.prototype.addPoint = function (p) {
-        this.points.push(p);
-    };
-
-    BezierCurve.prototype.start = function () {
-        return this.points[0];
-    };
-
-    BezierCurve.prototype.end = function () {
-        return this.points[this.points.length - 1];
-    };
-
-    BezierCurve.prototype.evaluate = function (parameter, prior, post) {
-        return evaluateBezier(parameter, makeHull(this.points, prior, post));
-    };
-
-    BezierCurve.prototype.tesselate = function (tesselation, result, prior, post) {
-        return tesselateBezier(makeHull(this.points, prior, post), tesselation, result);
-    };
-
-    BezierCurve.prototype.getData = function () {
-        let pointData = [];
-        for (let p = 0; p < this.points.length; ++p) {
-            pointData.push({x:this.points[p].x, y:this.points[p].y});
+    class BezierCurve extends Object {
+        constructor() {
+            super();
+            this.points =  [];
         }
-        return {
-            type:"BezierCurve",
-            points:pointData
+
+        addPoint(p) {
+            this.points.push(p);
         };
-    }
 
-    function Path(closed) {
-        this.segments = [];
-        this.closed = closed === true;
-    }
+        start() { return this.points[0]; };
+        end() { return this.points[this.points.length - 1]; };
 
-    Path.prototype.addSegment = function (segment) {
-        this.segments.push(segment);
-    };
-
-    Path.prototype.build = function (tesselation, out) {
-        var points = out === undefined ? [] : out;
-        for (var s = 0; s < this.segments.length; ++s) {
-            var prior = s > 0 ? this.segments[s-1].end() : null;
-            var post = this.closed && s === this.segments.length - 1 ? this.segments[0].start() : null;
-            this.segments[s].tesselate(tesselation, points, prior, post);
-        }
-        return points;
-    };
-
-    Path.prototype.isClosed = function () {
-        return this.closed;
-    };
-
-    Path.prototype.getData = function () {
-        let segmentData = [];
-        for (let s = 0; s < this.segments.length; ++s) {
-            segmentData.push(this.segments[s].getData());
-        }
-        return {
-            closed: this.closed,
-            segments: segmentData
+        evaluate(parameter, prior, post) {
+            return evaluateBezier(parameter, makeHull(this.points, prior, post));
         };
+
+        tesselate(tesselation, result, prior, post) {
+            return tesselateBezier(makeHull(this.points, prior, post), tesselation, result);
+        };
+
+        getData() {
+            let pointData = [];
+            for (let p = 0; p < this.points.length; ++p) {
+                pointData.push({x:this.points[p].x, y:this.points[p].y});
+            }
+            return {
+                type:"BezierCurve",
+                points:pointData
+            };
+        }
+    }
+
+    class Path extends Object {
+        constructor(closed) {
+            super();
+            this.segments = [];
+            this.closed = closed === true;
+        }
+
+        addSegment(segment) {
+            this.segments.push(segment);
+        };
+
+        build(tesselation, out) {
+            var points = out === undefined ? [] : out;
+            for (var s = 0; s < this.segments.length; ++s) {
+                var prior = s > 0 ? this.segments[s-1].end() : null;
+                var post = this.closed && s === this.segments.length - 1 ? this.segments[0].start() : null;
+                this.segments[s].tesselate(tesselation, points, prior, post);
+            }
+            return points;
+        };
+
+        isClosed() { return this.closed; };
+        setClosed(closed) { this.closed = closed; }
+
+        getData() {
+            let segmentData = [];
+            for (let s = 0; s < this.segments.length; ++s) {
+                segmentData.push(this.segments[s].getData());
+            }
+            return {
+                closed: this.closed,
+                segments: segmentData
+            };
+        }
     }
 
     return {
