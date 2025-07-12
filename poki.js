@@ -10,8 +10,14 @@ var POKI = (function (TICK, BLORT) {
         Space : "Space",
         Escape : "Escape",
         Minus : "Minus",
+        Equal : "Equal",
         Backspace : "Backspace",
         Delete : "Delete",
+        LBrace : "BracketLeft",
+        RBrace : "BracketRight",
+        BS : "Backslash",
+        Semi : "Semicolon",
+        Quote : "Quote",
         LT : "Comma",
         GT : "Period"
     };
