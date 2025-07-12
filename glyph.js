@@ -1,4 +1,4 @@
-let GLYPH = (function () {
+var GLYPH = (function () {
     "use strict";
 
     function codePointForCharacter(character) {
