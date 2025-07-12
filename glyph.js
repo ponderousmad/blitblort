@@ -33,6 +33,32 @@ var GLYPH = (function () {
         return new R3.V(pointData.x, pointData.y, pointData.z);
     }
 
+    function loadSegment(segmentData, spline) {
+        if (segmentData.type == "BezierCurve") {
+            let segment = new SPLINE.BezierCurve();
+            spline.addSegment(segment);
+            for (let i = 0; i < segmentData.points.length; ++i) {
+                segment.addPoint(loadPoint(segmentData.points[i]));
+            }
+        } else {
+            throw Error("Missing required spline type");
+        }
+    }
+
+    function loadGlyph(glyphData, glyphs) {
+        let codePoint = glyphData.codePoint,
+            splines = [];
+        for (let p = 0; p < glyphData.splines.length; ++p) {
+            let splineData = glyphData.splines[p],
+                spline = new SPLINE.Path(splineData.closed);
+            for (let s = 0; s < splineData.segments.length; ++s) {
+                loadSegment(splineData.segments[s], spline);
+            }
+            splines.push(spline);
+        }
+        glyphs[codePoint] = new GLYPH.Glyph(codePoint, splines);
+    }
+
     class Font extends Object {
         glyphs = [];
 
@@ -83,27 +109,7 @@ var GLYPH = (function () {
 
             let newGlpyhs = [];
             for (let g = 0; g < data.glyphs.length; ++g) {
-                let glyph = data.glyphs[g],
-                    codePoint = glyph.codePoint,
-                    splines = [];
-                for (let p = 0; p < glyph.splines.length; ++p) {
-                    let splineData = glyph.splines[p],
-                        spline = new SPLINE.Path(splineData.closed);
-                    for (let s = 0; s < splineData.segments.length; ++s) {
-                        let segmentData = splineData.segments[s];
-                        if (segmentData.type == "BezierCurve") {
-                            let segment = new SPLINE.BezierCurve();
-                            spline.addSegment(segment);
-                            for (let i = 0; i < segmentData.points.length; ++i) {
-                                segment.addPoint(loadPoint(segmentData.points[i]));
-                            }
-                        } else {
-                            throw Error("Missing required spline type");
-                        }
-                    }
-                    splines.push(spline);
-                }
-                newGlpyhs[codePoint] = new GLYPH.Glyph(codePoint, splines);
+                loadGlyph(data.glyphs[g], newGlpyhs);
             }
 
             this.name = data.name;
