@@ -1,4 +1,4 @@
-var GLYPH = (function () {
+let GLYPH = (function () {
     "use strict";
 
     function codePointForCharacter(character) {
@@ -6,6 +6,36 @@ var GLYPH = (function () {
             return character.codePointAt(0);
         }
         throw new TypeError("Character must be a single character string");
+    }
+
+    function isInsidePolygon(points, testPoint) {
+        if (points.length < 2) {
+            return false;
+        }
+        let xCrossings = 0,
+            yCrossings = 0,
+            prev = points[points.length - 1],
+            prevAhead = prev.x > testPoint.x,
+            prevBelow = prev.y > testPoint.y
+        for (const p of points) {
+            let ahead = p.x > testPoint.x,
+                below = p.y > testPoint.y
+
+            if ((ahead || prevAhead) && below != prevBelow) {
+                ++xCrossings;
+            }
+            if ((below || prevBelow) && ahead != prevAhead) {
+                ++yCrossings;
+            }
+
+            prev = p;
+            prevAhead = ahead;
+            prevBelow = below;
+        }
+        if ( (xCrossings % 2) != (yCrossings % 2)) {
+            console.log("Ambigous inside check! xCrossings: " + xCrossings + ", yCrossings: " + yCrossings);
+        }
+        return (xCrossings % 2) == 1;
     }
 
     class Glyph extends Object {
@@ -148,6 +178,7 @@ var GLYPH = (function () {
 
     return {
         codePointForCharacter: codePointForCharacter,
+        isInsidePolygon: isInsidePolygon,
         Glyph: Glyph,
         Font: Font
     };
