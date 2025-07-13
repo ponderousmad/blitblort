@@ -100,6 +100,8 @@ var SPLINE = (function () {
         isClosed() { return this.closed; };
         setClosed(closed) { this.closed = closed; }
 
+        getSegments() { return this.segments; }
+
         getData() {
             let segmentData = [];
             for (let s = 0; s < this.segments.length; ++s) {
