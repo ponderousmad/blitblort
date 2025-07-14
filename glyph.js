@@ -169,7 +169,7 @@ var GLYPH = (function () {
                         codePoint = nextValidCodePoint(glyphs, codePoint + 1);
                         return {
                             value: glyphs[current],
-                            done: codePoint < glyphs.length
+                            done: false
                         };
                     }
                     return {
