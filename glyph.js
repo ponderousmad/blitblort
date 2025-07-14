@@ -54,6 +54,8 @@ var GLYPH = (function () {
         getCodePoint() { return this.codePoint; }
         getSplines() { return this.splines; }
         getSymbol() { return String.fromCodePoint(this.codePoint); }
+
+        addSpline(path) { this.splines.push(path); }
     }
 
     function loadPoint(pointData) {
