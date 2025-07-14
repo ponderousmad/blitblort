@@ -333,12 +333,16 @@ var R2 = (function () {
             return Math.atan2(dir.y, dir.x);
         }
 
+        lengthSq() {
+            return r2.pointDistanceSq(this.end, this.start);
+        }
+
         length() {
             return r2.pointDistance(this.end, this.start);
         }
 
         interpolate(t) {
-            return r2.addVectors(this.start.scaled(t), this.end.scaled(1-t));
+            return r2.addVectors(this.start.scaled(1-t), this.end.scaled(t));
         }
 
         intersects(other) {
@@ -528,6 +532,54 @@ var R2 = (function () {
         ];
 
         let segmentTests = [
+            function testConstruct() {
+                let s = new Segment(0, 1, 2, 3),
+                    t = new Segment(new V(4, 5), new V(6, 7));
+
+                TEST.equals(s.start.x, 0);
+                TEST.equals(s.start.y, 1);
+
+                TEST.equals(s.end.x, 2);
+                TEST.equals(s.end.y, 3);
+
+                TEST.equals(t.start.x, 4);
+                TEST.equals(t.start.y, 5);
+
+                TEST.equals(t.end.x, 6);
+                TEST.equals(t.end.y, 7);
+            },
+
+            function testDirection() {
+                let s = new Segment(0, 0, 0, 1);
+
+                TEST.equals(s.direction().x, 0);
+                TEST.equals(s.direction().y, 1);
+            },
+
+            function testNormal() {
+                let s = new Segment(0, 0, 0, 1);
+
+                TEST.equals(s.normal().x, -1);
+                TEST.equals(s.normal().y, 0);
+            },
+
+            function testLength() {
+                let s = new Segment(0, 0, 0, 2);
+                TEST.tolEquals(s.lengthSq(), 4);
+                TEST.tolEquals(s.length(), 2);
+            },
+
+            function testInterpolate() {
+                let s = new Segment(0, 0, 1, 2),
+                    q1 = s.interpolate(0.25),
+                    q3 = s.interpolate(0.75);
+                
+                TEST.tolEquals(q1.x, 0.25);
+                TEST.tolEquals(q1.y, 0.5);
+
+                TEST.tolEquals(q3.x, 0.75);
+                TEST.tolEquals(q3.y, 1.5);
+            }
         ];
 
         let aaboxTests = [
