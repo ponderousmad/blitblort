@@ -149,9 +149,7 @@ var GLYPH = (function () {
             return JSON.stringify({name:this.name, glyphs:glyphData}, null, 4);
         }
 
-        loadFromJSON(jsonString) {
-            let data = JSON.parse(jsonString);
-
+        load(data) {
             let newGlpyhs = [];
             for (let g = 0; g < data.glyphs.length; ++g) {
                 loadGlyph(data.glyphs[g], newGlpyhs);
@@ -159,6 +157,10 @@ var GLYPH = (function () {
 
             this.name = data.name;
             this.glyphs = newGlpyhs;
+        }
+
+        loadFromJSON(jsonString) {
+            load(JSON.parse(jsonString));
         }
 
         [Symbol.iterator]() {
