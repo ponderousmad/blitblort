@@ -20,11 +20,23 @@ var SPLINE = (function () {
         };
 
         tesselate(tesselation, result, prior, post) {
-            if (!prior) {
-                result.push(this.startPoint)
+            if (this.startPoint) {
+                if (prior) {
+                    throw new Error("startPoint should never have prior value.");
+                }
+                result.push(this.startPoint);
             }
-            result.push(post || this.endPoint);
+            if (this.endPoint) {
+                result.push(this.endPoint);
+            }
+            if (post) {
+                result.push(post);
+            }
         };
+
+        isLinear() {
+            return true;
+        }
 
         controlPoints() {
             let points = [];
@@ -108,6 +120,10 @@ var SPLINE = (function () {
         tesselate(tesselation, result, prior, post) {
             return tesselateBezier(makeHull(this.points, prior, post), tesselation, result);
         };
+
+        isLinear() {
+            return false;
+        }
 
         controlPoints() { return this.points; }
 
