@@ -298,6 +298,7 @@ var R2 = (function () {
 
     class Segment extends Object {
         constructor(a, b, c, d) {
+            super();
             if (isNaN(a)) {
                 this.start = a;
                 this.end = b;
