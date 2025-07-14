@@ -57,10 +57,11 @@ var GLYPH = (function () {
     }
 
     function loadPoint(pointData) {
-        if(typeof(pointData.z) === 'undefined') {
-            return new R2.V(pointData.x, pointData.y);
+        if (!pointData) {
+            return undefined;
         }
-        return new R3.V(pointData.x, pointData.y, pointData.z);
+        // Always assume fonts are 2D.
+        return new R2.V(pointData.x, pointData.y);
     }
 
     function loadSegment(segmentData, spline) {
@@ -70,6 +71,8 @@ var GLYPH = (function () {
             for (let i = 0; i < segmentData.points.length; ++i) {
                 segment.addPoint(loadPoint(segmentData.points[i]));
             }
+        } else if (segmentData.type == "LineSegment") {
+            spline.addSegment(new SPLINE.LineSegment(loadPoint(segmentData.start), loadPoint(segmentData.end)))
         } else {
             throw Error("Missing required spline type");
         }

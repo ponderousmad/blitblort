@@ -1,6 +1,51 @@
 var SPLINE = (function () {
     "use strict";
 
+    class LineSegment extends Object {
+        constructor(start, end) {
+            super();
+            // Note, start will be null except for first segment and end will be null for last if closed
+            this.startPoint = start ? start : undefined;
+            this.endPoint = end ? end : undefined;
+        }
+
+        start() { return this.startPoint; };
+        end() { return this.endPoint; };
+
+        evaluate(parameter, prior, post) {
+            let start = proir || this.startPoint,
+                end = post || this.endPoint,
+                segment = new start.space().Segment(start, end);
+            return segment.interpolate(parameter);
+        };
+
+        tesselate(tesselation, result, prior, post) {
+            if (!prior) {
+                result.push(this.startPoint)
+            }
+            result.push(post || this.endPoint);
+        };
+
+        controlPoints() {
+            let points = [];
+            if (this.startPoint) {
+                points.push(this.startPoint);
+            }
+            if (this.endPoint) {
+                points.push(this.endPoint);
+            }
+            return points;
+        }
+
+        getData() {
+            return {
+                type:"LineSegment",
+                start: this.startPoint ? this.startPoint.getData() : undefined,
+                end: this.endPoint ? this.endPoint.getData() : undefined
+            };
+        }
+    }
+
     // Given a set of points, and an interpolation parameter, compute
     // the curve point assuming that the points are the bezier control hull
     // of the corresponding degree.
@@ -64,10 +109,12 @@ var SPLINE = (function () {
             return tesselateBezier(makeHull(this.points, prior, post), tesselation, result);
         };
 
+        controlPoints() { return this.points; }
+
         getData() {
             let pointData = [];
-            for (let p = 0; p < this.points.length; ++p) {
-                pointData.push({x:this.points[p].x, y:this.points[p].y});
+            for (const point of this.points) {
+                pointData.push(point.getData());
             }
             return {
                 type:"BezierCurve",
@@ -115,6 +162,7 @@ var SPLINE = (function () {
     }
 
     return {
+        LineSegment: LineSegment,
         BezierCurve: BezierCurve,
         Path: Path
     };
