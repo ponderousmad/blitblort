@@ -1,0 +1,64 @@
+{
+    "name": "Test",
+    "glyphs": [
+        {
+            "codePoint": 65,
+            "symbol": "A",
+            "splines": [
+                {
+                    "closed": true,
+                    "segments": [
+                        {
+                            "type": "BezierCurve",
+                            "points": [
+                                {
+                                    "x": 20,
+                                    "y": 20
+                                },
+                                {
+                                    "x": 50,
+                                    "y": 20
+                                },
+                                {
+                                    "x": 90,
+                                    "y": 20
+                                },
+                                {
+                                    "x": 120,
+                                    "y": 20
+                                }
+                            ]
+                        },
+                        {
+                            "type": "LineSegment",
+                            "end": {
+                                "x": 120,
+                                "y": 180
+                            }
+                        },
+                        {
+                            "type": "BezierCurve",
+                            "points": [
+                                {
+                                    "x": 90,
+                                    "y": 180
+                                },
+                                {
+                                    "x": 50,
+                                    "y": 180
+                                },
+                                {
+                                    "x": 20,
+                                    "y": 180
+                                }
+                            ]
+                        },
+                        {
+                            "type": "LineSegment"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
