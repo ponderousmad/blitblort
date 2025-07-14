@@ -16,24 +16,34 @@ var GLYPH = (function () {
             yCrossings = 0,
             prev = points[points.length - 1],
             prevAhead = prev.x > testPoint.x,
-            prevBelow = prev.y > testPoint.y
+            prevBelow = prev.y > testPoint.y;
         for (const p of points) {
             let ahead = p.x > testPoint.x,
                 below = p.y > testPoint.y
 
             if ((ahead || prevAhead) && below != prevBelow) {
-                ++xCrossings;
+                let rise = p.y - prev.y,
+                    offset = (testPoint.y - prev.y) / rise, // Rise is never zero because below != prevBelow
+                    xAtOffset = prev.x + offset * (p.x - prev.x);
+                if (xAtOffset > testPoint.x) {
+                    ++xCrossings; // xCrossings.push(p.toString() + " -> " + prev.toString() + " @ " + xAtOffset);
+                }
             }
             if ((below || prevBelow) && ahead != prevAhead) {
-                ++yCrossings;
+                let run = p.x - prev.x,
+                    offset = (testPoint.x - prev.x) / run, // Run is never zero because ahead != prevAhead
+                    yAtOffset = prev.y + offset * (p.y - prev.y);
+                if (yAtOffset > testPoint.y) {
+                    ++yCrossings; // yCrossings.push(p.toString() + " -> " + prev.toString() + " @ " + yAtOffset);
+                }
             }
 
             prev = p;
             prevAhead = ahead;
             prevBelow = below;
         }
-        if ( (xCrossings % 2) != (yCrossings % 2)) {
-            console.log("Ambigous inside check! xCrossings: " + xCrossings + ", yCrossings: " + yCrossings);
+        if ((xCrossings % 2) != (yCrossings % 2)) {
+            console.log("Ambigous inside check!", testPoint.toString(), xCrossings, yCrossings);
         }
         return (xCrossings % 2) == 1;
     }
