@@ -15,6 +15,9 @@ var R2 = (function () {
             this.x = x || 0;
             this.y = y || 0;
         }
+
+        space() { return r2; }
+
         clone() {
             return new V(this.x, this.y);
         }
@@ -89,6 +92,10 @@ var R2 = (function () {
 
         toString() {
             return "(" + this.x + ", " + this.y + ")";
+        }
+
+        getData() {
+            return {x: this.x, y: this.y};
         }
     }
 
@@ -444,6 +451,12 @@ var R2 = (function () {
                 TEST.equals(ones.y, 1);
             },
 
+            function testSpace() {
+                let v = new V();
+
+                TEST.same(v.space(), r2);
+            },
+
             function testLength() {
                 let v = new V(3, 4);
                 TEST.tolEquals(v.lengthSq(), 25);
@@ -491,6 +504,22 @@ var R2 = (function () {
                 v.copy(w);
                 TEST.equals(v.x, 0);
                 TEST.equals(v.y, 0);
+            },
+
+            function testToString() {
+                let zero = new V(),
+                    v = new V(1, 2);
+
+                TEST.equals(zero.toString(), "(0, 0)");
+                TEST.equals(v.toString(), "(1, 2)");
+            },
+
+            function testGetData() {
+                let zero = new V(),
+                    v = new V(1, 2);
+
+                TEST.equals(JSON.stringify(zero.getData()), JSON.stringify({x:0, y:0}));
+                TEST.equals(JSON.stringify(   v.getData()), JSON.stringify({x:1, y:2}));
             }
         ];
 

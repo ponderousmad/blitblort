@@ -11,6 +11,8 @@ var R3 = (function () {
         return Math.max(Math.min(v, max), min);
     }
 
+    let r3 = {};
+
     class V extends Object {
         constructor(x, y, z) {
             super();
@@ -18,6 +20,8 @@ var R3 = (function () {
             this.y = y || 0;
             this.z = z || 0;
         }
+
+        space() { return r3; }
 
         copy() {
             return new V(this.x, this.y, this.z);
@@ -131,6 +135,14 @@ var R3 = (function () {
 
         projectedOnV(v) {
             return v.scaled(this.dot(v) / v.lengthSq());
+        }
+
+        toString() {
+            return "(" + this.x + ", " + this.y + ", " + this.z +")";
+        }
+
+        getData() {
+            return {x: this.x, y: this.y, z: this.z };
         }
     }
 
@@ -782,6 +794,12 @@ var R3 = (function () {
                 testEqualsV(ones, 1, 1, 1);
             },
 
+            function testSpace() {
+                let v = new V();
+
+                TEST.same(v.space(), r3);
+            },
+
             function testLength() {
                 let zero = new V(0, 0, 0),
                     one = new V(1, 0, 0),
@@ -879,6 +897,22 @@ var R3 = (function () {
                 testEqualsV(xAxis.cross(bisector), 0, 0, Math.sqrt(2) * Math.sin(Math.PI/4), tolerance);
                 testEqualsV(bisector.cross(xAxis), 0, 0,-Math.sqrt(2) * Math.sin(Math.PI/4), tolerance);
                 testEqualsV(yAxis.cross(thirty), 2 * Math.sin(Math.PI/6), 0, 0, tolerance);
+            },
+
+            function testToString() {
+                let zero = new V(),
+                    v = new V(1, 2, 3);
+
+                TEST.equals(zero.toString(), "(0, 0, 0)");
+                TEST.equals(v.toString(), "(1, 2, 3)");
+            },
+
+            function testGetData() {
+                let zero = new V(),
+                    v = new V(1, 2, 3);
+
+                TEST.equals(JSON.stringify(zero.getData()), JSON.stringify({x:0, y:0, z:0}));
+                TEST.equals(JSON.stringify(   v.getData()), JSON.stringify({x:1, y:2, z:3}));
             }
         ];
 
@@ -1083,7 +1117,7 @@ var R3 = (function () {
         TEST.run("R3 AABox", aaboxTests);
     }
 
-    return {
+    Object.assign(r3, {
         M: M,
         V: V,
         Q: Q,
@@ -1112,5 +1146,7 @@ var R3 = (function () {
         vectorOntoPlane: vectorOntoPlane,
         closestPointOnLine: closestPointOnLine,
         testSuite: testSuite
-    };
+    });
+
+    return r3;
 }());
