@@ -38,6 +38,10 @@ var SPLINE = (function () {
             return true;
         }
 
+        clearStart() {
+            this.startPoint = undefined;
+        }
+
         controlPoints() {
             let points = [];
             if (this.startPoint) {
@@ -123,6 +127,12 @@ var SPLINE = (function () {
 
         isLinear() {
             return false;
+        }
+
+        clearStart() {
+            if (this.points.length == 4) {
+                this.points.splice(0, 1);
+            }
         }
 
         controlPoints() { return this.points; }
