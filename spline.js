@@ -50,6 +50,14 @@ var SPLINE = (function () {
             this.startPoint = undefined;
         }
 
+        setEnd(point) {
+            if (this.endPoint) {
+                this.endPoint.copy(point);
+            } else {
+                this.endPoint = point.clone();
+            }
+        }
+
         clearEnd() {
             this.endPoint = undefined;
         }
@@ -152,6 +160,14 @@ var SPLINE = (function () {
         clearStart() {
             if (this.points.length == 4) {
                 this.points.splice(0, 1);
+            }
+        }
+
+        setEnd(point) {
+            if(this.points.length == 2) {
+                this.points.splice(this.points.length, 0, point.clone());
+            } else {
+                this.points[this.points.length - 1].copy(point);
             }
         }
 
