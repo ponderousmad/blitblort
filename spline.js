@@ -38,8 +38,20 @@ var SPLINE = (function () {
             return true;
         }
 
+        setStart(point) {
+            if (this.startPoint) {
+                this.startPoint.copy(point);
+            } else {
+                this.startPoint = point.clone();
+            }
+        }
+
         clearStart() {
             this.startPoint = undefined;
+        }
+
+        clearEnd() {
+            this.endPoint = undefined;
         }
 
         controlPoints() {
@@ -129,9 +141,23 @@ var SPLINE = (function () {
             return false;
         }
 
+        setStart(point) {
+            if (this.points.length == 4) {
+                this.points[0].copy(point);
+            } else {
+                this.points.splice(0, 0, point.clone());
+            }
+        }
+
         clearStart() {
             if (this.points.length == 4) {
                 this.points.splice(0, 1);
+            }
+        }
+
+        clearEnd() {
+            if (this.points.length > 2) {
+                this.points.splice(this.points.length - 1, 1);
             }
         }
 
